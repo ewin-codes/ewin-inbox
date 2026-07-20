@@ -56,26 +56,12 @@ flowchart LR
 - **`ewin_omnichannel_core`** owns the domain: channels, accounts, identities, conversations, messages, the routing service, the retry job queue, the Discuss mirror, reporting and canned templates. It knows nothing about any specific provider.
 - **Connector addons** implement one abstract contract (`omnichannel.connector`): parse an inbound provider event into a universal shape, and send an outbound message. Inbound always flows through `routing_service.process_event`; outbound always flows through `connector.send_message`.
 
-## Quick start (Docker)
+## Install
 
-Requirements: Docker + Docker Compose.
-
-```bash
-# 1. Configuration
-cp config/odoo.conf.example config/odoo.conf   # then set admin_passwd + db_password
-cp .env.example .env                            # if present; otherwise set DB creds
-
-# 2. Bring it up
-docker compose up -d
-
-# 3. Open http://localhost:8069 and create a database (master password = admin_passwd)
-```
-
-Install the core plus the channels you need (developer mode → Apps, or CLI):
+These are standard Odoo 18 addons. Put the modules under `addons/` on your Odoo `addons_path`, then install the core plus the channels you need (developer mode → Apps, or CLI):
 
 ```bash
-docker compose exec -T odoo odoo -d <db> -i ewin_omnichannel_core,ewin_omnichannel_whatsapp --stop-after-init --no-http
-docker compose restart odoo
+odoo -d <db> -i ewin_omnichannel_core,ewin_omnichannel_whatsapp --stop-after-init
 ```
 
 > Menus that read `omnichannel.*` are visible only to users in an EWIN Inbox security group. Grant yourself the **EWIN Inbox / Administrator** group after install.
@@ -86,16 +72,15 @@ Open **EWIN Inbox → Configuration → Accounts**, create an account, pick the 
 
 ## Development & tests
 
-Odoo runs in the `odoo-web` container against the `odoo-test` database.
+Each module ships a test suite. Run one against a test database:
 
 ```bash
-# run a module's test suite (‑u to upgrade, ‑i to install first)
-docker exec odoo-web odoo -c /etc/odoo/odoo.conf -d odoo-test \
-  -u ewin_omnichannel_whatsapp --test-enable --stop-after-init \
+# ‑u to upgrade, ‑i to install first
+odoo -d <test-db> -u ewin_omnichannel_whatsapp --test-enable --stop-after-init \
   --http-port=8269 --test-tags /ewin_omnichannel_whatsapp
 ```
 
-`--http-port=8269` avoids colliding with the running server on 8069. A green run ends with `0 failed, 0 error(s) of N tests`.
+`--http-port=8269` avoids colliding with an already-running server on 8069. A green run ends with `0 failed, 0 error(s) of N tests`.
 
 ## Project layout
 
@@ -107,15 +92,13 @@ addons/
   ewin_omnichannel_viber/       # Viber bot connector
   ewin_omnichannel_email/       # Email (IMAP/SMTP) connector
   ewin_omnichannel_livechat/    # Website Live Chat connector (in-process, no webhook)
-config/odoo.conf.example        # sanitized config template
-docker-compose.yml              # Odoo 18 + PostgreSQL 16
 ```
 
 ## Security notes
 
 - Provider secrets (tokens, app secrets) are stored under an admin-only security group and never logged.
 - Webhooks are authenticated per provider (e.g. WhatsApp validates the `X-Hub-Signature-256` HMAC over the raw body with the Meta App Secret, constant-time).
-- Real secrets never live in the repo: `config/odoo.conf`, `.env` and certificates are git-ignored — commit the `*.example` templates instead.
+- Real secrets never live in the repo: provider credentials are entered in Odoo (under an admin-only group), and any local runtime config (`odoo.conf`, `.env`, certificates) is git-ignored.
 
 ## License
 
