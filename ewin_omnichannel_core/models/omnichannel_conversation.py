@@ -10,6 +10,7 @@ CHANNEL_ICONS = {
     "telegram": ("fa-telegram", "#29a9eb"),
     "viber": ("fa-viber", "#7360f2"),
     "email": ("fa-envelope", "#d44638"),
+    "livechat": ("fa-comments", "#00a09d"),
 }
 CHANNEL_ICON_DEFAULT = ("fa-comments-o", "#6c757d")
 
