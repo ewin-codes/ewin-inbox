@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="channel_livechat" model="omnichannel.channel">
+        <field name="name">Live Chat</field>
+        <field name="code">livechat</field>
+        <field name="connector_module">ewin_omnichannel_livechat</field>
+        <field name="capabilities">{"text": true, "image": true, "document": true, "audio": true, "video": true, "templates": false, "delivery_status": false}</field>
+    </record>
+</odoo>

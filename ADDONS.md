@@ -15,8 +15,9 @@ it does not require changing the core.
 |---|---|
 | `ewin_omnichannel_core` | Channel-agnostic core: channels, accounts, identities, conversations, messages, teams, tags, error log, the connector contract, the job queue, and the operator UI (Inbox menu under Discuss). Depends on `base`, `mail`, `contacts`. |
 | `ewin_omnichannel_telegram` | Telegram Bot connector: account settings (bot token, webhook), the Telegram API client, webhook controller, inbound/outbound message handling, attachment download/upload. Depends on `ewin_omnichannel_core`. |
+| `ewin_omnichannel_livechat` | Live Chat connector: bridges Odoo's own website Live Chat (`website_livechat`) into Inbox as a two-way channel via an in-process `discuss.channel.message_post` hook — no webhook. Depends on `ewin_omnichannel_core`, `website_livechat`. |
 
-Both modules use Odoo model names in the `omnichannel.*` namespace (e.g. `omnichannel.conversation`);
+All modules use Odoo model names in the `omnichannel.*` namespace (e.g. `omnichannel.conversation`);
 only the Odoo *module* names carry the `ewin_` prefix.
 
 ## Installation
