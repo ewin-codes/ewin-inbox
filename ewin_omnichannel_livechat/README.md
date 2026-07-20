@@ -119,6 +119,50 @@ connected account's bridge user back to `online`
 `_livechat_ensure_bridge_presence()`), independent of whether anyone is
 actually watching that user's session.
 
+## Operating it day to day
+
+Operators answer from the **EWIN Inbox** conversation, not from the raw
+Live Chat window in Discuss. A visitor's message creates (or reopens) an
+`omnichannel.conversation`; the operator opens it in Inbox and replies with
+the normal composer — the reply is delivered into the visitor's widget by
+the connector.
+
+**Assignment drives live delivery.** An operator only receives native
+push/sound/unread badges for a conversation once they are its operator,
+because the mirror channel (M) subscribes the assigned operator, not every
+user. There are two ways to get there:
+
+- Set a **Default Operator** and/or **Default Team** on the account
+  (**Configuration → Accounts**). New conversations are then created already
+  assigned and **open**, and the operator is notified immediately.
+- Leave it unset and let conversations land in the **New / Unassigned**
+  queue; an operator picks one up with **Take** on the conversation. Until a
+  conversation is taken it sits in the queue: its messages are stored and
+  visible when you open it, but no live notification is pushed — that is the
+  intended queue behaviour, not a lost message.
+
+## Troubleshooting
+
+- **"The visitor's messages reach Discuss but never appear in Inbox."** You
+  are almost certainly chatting as the operator. Because the bridge operator
+  (or any operator) is identified as non-visitor, a message you post while
+  logged in as that user is treated as an operator reply and is not ingested
+  as an inbound customer message. Test from a **logged-out / incognito
+  browser** so you are a real anonymous visitor. Genuine visitor messages
+  are ingested; the operator's own are not, by design.
+- **"Messages are in the conversation but I get no notification and the
+  thread doesn't refresh live."** The conversation is **unassigned**
+  (Operator is empty). Click **Take**, or set a Default Operator/Team so new
+  conversations auto-assign. Assignment is what subscribes you to the mirror
+  channel.
+- **"Nothing lands at all."** Confirm the account is **Connected** (run
+  **Check Connection**) and that the `im_livechat.channel` the visitor's
+  session actually uses is the one selected on the account. Ingestion never
+  raises into the visitor's request: an internal failure is recorded in
+  **Configuration → Logs** (`omnichannel.error.log`, category *internal*)
+  without losing the visitor's message — check there if a message is
+  missing.
+
 ## Tests
 
 ```bash
