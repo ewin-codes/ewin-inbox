@@ -1,2 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo/>
+<odoo>
+    <record id="view_account_form_livechat" model="ir.ui.view">
+        <field name="name">omnichannel.account.form.livechat</field>
+        <field name="model">omnichannel.account</field>
+        <field name="inherit_id" ref="ewin_omnichannel_core.view_account_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <group string="Live Chat"
+                       invisible="channel_code != 'livechat'">
+                    <field name="channel_code" invisible="1"/>
+                    <field name="livechat_channel_id"
+                           options="{'no_create': True}"/>
+                    <field name="livechat_bridge_user_id"
+                           options="{'no_create': True}"/>
+                </group>
+            </xpath>
+            <xpath expr="//header" position="inside">
+                <button name="action_livechat_check_connection" type="object"
+                        string="Check Connection"
+                        invisible="channel_code != 'livechat'"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
