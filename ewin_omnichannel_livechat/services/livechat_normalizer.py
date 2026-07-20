@@ -15,8 +15,8 @@ class LivechatNormalizer(models.AbstractModel):
 
         Visitor-vs-operator uses the same signal website_livechat itself uses:
         a livechat post is the operator's iff its author is
-        ``livechat_operator_id``. System notifications (message_type other than
-        'comment') and our own outbound (context flag) are excluded."""
+        ``livechat_operator_id``. System notifications (message_type other
+        than 'comment') are excluded too."""
         if channel.channel_type != "livechat":
             return False
         if mail_message.message_type != "comment":

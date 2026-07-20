@@ -1,4 +1,5 @@
 import uuid
+from unittest.mock import patch
 
 from .common import LivechatCase
 from odoo.tests import tagged
@@ -48,6 +49,21 @@ class TestLivechatIngestion(LivechatCase):
         channel.message_post(
             body="operator hi", author_id=self.bridge_user.partner_id.id,
             message_type="comment", subtype_xmlid="mail.mt_comment")
+        conv = self.env["omnichannel.conversation"].search(
+            [("account_id", "=", self.account.id)])
+        self.assertFalse(conv)
+
+    def test_ingest_failure_preserves_visitor_message(self):
+        visitor = self._visitor()
+        channel = self._make_session(visitor=visitor)
+        RoutingService = self.env["omnichannel.routing.service"]
+        with patch.object(type(RoutingService), "process_event",
+                          side_effect=Exception("boom")):
+            message = self._visitor_post(channel, body="I need help")
+        self.assertIn(message, channel.message_ids)
+        errors = self.env["omnichannel.error.log"].search(
+            [("account_id", "=", self.account.id)])
+        self.assertTrue(errors)
         conv = self.env["omnichannel.conversation"].search(
             [("account_id", "=", self.account.id)])
         self.assertFalse(conv)

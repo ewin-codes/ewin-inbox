@@ -1,6 +1,6 @@
 # EWIN Inbox
 
-**Omnichannel customer inbox for Odoo 18.** One place for your team to receive and answer customer messages from Telegram, WhatsApp, Viber and Email — threaded into Odoo Discuss, tied to `res.partner`, with routing, delivery status, canned replies and reporting.
+**Omnichannel customer inbox for Odoo 18.** One place for your team to receive and answer customer messages from Telegram, WhatsApp, Viber, Email and website Live Chat — threaded into Odoo Discuss, tied to `res.partner`, with routing, delivery status, canned replies and reporting.
 
 ![Odoo](https://img.shields.io/badge/Odoo-18.0-714B67) ![License](https://img.shields.io/badge/license-LGPL--3-blue) ![Status](https://img.shields.io/badge/status-active%20development-orange)
 

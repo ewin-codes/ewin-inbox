@@ -1,8 +1,4 @@
-import logging
-
 from odoo import models
-
-_logger = logging.getLogger(__name__)
 
 
 class DiscussChannel(models.Model):
@@ -38,19 +34,29 @@ class DiscussChannel(models.Model):
             normalized["raw_payload"])
         if not created and event.state in ("processed", "skipped"):
             return
+        # This runs synchronously inside the visitor's own message_post
+        # request (there is no controller wrapping this, unlike the webhook
+        # connectors). An uncaught exception here would roll back the whole
+        # request transaction, undoing super().message_post() and erasing the
+        # visitor's message from the live session - and it would also wipe
+        # out the failure bookkeeping below. So ingest side-effects are
+        # confined to a savepoint: on failure only those writes unwind, the
+        # visitor's message and the failure record survive in the outer
+        # transaction, and nothing is re-raised into the visitor's request.
         try:
-            omni_message = self.env["omnichannel.routing.service"].sudo(
-                ).process_event(account, normalized)
-            conversation = omni_message.conversation_id
-            if conversation and conversation.livechat_channel_id != self:
-                conversation.sudo().livechat_channel_id = self.id
-            event.mark_processed()
+            with self.env.cr.savepoint():
+                omni_message = self.env["omnichannel.routing.service"].sudo(
+                    ).process_event(account, normalized)
+                conversation = omni_message.conversation_id
+                if conversation and conversation.livechat_channel_id != self:
+                    conversation.sudo().livechat_channel_id = self.id
         except Exception as err:  # noqa: BLE001
             event.mark_failed(str(err))
             self.env["omnichannel.error.log"].sudo().log(
                 "internal", "Failed to ingest livechat message",
                 account=account, event_id=event.id, technical=str(err))
-            raise
+            return
+        event.mark_processed()
 
     def _close_livechat_session(self, **kwargs):
         res = super()._close_livechat_session(**kwargs)
