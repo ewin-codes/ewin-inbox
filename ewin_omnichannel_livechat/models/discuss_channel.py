@@ -51,3 +51,16 @@ class DiscussChannel(models.Model):
                 "internal", "Failed to ingest livechat message",
                 account=account, event_id=event.id, technical=str(err))
             raise
+
+    def _close_livechat_session(self, **kwargs):
+        res = super()._close_livechat_session(**kwargs)
+        Conversation = self.env["omnichannel.conversation"].sudo()
+        for channel in self.filtered(
+                lambda c: c.channel_type == "livechat"):
+            conv = Conversation.search([
+                ("livechat_channel_id", "=", channel.id),
+                ("state", "not in", ("closed", "pending")),
+            ], limit=1)
+            if conv:
+                conv.action_set_pending()
+        return res
