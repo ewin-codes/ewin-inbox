@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_conversation_form_wa_template" model="ir.ui.view">
+        <field name="name">omnichannel.conversation.form.wa.template</field>
+        <field name="model">omnichannel.conversation</field>
+        <field name="inherit_id"
+               ref="ewin_omnichannel_core.view_conversation_form"/>
+        <field name="arch" type="xml">
+            <header position="inside">
+                <field name="wa_is_whatsapp" invisible="1"/>
+                <field name="wa_window_closed" invisible="1"/>
+                <button name="action_wa_open_template_wizard"
+                        string="Send WhatsApp Template" type="object"
+                        invisible="not wa_is_whatsapp"/>
+            </header>
+            <div class="o_omni_composer" position="before">
+                <div class="alert alert-warning mb-1" role="alert"
+                     invisible="not wa_window_closed">
+                    The 24-hour window looks closed — only approved templates
+                    can be delivered until the customer replies.
+                </div>
+            </div>
+        </field>
+    </record>
+</odoo>

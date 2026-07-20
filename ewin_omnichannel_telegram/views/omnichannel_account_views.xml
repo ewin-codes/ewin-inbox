@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_account_form_telegram" model="ir.ui.view">
+        <field name="name">omnichannel.account.form.telegram</field>
+        <field name="model">omnichannel.account</field>
+        <field name="inherit_id" ref="ewin_omnichannel_core.view_account_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <group string="Telegram"
+                       invisible="channel_code != 'telegram'">
+                    <field name="channel_code" invisible="1"/>
+                    <field name="tg_bot_token"
+                           groups="ewin_omnichannel_core.group_omni_admin"
+                           password="True"/>
+                    <field name="tg_bot_token_masked"
+                           groups="!ewin_omnichannel_core.group_omni_admin"/>
+                    <field name="tg_bot_username"/>
+                    <field name="tg_bot_external_id" readonly="1"/>
+                    <field name="tg_webhook_status" readonly="1"/>
+                    <field name="tg_api_base_url"/>
+                    <field name="tg_download_files"/>
+                    <field name="tg_max_file_size"/>
+                    <field name="tg_create_contacts"/>
+                    <field name="tg_welcome_message"/>
+                </group>
+            </xpath>
+            <xpath expr="//header" position="inside">
+                <button name="action_tg_check_connection" type="object"
+                        string="Check Connection"
+                        invisible="channel_code != 'telegram'"/>
+                <button name="action_tg_register_webhook" type="object"
+                        string="Register Webhook"
+                        invisible="channel_code != 'telegram'"/>
+                <button name="action_tg_remove_webhook" type="object"
+                        string="Remove Webhook"
+                        invisible="channel_code != 'telegram'"/>
+                <button name="action_tg_webhook_info" type="object"
+                        string="Webhook Status"
+                        invisible="channel_code != 'telegram'"/>
+                <button name="action_tg_send_test" type="object"
+                        string="Send Test"
+                        invisible="channel_code != 'telegram'"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

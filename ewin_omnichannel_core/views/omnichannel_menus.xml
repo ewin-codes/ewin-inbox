@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_omnichannel_root" name="EWIN Inbox"
+              web_icon="ewin_omnichannel_core,static/description/icon.png"
+              sequence="50"/>
+
+    <menuitem id="menu_omni_inbox" name="Inbox"
+              parent="menu_omnichannel_root"
+              action="action_conversation_inbox" sequence="10"/>
+    <menuitem id="menu_omni_my" name="My Conversations"
+              parent="menu_omnichannel_root"
+              action="action_conversation_my" sequence="20"/>
+    <menuitem id="menu_omni_unassigned" name="Unassigned"
+              parent="menu_omnichannel_root"
+              action="action_conversation_unassigned" sequence="30"/>
+    <menuitem id="menu_omni_all" name="All Conversations"
+              parent="menu_omnichannel_root"
+              action="action_conversation_all" sequence="40"/>
+    <menuitem id="menu_omni_contacts" name="Contacts"
+              parent="menu_omnichannel_root"
+              action="contacts.action_contacts" sequence="50"/>
+
+    <menuitem id="menu_omni_reporting" name="Reporting"
+              parent="menu_omnichannel_root" sequence="80"
+              groups="ewin_omnichannel_core.group_omni_manager"/>
+    <menuitem id="menu_report_conversations" name="Conversations Analysis"
+              parent="menu_omni_reporting" action="action_report_conversations"
+              sequence="10"/>
+    <menuitem id="menu_report_messages" name="Message Volume"
+              parent="menu_omni_reporting" action="action_report_messages"
+              sequence="20"/>
+
+    <menuitem id="menu_omni_config" name="Configuration"
+              parent="menu_omnichannel_root" sequence="90"
+              groups="ewin_omnichannel_core.group_omni_admin"/>
+    <menuitem id="menu_omni_settings" name="Settings"
+              parent="menu_omni_config" action="action_omni_settings" sequence="5"
+              groups="base.group_system"/>
+    <menuitem id="menu_omni_channels" name="Channels"
+              parent="menu_omni_config" action="action_channel" sequence="10"/>
+    <menuitem id="menu_omni_accounts" name="Accounts"
+              parent="menu_omni_config" action="action_account" sequence="20"/>
+    <menuitem id="menu_omni_teams" name="Teams"
+              parent="menu_omni_config" action="action_team" sequence="30"/>
+    <menuitem id="menu_omni_tags" name="Tags"
+              parent="menu_omni_config" action="action_tag" sequence="40"/>
+    <menuitem id="menu_omni_templates" name="Quick Replies"
+              parent="menu_omni_config" action="action_template" sequence="45"/>
+    <menuitem id="menu_omni_errorlogs" name="Error Logs"
+              parent="menu_omni_config" action="action_error_log" sequence="50"/>
+</odoo>

@@ -1,0 +1,228 @@
+// Chat-first layout for the conversation form.
+
+// ---------------------------------------------------------------------------
+// Reusable horizontal row for MIXED inline items — icons, Odoo field widgets,
+// <label>, badges, boolean toggles — all vertically centred on one line.
+//
+// WHY THIS EXISTS: Odoo field widgets and <label> each carry their own
+// line-height, padding and margins. Laying them out with plain inline /
+// inline-block relies on baseline alignment, which then puts a field's text a
+// few pixels below an adjacent icon or label. This has bitten us repeatedly.
+//
+// RULE: any row that places a field widget or a toggle next to text/icons/
+// labels MUST be a flex row centred with this mixin (or the `.o_omni_vrow`
+// class in XML). Never rely on inline/baseline alignment for such rows.
+@mixin omni-vrow($gap: 6px) {
+    display: flex;
+    align-items: center;
+    gap: $gap;
+    line-height: 1.2;
+
+    // neutralise each child's intrinsic vertical box
+    > * {
+        display: inline-flex;
+        align-items: center;
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+
+    // field widgets wrap their value in inputs/spans/anchors that each impose
+    // their own box; pin the value to the shared centre line
+    .o_field_widget {
+        width: auto;
+        line-height: 1.2;
+    }
+    .o_field_widget :is(input, span, a, div) {
+        line-height: 1.2;
+        vertical-align: middle;
+    }
+    label {
+        margin-bottom: 0;
+    }
+    i.fa {
+        line-height: 1;
+    }
+}
+
+.o_omni_vrow {
+    @include omni-vrow;
+}
+
+// Let the conversation sheet use the full container width (the chat should not
+// be boxed to the default narrow form width).
+.o_omni_chat_sheet.o_form_sheet {
+    max-width: 100%;
+}
+
+// Collapsible "customer & routing" block (native <details>).
+.o_omni_info {
+    border: 1px solid var(--gray-300, #dee2e6);
+    border-radius: 6px;
+    padding: 6px 10px;
+    margin-bottom: 8px;
+
+    > summary {
+        @include omni-vrow(6px); // name / icon / subject / hint on one line
+        cursor: pointer;
+        list-style: none;
+        font-size: 13px;
+        user-select: none;
+    }
+
+    > summary::-webkit-details-marker {
+        display: none;
+    }
+
+    > summary::marker {
+        content: "";
+    }
+
+    &[open] .o_omni_info_hint {
+        display: none;
+    }
+}
+
+// The native Discuss thread field fills the width and grows.
+.o_omni_thread_field {
+    display: block;
+    width: 100%;
+}
+
+.o_omni_thread_panel {
+    height: 60vh;
+    min-height: 340px;
+    max-height: 72vh;
+    overflow: hidden; // the inner mail Thread owns its own scroll
+    background: var(--o-view-background-color, #fff);
+
+    .o-mail-Thread {
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+}
+
+.o_omni_thread_empty {
+    flex: 1 1 auto;
+}
+
+// Composer pinned to the bottom of the scroll viewport, compact.
+.o_omni_composer {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    background: var(--o-view-background-color, #fff);
+    border-top: 1px solid var(--gray-300, #dee2e6);
+    padding: 8px 12px 6px;
+    margin-top: 8px;
+
+    textarea {
+        min-height: 38px;
+        max-height: 90px;
+    }
+}
+
+// Toggle + its label centred on one line (see omni-vrow: the boolean_toggle
+// field wrapper otherwise adds vertical margin that pushes them out of line).
+.o_omni_internal_switch {
+    @include omni-vrow(8px);
+}
+
+// Internal-note mode: tint the whole composer amber so the operator always
+// knows the next message will NOT reach the customer. Visibility of the hint
+// vs. the "internal note" banner is driven by the field's `invisible` modifier
+// in the view; this only handles the amber wash. Flat top border, no rounding.
+.o_omni_composer:has(.o_omni_internal_toggle input:checked) {
+    background: #fff8e1;
+    border-top: 2px solid #ffca28;
+
+    .o_omni_composer_input {
+        background: #fffdf5;
+        border-color: #ffca28;
+    }
+}
+
+// Internal notes in the mirrored Discuss thread: colour the WHOLE message
+// bubble amber (not just a badge) so an internal note stands out at a glance.
+// The marker span is injected into the note body by the mirror; :has() lifts
+// the highlight up to the enclosing message bubble.
+.o_omni_internal_marker {
+    display: block;
+    font-weight: 600;
+    font-size: 11px;
+    line-height: 1.5;
+    color: #8a6d00;
+}
+
+.o-mail-Message:has(.o_omni_internal_marker) {
+    .o-mail-Message-bubble {
+        background-color: #fff3cd !important;
+        border-color: #ffe08a !important;
+    }
+}
+
+// The custom composer field must fill the composer width.
+.o_field_omni_composer {
+    display: block;
+    width: 100%;
+}
+
+.o_omni_composer_input {
+    width: 100%;
+}
+
+// Quick-replies dropdown inside the composer.
+.o_omni_composer_wrap {
+    width: 100%;
+}
+
+.o_omni_composer_toolbar {
+    margin-bottom: 4px;
+}
+
+.o_omni_qr_dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.o_omni_qr_menu {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    z-index: 10;
+    min-width: 240px;
+    max-height: 260px;
+    overflow-y: auto;
+    margin-bottom: 4px;
+    padding: 4px;
+    background: var(--o-view-background-color, #fff);
+    border: 1px solid var(--gray-300, #dee2e6);
+    border-radius: 6px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+
+    .o_omni_qr_item {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        width: 100%;
+        padding: 6px 10px;
+        text-align: left;
+        background: transparent;
+        border: 0;
+        border-radius: 4px;
+        cursor: pointer;
+
+        &:hover {
+            background: var(--gray-200, #e9ecef);
+        }
+    }
+}
+
+// Conversation-list "Customer" cell: icon + name + unread badge on one line.
+.o_omni_customer {
+    @include omni-vrow(6px);
+    display: inline-flex; // stay inline inside the list-cell
+
+    i.fa {
+        font-size: 15px;
+    }
+}

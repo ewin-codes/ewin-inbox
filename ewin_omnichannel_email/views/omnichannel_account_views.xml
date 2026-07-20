@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_account_form_email" model="ir.ui.view">
+        <field name="name">omnichannel.account.form.email</field>
+        <field name="model">omnichannel.account</field>
+        <field name="inherit_id" ref="ewin_omnichannel_core.view_account_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <group string="Email" invisible="channel_code != 'email'">
+                    <field name="channel_code" invisible="1"/>
+                    <field name="email_address" required="channel_code == 'email'"
+                           placeholder="e.g. support@yourdomain.com"/>
+                    <field name="email_from_name"
+                           placeholder="e.g. YourBrand Support"/>
+                    <field name="email_password"
+                           groups="ewin_omnichannel_core.group_omni_admin"
+                           password="True"/>
+                    <field name="email_password_masked"
+                           groups="!ewin_omnichannel_core.group_omni_admin"/>
+                    <field name="email_imap_host"/>
+                    <field name="email_imap_port"/>
+                    <field name="email_imap_ssl"/>
+                    <field name="email_smtp_host"/>
+                    <field name="email_smtp_port"/>
+                    <field name="email_smtp_security"/>
+                    <field name="email_folder"/>
+                    <field name="email_download_files"/>
+                    <field name="email_max_file_size"/>
+                    <field name="email_create_contacts"/>
+                </group>
+            </xpath>
+            <xpath expr="//header" position="inside">
+                <button name="action_email_check_connection" type="object"
+                        string="Check Connection"
+                        invisible="channel_code != 'email'"/>
+                <button name="action_email_fetch_now" type="object"
+                        string="Fetch Now"
+                        invisible="channel_code != 'email'"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

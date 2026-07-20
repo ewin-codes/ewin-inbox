@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Conversation analysis: volume, statuses, operators, response time. -->
+    <record id="view_conversation_graph" model="ir.ui.view">
+        <field name="name">omnichannel.conversation.graph</field>
+        <field name="model">omnichannel.conversation</field>
+        <field name="arch" type="xml">
+            <graph string="Conversations" sample="1">
+                <field name="channel_id"/>
+                <field name="state"/>
+                <field name="first_response_seconds" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_conversation_pivot" model="ir.ui.view">
+        <field name="name">omnichannel.conversation.pivot</field>
+        <field name="model">omnichannel.conversation</field>
+        <field name="arch" type="xml">
+            <pivot string="Conversations" sample="1">
+                <field name="channel_id" type="row"/>
+                <field name="operator_id" type="row"/>
+                <field name="state" type="col"/>
+                <field name="first_response_seconds" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="action_report_conversations" model="ir.actions.act_window">
+        <field name="name">Conversations Analysis</field>
+        <field name="res_model">omnichannel.conversation</field>
+        <field name="view_mode">graph,pivot</field>
+        <field name="context">{'search_default_g_operator': 1}</field>
+    </record>
+
+    <!-- Message volume: inbound vs outbound over time, by channel/account. -->
+    <record id="view_message_graph" model="ir.ui.view">
+        <field name="name">omnichannel.message.graph</field>
+        <field name="model">omnichannel.message</field>
+        <field name="arch" type="xml">
+            <graph string="Messages" sample="1">
+                <field name="channel_id"/>
+                <field name="direction"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_message_pivot" model="ir.ui.view">
+        <field name="name">omnichannel.message.pivot</field>
+        <field name="model">omnichannel.message</field>
+        <field name="arch" type="xml">
+            <pivot string="Messages" sample="1">
+                <field name="channel_id" type="row"/>
+                <field name="account_id" type="row"/>
+                <field name="direction" type="col"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_message_search" model="ir.ui.view">
+        <field name="name">omnichannel.message.search</field>
+        <field name="model">omnichannel.message</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="account_id"/>
+                <filter name="inbound" string="Inbound"
+                        domain="[('direction','=','inbound')]"/>
+                <filter name="outbound" string="Outbound"
+                        domain="[('direction','=','outbound')]"/>
+                <group expand="0" string="Group By">
+                    <filter name="g_channel" string="Channel"
+                            context="{'group_by':'channel_id'}"/>
+                    <filter name="g_direction" string="Direction"
+                            context="{'group_by':'direction'}"/>
+                    <filter name="g_account" string="Account"
+                            context="{'group_by':'account_id'}"/>
+                    <filter name="g_type" string="Type"
+                            context="{'group_by':'message_type'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_report_messages" model="ir.actions.act_window">
+        <field name="name">Message Volume</field>
+        <field name="res_model">omnichannel.message</field>
+        <field name="view_mode">graph,pivot</field>
+    </record>
+</odoo>

@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_wa_template_admin,wa.template.admin,model_omnichannel_whatsapp_template,ewin_omnichannel_core.group_omni_admin,1,1,1,1
+access_wa_template_operator,wa.template.operator,model_omnichannel_whatsapp_template,ewin_omnichannel_core.group_omni_operator,1,0,0,0
+access_wa_sendtpl_wizard_operator,wa.sendtpl.wizard.operator,model_omnichannel_whatsapp_send_template_wizard,ewin_omnichannel_core.group_omni_operator,1,1,1,1
+access_wa_sendtpl_wizard_admin,wa.sendtpl.wizard.admin,model_omnichannel_whatsapp_send_template_wizard,ewin_omnichannel_core.group_omni_admin,1,1,1,1
+access_wa_sendtpl_line_operator,wa.sendtpl.line.operator,model_omnichannel_whatsapp_send_template_wizard_line,ewin_omnichannel_core.group_omni_operator,1,1,1,1
+access_wa_sendtpl_line_admin,wa.sendtpl.line.admin,model_omnichannel_whatsapp_send_template_wizard_line,ewin_omnichannel_core.group_omni_admin,1,1,1,1

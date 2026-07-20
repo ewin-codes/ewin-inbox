@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_account_form_whatsapp" model="ir.ui.view">
+        <field name="name">omnichannel.account.form.whatsapp</field>
+        <field name="model">omnichannel.account</field>
+        <field name="inherit_id" ref="ewin_omnichannel_core.view_account_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <group string="WhatsApp"
+                       invisible="channel_code != 'whatsapp'">
+                    <field name="channel_code" invisible="1"/>
+                    <field name="wa_access_token"
+                           groups="ewin_omnichannel_core.group_omni_admin"
+                           password="True"/>
+                    <field name="wa_access_token_masked"
+                           groups="!ewin_omnichannel_core.group_omni_admin"/>
+                    <field name="wa_phone_number_id"/>
+                    <field name="wa_waba_id"/>
+                    <field name="wa_business_phone" readonly="1"/>
+                    <field name="wa_app_secret"
+                           groups="ewin_omnichannel_core.group_omni_admin"
+                           password="True"/>
+                    <field name="wa_verify_token"
+                           groups="ewin_omnichannel_core.group_omni_admin"/>
+                    <field name="wa_graph_version"/>
+                    <field name="wa_download_files"/>
+                    <field name="wa_max_file_size"/>
+                    <field name="wa_create_contacts"/>
+                </group>
+            </xpath>
+            <xpath expr="//header" position="inside">
+                <button name="action_wa_check_connection" type="object"
+                        string="Check Connection"
+                        invisible="channel_code != 'whatsapp'"/>
+                <button name="action_wa_sync_templates" type="object"
+                        string="Sync Templates"
+                        invisible="channel_code != 'whatsapp'"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

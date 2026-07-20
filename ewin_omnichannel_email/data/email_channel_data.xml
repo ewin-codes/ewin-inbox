@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="channel_email" model="omnichannel.channel">
+        <field name="name">Email</field>
+        <field name="code">email</field>
+        <field name="connector_module">ewin_omnichannel_email</field>
+        <field name="capabilities">{"text": true, "image": true, "document": true, "audio": true, "video": true, "templates": false, "delivery_status": false}</field>
+    </record>
+
+    <record id="cron_email_poll" model="ir.cron">
+        <field name="name">EWIN Email Poll</field>
+        <field name="model_id" ref="model_omnichannel_connector_email"/>
+        <field name="state">code</field>
+        <field name="code">model.poll_all()</field>
+        <field name="interval_number">2</field>
+        <field name="interval_type">minutes</field>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>

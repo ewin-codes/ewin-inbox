@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_template_list" model="ir.ui.view">
+        <field name="name">omnichannel.template.list</field>
+        <field name="model">omnichannel.template</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="shortcut"/>
+                <field name="body"/>
+                <field name="channel_id"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_template_form" model="ir.ui.view">
+        <field name="name">omnichannel.template.form</field>
+        <field name="model">omnichannel.template</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="shortcut"/>
+                        <field name="channel_id"/>
+                        <field name="sequence"/>
+                        <field name="active" widget="boolean_toggle"/>
+                    </group>
+                    <group string="Message">
+                        <field name="body" nolabel="1"
+                               placeholder="Type the reply text. Use {{name}} for the customer's name."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_template_search" model="ir.ui.view">
+        <field name="name">omnichannel.template.search</field>
+        <field name="model">omnichannel.template</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="shortcut"/>
+                <field name="channel_id"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_template" model="ir.actions.act_window">
+        <field name="name">Quick Replies</field>
+        <field name="res_model">omnichannel.template</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Create your first quick reply</p>
+            <p>Quick replies let operators insert canned messages into the composer.
+               Use <b>{{name}}</b> to auto-fill the customer's name.</p>
+        </field>
+    </record>
+</odoo>

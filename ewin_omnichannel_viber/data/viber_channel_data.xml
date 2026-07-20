@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="channel_viber" model="omnichannel.channel">
+        <field name="name">Viber</field>
+        <field name="code">viber</field>
+        <field name="connector_module">ewin_omnichannel_viber</field>
+        <field name="capabilities">{"text": true, "image": true, "document": true, "audio": false, "video": true, "templates": false, "delivery_status": false}</field>
+    </record>
+</odoo>

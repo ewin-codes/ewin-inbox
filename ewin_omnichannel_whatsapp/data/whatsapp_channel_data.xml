@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="channel_whatsapp" model="omnichannel.channel">
+        <field name="name">WhatsApp</field>
+        <field name="code">whatsapp</field>
+        <field name="connector_module">ewin_omnichannel_whatsapp</field>
+        <field name="capabilities">{"text": true, "image": true, "document": true, "audio": true, "video": true, "templates": true, "delivery_status": true}</field>
+    </record>
+</odoo>

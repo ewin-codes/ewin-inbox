@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="module_category_omnichannel" model="ir.module.category">
+        <field name="name">EWIN Inbox</field>
+        <field name="sequence">20</field>
+    </record>
+
+    <record id="group_omni_operator" model="res.groups">
+        <field name="name">Omnichannel: Operator</field>
+        <field name="category_id" ref="module_category_omnichannel"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <record id="group_omni_manager" model="res.groups">
+        <field name="name">Omnichannel: Manager</field>
+        <field name="category_id" ref="module_category_omnichannel"/>
+        <field name="implied_ids" eval="[(4, ref('group_omni_operator'))]"/>
+    </record>
+
+    <record id="group_omni_admin" model="res.groups">
+        <field name="name">Omnichannel: Administrator</field>
+        <field name="category_id" ref="module_category_omnichannel"/>
+        <field name="implied_ids" eval="[(4, ref('group_omni_manager'))]"/>
+    </record>
+
+    <!-- Multi-company rules -->
+    <record id="rule_account_company" model="ir.rule">
+        <field name="name">Account: company</field>
+        <field name="model_id" ref="model_omnichannel_account"/>
+        <field name="domain_force">['|',('company_id','=',False),('company_id','in',company_ids)]</field>
+        <field name="global" eval="True"/>
+    </record>
+    <record id="rule_conversation_company" model="ir.rule">
+        <field name="name">Conversation: company</field>
+        <field name="model_id" ref="model_omnichannel_conversation"/>
+        <field name="domain_force">[('company_id','in',company_ids)]</field>
+        <field name="global" eval="True"/>
+    </record>
+    <record id="rule_message_company" model="ir.rule">
+        <field name="name">Message: company</field>
+        <field name="model_id" ref="model_omnichannel_message"/>
+        <field name="domain_force">[('company_id','in',company_ids)]</field>
+        <field name="global" eval="True"/>
+    </record>
+    <record id="rule_identity_company" model="ir.rule">
+        <field name="name">Identity: company</field>
+        <field name="model_id" ref="model_omnichannel_identity"/>
+        <field name="domain_force">[('company_id','in',company_ids)]</field>
+        <field name="global" eval="True"/>
+    </record>
+    <record id="rule_event_company" model="ir.rule">
+        <field name="name">Event: company</field>
+        <field name="model_id" ref="model_omnichannel_event"/>
+        <field name="domain_force">[('company_id','in',company_ids)]</field>
+        <field name="global" eval="True"/>
+    </record>
+    <record id="rule_team_company" model="ir.rule">
+        <field name="name">Team: company</field>
+        <field name="model_id" ref="model_omnichannel_team"/>
+        <field name="domain_force">['|',('company_id','=',False),('company_id','in',company_ids)]</field>
+        <field name="global" eval="True"/>
+    </record>
+    <record id="rule_errorlog_company" model="ir.rule">
+        <field name="name">Error Log: company</field>
+        <field name="model_id" ref="model_omnichannel_error_log"/>
+        <field name="domain_force">['|',('company_id','=',False),('company_id','in',company_ids)]</field>
+        <field name="global" eval="True"/>
+    </record>
+
+    <!-- Operator conversation scoping (non-global, operator group only) -->
+    <record id="rule_conversation_operator_scope" model="ir.rule">
+        <field name="name">Conversation: operator scope</field>
+        <field name="model_id" ref="model_omnichannel_conversation"/>
+        <field name="groups" eval="[(4, ref('group_omni_operator'))]"/>
+        <field name="domain_force">['|','|',('operator_id','=',user.id),('operator_id','=',False),('team_id.user_ids','in',[user.id])]</field>
+    </record>
+    <record id="rule_conversation_manager_all" model="ir.rule">
+        <field name="name">Conversation: manager sees all in company</field>
+        <field name="model_id" ref="model_omnichannel_conversation"/>
+        <field name="groups" eval="[(4, ref('group_omni_manager'))]"/>
+        <field name="domain_force">[(1,'=',1)]</field>
+    </record>
+</odoo>

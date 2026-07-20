@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_omni_config_settings_form" model="ir.ui.view">
+        <field name="name">ewin.omnichannel.config.settings.form</field>
+        <field name="model">res.config.settings</field>
+        <field name="arch" type="xml">
+            <form string="EWIN Inbox Settings" class="oe_form_configuration">
+                <header>
+                    <button string="Save" type="object" name="execute"
+                            class="btn-primary"/>
+                    <button string="Cancel" type="object" name="cancel"
+                            class="btn-secondary" special="cancel"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Composer">
+                            <field name="omni_send_shortcut" widget="radio"/>
+                            <div class="text-muted" colspan="2">
+                                Choose how the reply composer sends a message.
+                                With Ctrl+Enter, plain Enter inserts a newline.
+                            </div>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_omni_settings" model="ir.actions.act_window">
+        <field name="name">Settings</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">inline</field>
+        <field name="context">{'module': 'ewin_omnichannel_core'}</field>
+    </record>
+</odoo>

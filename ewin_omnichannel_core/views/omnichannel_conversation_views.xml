@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_conversation_list" model="ir.ui.view">
+        <field name="name">omnichannel.conversation.list</field>
+        <field name="model">omnichannel.conversation</field>
+        <field name="arch" type="xml">
+            <list decoration-bf="unread_count &gt; 0" js_class="omni_conversation_list">
+                <field name="unread_count" column_invisible="1"/>
+                <field name="partner_id" column_invisible="1"/>
+                <field name="customer_label" widget="html" string="Customer"/>
+                <field name="subject" string="Subject" optional="show"/>
+                <field name="account_id"/>
+                <field name="last_message_at"/>
+                <field name="operator_id"/>
+                <field name="team_id"/>
+                <field name="state" widget="badge"/>
+                <field name="priority" widget="priority"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_conversation_form" model="ir.ui.view">
+        <field name="name">omnichannel.conversation.form</field>
+        <field name="model">omnichannel.conversation</field>
+        <field name="arch" type="xml">
+            <form class="o_omni_conversation_form">
+                <header>
+                    <button name="action_take" string="Take" type="object"
+                            class="btn-primary" invisible="operator_id == uid"/>
+                    <button name="action_set_pending" string="Wait for customer"
+                            type="object"/>
+                    <button name="action_close" string="Close" type="object"
+                            invisible="state == 'closed'"/>
+                    <button name="action_reopen" string="Re-open" type="object"
+                            invisible="state != 'closed'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="new,open,pending,closed"/>
+                </header>
+                <sheet class="o_omni_chat_sheet d-flex flex-column">
+                    <!-- Customer &amp; routing: collapsed by default so the chat
+                         gets the space. Native details/summary = no JS needed. -->
+                    <details class="o_omni_info">
+                        <summary class="o_omni_info_summary">
+                            <field name="channel_icon" widget="html"
+                                   class="d-inline-block"/>
+                            <field name="partner_id" nolabel="1" readonly="1"
+                                   class="d-inline-block fw-bold"
+                                   options="{'no_open': True}"/>
+                            <span class="o_omni_subject fw-bold"
+                                  invisible="not subject">
+                                <span class="text-muted mx-1">·</span>
+                                <field name="subject" nolabel="1" readonly="1"
+                                       class="d-inline"/>
+                            </span>
+                            <span class="o_omni_info_hint text-muted">
+                                | click to expand customer &amp; routing
+                            </span>
+                        </summary>
+                        <group class="mt-2">
+                            <group>
+                                <field name="partner_id"/>
+                                <field name="identity_id"/>
+                                <field name="channel_id"/>
+                                <field name="account_id"/>
+                            </group>
+                            <group>
+                                <field name="operator_id"/>
+                                <field name="team_id"/>
+                                <field name="priority" widget="priority"/>
+                                <field name="tag_ids" widget="many2many_tags"/>
+                            </group>
+                        </group>
+                    </details>
+
+                    <field name="send_shortcut" invisible="1"/>
+
+                    <!-- Chat thread: full width, grows to fill the sheet. -->
+                    <field name="discuss_channel_id"
+                           widget="omni_discuss_thread" nolabel="1" readonly="1"
+                           class="o_omni_thread_field flex-grow-1"/>
+
+                    <!-- Composer: pinned to the bottom of the screen, compact. -->
+                    <div class="o_omni_composer">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <span class="fw-bold o_omni_compose_hint"
+                                  invisible="composer_is_internal">
+                                <field name="compose_hint" nolabel="1" readonly="1"
+                                       class="d-inline"/>
+                            </span>
+                            <span class="fw-bold text-warning o_omni_internal_banner"
+                                  invisible="not composer_is_internal">
+                                <i class="fa fa-lock me-1"></i>Internal note — not sent to the customer
+                            </span>
+                            <div class="o_omni_internal_switch d-flex align-items-center gap-2">
+                                <field name="composer_is_internal"
+                                       widget="boolean_toggle"
+                                       class="o_omni_internal_toggle"/>
+                                <label for="composer_is_internal"
+                                       string="Internal note" class="mb-0"
+                                       help="Kept in Odoo, not sent to the customer."/>
+                            </div>
+                        </div>
+                        <field name="composer_body" nolabel="1"
+                               widget="omni_composer"
+                               placeholder="Type a reply to the customer..."/>
+                        <div class="d-flex align-items-center justify-content-between mt-1">
+                            <button name="action_send_reply" type="object"
+                                    string="Send" class="btn-primary"/>
+                            <field name="composer_attachment_ids" nolabel="1"
+                                   widget="many2many_binary"/>
+                        </div>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_conversation_search" model="ir.ui.view">
+        <field name="name">omnichannel.conversation.search</field>
+        <field name="model">omnichannel.conversation</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="partner_id"/>
+                <field name="subject"/>
+                <field name="account_id"/>
+                <filter name="my" string="My" domain="[('operator_id','=',uid)]"/>
+                <filter name="unassigned" string="Unassigned"
+                        domain="[('operator_id','=',False)]"/>
+                <separator/>
+                <filter name="new" string="New" domain="[('state','=','new')]"/>
+                <filter name="open" string="Open" domain="[('state','=','open')]"/>
+                <filter name="pending" string="Pending"
+                        domain="[('state','=','pending')]"/>
+                <filter name="closed" string="Closed"
+                        domain="[('state','=','closed')]"/>
+                <separator/>
+                <filter name="send_errors" string="With send errors"
+                        domain="[('omni_message_ids.state','=','failed')]"/>
+                <group expand="0" string="Group By">
+                    <filter name="g_state" string="Status" context="{'group_by':'state'}"/>
+                    <filter name="g_channel" string="Channel"
+                            context="{'group_by':'channel_id'}"/>
+                    <filter name="g_operator" string="Operator"
+                            context="{'group_by':'operator_id'}"/>
+                    <filter name="g_account" string="Account"
+                            context="{'group_by':'account_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_conversation_inbox" model="ir.actions.act_window">
+        <field name="name">Inbox</field>
+        <field name="res_model">omnichannel.conversation</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_open': 1, 'search_default_new': 1}</field>
+    </record>
+    <record id="action_conversation_my" model="ir.actions.act_window">
+        <field name="name">My Conversations</field>
+        <field name="res_model">omnichannel.conversation</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_my': 1}</field>
+    </record>
+    <record id="action_conversation_unassigned" model="ir.actions.act_window">
+        <field name="name">Unassigned</field>
+        <field name="res_model">omnichannel.conversation</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_unassigned': 1}</field>
+    </record>
+    <record id="action_conversation_all" model="ir.actions.act_window">
+        <field name="name">All Conversations</field>
+        <field name="res_model">omnichannel.conversation</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

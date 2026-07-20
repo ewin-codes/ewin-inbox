@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_error_log_list" model="ir.ui.view">
+        <field name="name">omnichannel.error.log.list</field>
+        <field name="model">omnichannel.error.log</field>
+        <field name="arch" type="xml">
+            <list create="0">
+                <field name="create_date"/>
+                <field name="account_id"/>
+                <field name="channel_id"/>
+                <field name="category"/>
+                <field name="summary"/>
+                <field name="state" widget="badge"/>
+                <field name="responsible_id"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_error_log_form" model="ir.ui.view">
+        <field name="name">omnichannel.error.log.form</field>
+        <field name="model">omnichannel.error.log</field>
+        <field name="arch" type="xml">
+            <form create="0">
+                <header>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="create_date" readonly="1"/>
+                            <field name="category"/>
+                            <field name="code"/>
+                            <field name="summary"/>
+                            <field name="responsible_id"/>
+                            <field name="retry_count"/>
+                        </group>
+                        <group>
+                            <field name="account_id" readonly="1"/>
+                            <field name="channel_id" readonly="1"/>
+                            <field name="conversation_id" readonly="1"/>
+                            <field name="message_id" readonly="1"/>
+                            <field name="event_id" readonly="1"/>
+                            <field name="company_id" groups="base.group_multi_company" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Technical details">
+                        <field name="technical" readonly="1"
+                               groups="ewin_omnichannel_core.group_omni_manager"/>
+                        <field name="payload" widget="jsonb" readonly="1"
+                               groups="ewin_omnichannel_core.group_omni_admin"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_error_log_search" model="ir.ui.view">
+        <field name="name">omnichannel.error.log.search</field>
+        <field name="model">omnichannel.error.log</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="summary"/>
+                <field name="account_id"/>
+                <field name="category"/>
+                <filter name="new" string="New" domain="[('state','=','new')]"/>
+                <filter name="acknowledged" string="Acknowledged"
+                        domain="[('state','=','acknowledged')]"/>
+                <filter name="resolved" string="Resolved"
+                        domain="[('state','=','resolved')]"/>
+                <group expand="0" string="Group By">
+                    <filter name="g_category" string="Category"
+                            context="{'group_by':'category'}"/>
+                    <filter name="g_state" string="Status" context="{'group_by':'state'}"/>
+                    <filter name="g_account" string="Account"
+                            context="{'group_by':'account_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="action_error_log" model="ir.actions.act_window">
+        <field name="name">Error Logs</field>
+        <field name="res_model">omnichannel.error.log</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

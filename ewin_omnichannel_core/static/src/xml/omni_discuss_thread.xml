@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="ewin_omnichannel_core.OmniDiscussThreadField">
+        <div class="o_omni_thread_panel d-flex flex-column border rounded">
+            <Thread t-if="state.thread" thread="state.thread"
+                    messageActions="false" jumpPresent="state.jumpPresent"/>
+            <div t-else="" class="o_omni_thread_empty d-flex align-items-center justify-content-center text-muted p-4">
+                <i class="fa fa-comments-o me-2"/> No messages in this conversation yet.
+            </div>
+        </div>
+    </t>
+</templates>

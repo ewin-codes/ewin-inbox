@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_account_form_viber" model="ir.ui.view">
+        <field name="name">omnichannel.account.form.viber</field>
+        <field name="model">omnichannel.account</field>
+        <field name="inherit_id" ref="ewin_omnichannel_core.view_account_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <group string="Viber" invisible="channel_code != 'viber'">
+                    <field name="channel_code" invisible="1"/>
+                    <field name="viber_auth_token"
+                           groups="ewin_omnichannel_core.group_omni_admin"
+                           password="True"/>
+                    <field name="viber_auth_token_masked"
+                           groups="!ewin_omnichannel_core.group_omni_admin"/>
+                    <field name="viber_bot_name"/>
+                    <field name="viber_bot_uri" readonly="1"/>
+                    <field name="viber_bot_id" readonly="1"/>
+                    <field name="viber_webhook_status" readonly="1"/>
+                    <field name="viber_api_base_url"/>
+                    <field name="viber_download_files"/>
+                    <field name="viber_max_file_size"/>
+                    <field name="viber_create_contacts"/>
+                    <field name="viber_welcome_message"/>
+                </group>
+            </xpath>
+            <xpath expr="//header" position="inside">
+                <button name="action_viber_check_connection" type="object"
+                        string="Check Connection"
+                        invisible="channel_code != 'viber'"/>
+                <button name="action_viber_register_webhook" type="object"
+                        string="Register Webhook"
+                        invisible="channel_code != 'viber'"/>
+                <button name="action_viber_remove_webhook" type="object"
+                        string="Remove Webhook"
+                        invisible="channel_code != 'viber'"/>
+                <button name="action_viber_webhook_info" type="object"
+                        string="Webhook Status"
+                        invisible="channel_code != 'viber'"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
