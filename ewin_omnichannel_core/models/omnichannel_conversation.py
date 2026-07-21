@@ -243,6 +243,22 @@ class OmnichannelConversation(models.Model):
             conv.message_post(body=_("Taken by %s", self.env.user.name))
             conv._notify_omni_event("conversation_assigned")
 
+    def _ensure_operator(self):
+        """Assign the current user as operator when the conversation is still
+        unassigned and they act on it (e.g. send a reply), so replying doubles
+        as taking it — no separate Take click needed. Never overrides an
+        existing assignment (a colleague's conversation stays theirs)."""
+        for conv in self:
+            if conv.operator_id:
+                continue
+            conv.operator_id = self.env.user
+            if conv.state == "new":
+                conv.state = "open"
+            conv._sync_channel_members()
+            conv.message_post(
+                body=_("Assigned to %s on reply.", self.env.user.name))
+            conv._notify_omni_event("conversation_assigned")
+
     def action_set_pending(self):
         self.write({"state": "pending"})
 

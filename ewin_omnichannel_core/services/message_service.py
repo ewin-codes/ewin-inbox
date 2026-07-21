@@ -88,6 +88,10 @@ class MessageService(models.AbstractModel):
     @api.model
     def create_outbound(self, conversation, body, is_internal=False, attachments=None):
         now = fields.Datetime.now()
+        # Replying to a customer takes an unassigned conversation automatically
+        # (internal notes do not — writing a note is not answering the customer).
+        if not is_internal:
+            conversation._ensure_operator()
         message = self.env["omnichannel.message"].create({
             "conversation_id": conversation.id,
             "direction": "outbound",
@@ -124,6 +128,9 @@ class MessageService(models.AbstractModel):
         if existing:
             return existing
         now = fields.Datetime.now()
+        # An operator answering from the mirrored Discuss channel also takes
+        # the conversation if it is still unassigned.
+        conversation._ensure_operator()
         message = self.env["omnichannel.message"].create({
             "conversation_id": conversation.id,
             "direction": "outbound",
