@@ -1,6 +1,6 @@
 # EWIN Inbox
 
-**Omnichannel customer inbox for Odoo 18.** One place for your team to receive and answer customer messages from Telegram, WhatsApp, Viber, Email and website Live Chat — threaded into Odoo Discuss, tied to `res.partner`, with routing, delivery status, canned replies and reporting.
+**Omnichannel customer inbox for Odoo 18.** One place for your team to receive and answer customer messages from Telegram, WhatsApp, Instagram, Viber, Email and website Live Chat — threaded into Odoo Discuss, tied to `res.partner`, with routing, delivery status, canned replies and reporting.
 
 ![Odoo](https://img.shields.io/badge/Odoo-18.0-714B67) ![License](https://img.shields.io/badge/license-LGPL--3-blue) ![Status](https://img.shields.io/badge/status-active%20development-orange)
 
@@ -28,6 +28,7 @@ Support teams juggle a dozen apps. EWIN Inbox pulls every channel into a single 
 |---|---|---|---|
 | Telegram | `ewin_omnichannel_telegram` | Bot webhook | Full media, instant sync send |
 | WhatsApp Business | `ewin_omnichannel_whatsapp` | Meta Cloud API (Graph) | Media, delivery status, HSM templates, 24h-window handling |
+| Instagram Direct | `ewin_omnichannel_instagram` | Instagram Graph API (business login) | Media, story mentions/replies, delivery/read receipts, auto token refresh, 24h-window handling |
 | Viber | `ewin_omnichannel_viber` | Bot webhook | Text + media |
 | Email | `ewin_omnichannel_email` | IMAP poll + SMTP | RFC-2822 threading, TLS enforced |
 | Live Chat | `ewin_omnichannel_livechat` | In-process (no webhook) | Bridges website Live Chat; hybrid partner/visitor/guest identity |
@@ -39,7 +40,7 @@ Each connector is a thin addon over a shared core — adding a channel means wri
 ```mermaid
 flowchart LR
     subgraph Providers
-      TG[Telegram] & WA[WhatsApp] & VB[Viber] & EM[Email]
+      TG[Telegram] & WA[WhatsApp] & IG[Instagram] & VB[Viber] & EM[Email]
     end
     subgraph Connectors["Connector addons (thin)"]
       C1[webhook / poll] --> C2[api_client] --> C3[normalizer]
@@ -89,6 +90,7 @@ addons/
   ewin_omnichannel_core/        # shared domain + services + Discuss mirror + reporting
   ewin_omnichannel_telegram/    # Telegram bot connector
   ewin_omnichannel_whatsapp/    # WhatsApp Business (Meta Cloud API) connector
+  ewin_omnichannel_instagram/   # Instagram Direct (business login) connector
   ewin_omnichannel_viber/       # Viber bot connector
   ewin_omnichannel_email/       # Email (IMAP/SMTP) connector
   ewin_omnichannel_livechat/    # Website Live Chat connector (in-process, no webhook)

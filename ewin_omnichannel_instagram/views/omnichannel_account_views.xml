@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_account_form_instagram" model="ir.ui.view">
+        <field name="name">omnichannel.account.form.instagram</field>
+        <field name="model">omnichannel.account</field>
+        <field name="inherit_id" ref="ewin_omnichannel_core.view_account_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <div class="alert alert-info" role="alert" colspan="2"
+                     invisible="channel_code != 'instagram'">
+                    <b>Setup — connect your Instagram professional account
+                    (Instagram business login, in the Meta developer
+                    dashboard):</b>
+                    <ol class="mb-1 ps-3">
+                        <li><b>App Secret</b> — open
+                            <i>App settings → Basic</i>, click <i>Show</i> next
+                            to <i>App secret</i>, and paste it into
+                            <b>App Secret</b> below.</li>
+                        <li><b>Access token</b> — open
+                            <i>Instagram → API setup with Instagram business
+                            login → Generate access tokens</i>, add and select
+                            your Instagram account, click <i>Generate token</i>,
+                            and paste the long-lived token into
+                            <b>Access Token</b> below. Then <b>Save</b> (the
+                            token is auto-refreshed before it expires).</li>
+                        <li><b>Webhook</b> — in
+                            <i>Instagram → API setup with Instagram business
+                            login → Configure webhooks</i>, paste the
+                            <b>Webhook Callback URL</b> and <b>Verify Token</b>
+                            shown below, then <i>Verify and Save</i>. It fails
+                            until steps 1–2 are saved here.</li>
+                        <li><b>Subscribe fields</b> — enable these Instagram
+                            webhook fields:
+                            <code>messages</code>,
+                            <code>messaging_postbacks</code>,
+                            <code>messaging_seen</code>.</li>
+                        <li>Click <b>Check Connection</b> (top of the form).</li>
+                    </ol>
+                    In development mode the account only exchanges messages with
+                    people who have an app role (Admin / Developer / Tester);
+                    reaching the public requires Meta App Review of the
+                    <code>instagram_business_manage_messages</code> permission.
+                </div>
+                <group string="Instagram"
+                       invisible="channel_code != 'instagram'">
+                    <field name="channel_code" invisible="1"/>
+                    <group string="Credentials">
+                        <field name="ig_user_id"/>
+                        <field name="ig_username" readonly="1"/>
+                        <field name="ig_access_token"
+                               groups="ewin_omnichannel_core.group_omni_admin"
+                               password="True"/>
+                        <field name="ig_access_token_masked"
+                               groups="!ewin_omnichannel_core.group_omni_admin"/>
+                        <field name="ig_app_secret"
+                               groups="ewin_omnichannel_core.group_omni_admin"
+                               password="True"/>
+                    </group>
+                    <group string="Token">
+                        <field name="ig_token_expires_at" readonly="1"/>
+                    </group>
+                    <group string="Webhook">
+                        <field name="ig_webhook_url" readonly="1"
+                               widget="CopyClipboardChar"/>
+                        <field name="ig_verify_token" readonly="1"
+                               widget="CopyClipboardChar"
+                               groups="ewin_omnichannel_core.group_omni_admin"/>
+                    </group>
+                    <group string="Options">
+                        <field name="ig_graph_version"/>
+                        <field name="ig_download_files"/>
+                        <field name="ig_max_file_size"/>
+                        <field name="ig_create_contacts"/>
+                        <field name="ig_fetch_profile"/>
+                        <field name="ig_human_agent"/>
+                    </group>
+                </group>
+            </xpath>
+            <xpath expr="//header" position="inside">
+                <button name="action_ig_check_connection" type="object"
+                        string="Check Connection"
+                        invisible="channel_code != 'instagram'"/>
+                <button name="action_ig_refresh_token" type="object"
+                        string="Refresh Token"
+                        groups="ewin_omnichannel_core.group_omni_admin"
+                        invisible="channel_code != 'instagram'"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
