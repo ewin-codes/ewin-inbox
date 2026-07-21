@@ -272,8 +272,27 @@ class OmnichannelConversation(models.Model):
         self.write({"state": "open", "closed_at": False, "closed_by": False})
 
     def _notify_omni_event(self, event_name, payload=None):
-        """Hook point for future automations/CRM/AI. No-op body in MVP."""
+        """Push a lightweight realtime signal so the Inbox thread and list
+        refresh without a manual reload.
+
+        It targets the assigned operator's own partner bus channel, which is
+        always subscribed — unlike a mirror discuss.channel, whose client-side
+        bus subscription only settles after a page reload when membership was
+        just granted. Also a hook point for future automations/CRM/AI.
+        """
         self.ensure_one()
+        partner = self.operator_id.partner_id
+        if not partner:
+            return True
+        data = {
+            "event": event_name,
+            "conversation_id": self.id,
+            "channel_id": self.discuss_channel_id.id,
+            "state": self.state,
+        }
+        if payload:
+            data.update(payload)
+        self.env["bus.bus"]._sendone(partner, "omni.inbox", data)
         return True
 
     def action_send_reply(self):

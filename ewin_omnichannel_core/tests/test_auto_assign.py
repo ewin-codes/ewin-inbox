@@ -46,3 +46,19 @@ class TestAutoAssign(OmnichannelCase):
                 self.conv, "private note", is_internal=True)
         self.assertFalse(self.conv.operator_id,
                          "an internal note is not a reply — no auto-assign")
+
+    def test_notify_pushes_to_operator_bus(self):
+        self.conv.operator_id = self.env.user
+        with patch.object(type(self.env["bus.bus"]), "_sendone") as send:
+            self.conv._notify_omni_event("message_received")
+        self.assertTrue(send.called)
+        _target, ntype, message = send.call_args[0]
+        self.assertEqual(ntype, "omni.inbox")
+        self.assertEqual(message["conversation_id"], self.conv.id)
+        self.assertEqual(message["event"], "message_received")
+
+    def test_notify_is_noop_without_operator(self):
+        with patch.object(type(self.env["bus.bus"]), "_sendone") as send:
+            self.conv._notify_omni_event("message_received")
+        self.assertFalse(
+            send.called, "no operator to notify -> no bus traffic")

@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { Component, useState, onWillStart, onWillUpdateProps } from "@odoo/owl";
+import { Component, useState, onWillStart, onWillUpdateProps, onWillUnmount } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { standardFieldProps } from "@web/views/fields/standard_field_props";
@@ -20,9 +20,37 @@ export class OmniDiscussThreadField extends Component {
     setup() {
         this.store = useState(useService("mail.store"));
         this.orm = useService("orm");
+        this.busService = useService("bus_service");
         this.state = useState({ thread: undefined, jumpPresent: 0 });
         onWillStart(() => this._loadThread(this.props));
         onWillUpdateProps((nextProps) => this._loadThread(nextProps));
+        // Realtime: the server pushes "omni.inbox" to the operator's own bus
+        // channel on every new message in their conversations. Refetch when the
+        // event is for the conversation currently shown, so replies and inbound
+        // messages appear without a manual reload (a freshly-assigned mirror
+        // channel is not yet live on the client's bus until the next reload).
+        this._onOmniEvent = (payload) => {
+            if (payload && payload.conversation_id === this.props.record.resId) {
+                this._refreshMessages();
+            }
+        };
+        this.busService.subscribe("omni.inbox", this._onOmniEvent);
+        onWillUnmount(() =>
+            this.busService.unsubscribe("omni.inbox", this._onOmniEvent)
+        );
+    }
+
+    async _refreshMessages() {
+        const thread = this.state.thread;
+        if (!thread) {
+            return;
+        }
+        try {
+            await thread.fetchNewMessages();
+            this.state.jumpPresent++;
+        } catch {
+            // transient/access errors: keep the current view as-is
+        }
     }
 
     _channelId(props) {

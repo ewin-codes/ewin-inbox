@@ -111,6 +111,7 @@ class MessageService(models.AbstractModel):
             conv_vals["first_operator_message_at"] = now
         conversation.write(conv_vals)
         self._mirror_to_discuss(conversation, message)
+        conversation._notify_omni_event("message_sent")
         if not is_internal:
             # The first attempt is immediate (synchronous). Only retries go
             # through the ir.cron queue.
@@ -150,5 +151,6 @@ class MessageService(models.AbstractModel):
         if not conversation.first_operator_message_at:
             conv_vals["first_operator_message_at"] = now
         conversation.write(conv_vals)
+        conversation._notify_omni_event("message_sent")
         self.env["omnichannel.routing.service"].deliver_outbound(message)
         return message

@@ -23,9 +23,14 @@ export class OmniConversationListController extends ListController {
         };
         this._omniOnNewMessage = () => reload();
         bus.subscribe("discuss.channel/new_message", this._omniOnNewMessage);
+        // Also reload on our own realtime signal, which reaches the operator
+        // even when a just-assigned mirror channel is not yet live on the bus.
+        this._omniOnEvent = () => reload();
+        bus.subscribe("omni.inbox", this._omniOnEvent);
         onWillUnmount(() => {
             clearTimeout(timer);
             bus.unsubscribe("discuss.channel/new_message", this._omniOnNewMessage);
+            bus.unsubscribe("omni.inbox", this._omniOnEvent);
         });
     }
 }
