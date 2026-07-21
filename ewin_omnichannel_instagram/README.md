@@ -3,8 +3,8 @@
 An **Instagram Direct** connector for **EWIN Inbox**, built directly against
 the **Instagram Graph API** using **Instagram business login** — no Facebook
 Page and no third-party BSP in the middle. It adds an Instagram channel to
-Inbox alongside Telegram, WhatsApp, Viber, Email and Live Chat, so operators
-handle Instagram DMs in the same conversation list, with the same
+Inbox alongside Telegram, WhatsApp, Messenger, Viber, Email and Live Chat, so
+operators handle Instagram DMs in the same conversation list, with the same
 routing, attachments and reply tools as every other channel.
 
 Depends on `ewin_omnichannel_core`.
@@ -210,4 +210,5 @@ These are intentionally not implemented in this version:
 - **Instagram-via-Facebook-Page** — this connector uses Instagram business
   login (standalone). The alternative path (an Instagram account linked to a
   Facebook Page, messaged through `graph.facebook.com` with a Page access
-  token) is not supported here.
+  token) is not supported here — use the Messenger connector for Page-based
+  setups.
