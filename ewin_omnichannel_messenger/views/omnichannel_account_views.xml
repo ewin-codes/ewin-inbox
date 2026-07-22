@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_account_form_messenger" model="ir.ui.view">
+        <field name="name">omnichannel.account.form.messenger</field>
+        <field name="model">omnichannel.account</field>
+        <field name="inherit_id" ref="ewin_omnichannel_core.view_account_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <div class="alert alert-info" role="alert" colspan="2"
+                     invisible="channel_code != 'messenger'">
+                    <b>Setup — connect your Facebook Page (in the Meta
+                    developer dashboard):</b>
+                    <ol class="mb-1 ps-3">
+                        <li><b>App Secret</b> — open
+                            <i>App settings → Basic</i>, click <i>Show</i> next
+                            to <i>App secret</i>, and paste it into
+                            <b>App Secret</b> below.</li>
+                        <li><b>Page ID &amp; token</b> — open
+                            <i>Use cases → Engage customers in Messenger →
+                            Customize → Messenger API settings →
+                            Generate access tokens</i> and select your Page.
+                            Optionally copy the <b>Page ID</b> shown under the
+                            Page name into <b>Page ID</b> below (it is learned
+                            automatically otherwise); click <i>Generate</i> to
+                            create the access token (RU: «Маркер доступа») and
+                            paste it into <b>Page Access Token</b> below.
+                            Then <b>Save</b>.</li>
+                        <li><b>Webhook</b> — on that same page, paste the
+                            <b>Webhook Callback URL</b> and <b>Verify Token</b>
+                            shown below into the <i>Webhooks</i> section, then
+                            <i>Verify and Save</i>. It fails until steps 1–2 are
+                            saved here.</li>
+                        <li><b>Page subscriptions</b> — in the
+                            <i>Webhooks subscription</i> for your Page, enable
+                            exactly these four fields:
+                            <code>messages</code>,
+                            <code>messaging_postbacks</code>,
+                            <code>message_deliveries</code>,
+                            <code>message_reads</code>.</li>
+                        <li>Click <b>Check Connection</b> (top of the form).</li>
+                    </ol>
+                    In development mode the bot only replies to people with an
+                    app role (Admin / Developer / Tester); public customers
+                    require Meta App Review.
+                </div>
+                <group string="Messenger"
+                       invisible="channel_code != 'messenger'">
+                    <field name="channel_code" invisible="1"/>
+                    <group string="Credentials">
+                        <field name="mg_page_id"/>
+                        <field name="mg_page_name" readonly="1"/>
+                        <field name="mg_page_access_token"
+                               groups="ewin_omnichannel_core.group_omni_admin"
+                               password="True"/>
+                        <field name="mg_page_access_token_masked"
+                               groups="!ewin_omnichannel_core.group_omni_admin"/>
+                        <field name="mg_app_secret"
+                               groups="ewin_omnichannel_core.group_omni_admin"
+                               password="True"/>
+                    </group>
+                    <group string="Webhook">
+                        <field name="mg_webhook_url" readonly="1"
+                               widget="CopyClipboardChar"/>
+                        <field name="mg_verify_token" readonly="1"
+                               widget="CopyClipboardChar"
+                               groups="ewin_omnichannel_core.group_omni_admin"/>
+                    </group>
+                    <group string="Options">
+                        <field name="mg_graph_version"/>
+                        <field name="mg_download_files"/>
+                        <field name="mg_max_file_size"/>
+                        <field name="mg_create_contacts"/>
+                        <field name="mg_fetch_profile"/>
+                    </group>
+                </group>
+            </xpath>
+            <xpath expr="//header" position="inside">
+                <button name="action_mg_check_connection" type="object"
+                        string="Check Connection"
+                        invisible="channel_code != 'messenger'"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

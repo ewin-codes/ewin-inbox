@@ -1,10 +1,12 @@
 {
-    "name": "EWIN Inbox Core",
-    "summary": "Extensible omnichannel inbox for Odoo",
+    "name": "EWIN Inbox",
+    "summary": "Omnichannel customer inbox for Odoo",
     "version": "18.0.1.0.0",
     "category": "Productivity/Discuss",
-    "author": "EWIN",
+    "author": "EWIN.codes",
+    "maintainer": "EWIN.codes",
     "website": "https://ewin.codes",
+    "support": "odoo@ewin.codes",
     "license": "LGPL-3",
     "depends": [
         "base",

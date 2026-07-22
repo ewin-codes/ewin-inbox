@@ -4,40 +4,32 @@ Thanks for considering a contribution to EWIN Inbox.
 
 ## Development setup
 
-The project runs Odoo 18 (Community) via Docker Compose (`docker-compose.yml` at the repo
-root), with `addons/` mounted read-write at `/mnt/extra-addons` inside the container.
+Run any Odoo 18 (Community) instance with the module directories on its `addons_path`.
+Install the core first, then the connector you are working on (the connector depends on
+the core):
 
 ```bash
-docker compose up -d
-```
-
-Install (or upgrade) the modules on your working database — always the core first, then
-the connector, since the connector depends on it:
-
-```bash
-docker compose exec -T odoo odoo -d <your-db> -i ewin_omnichannel_core,ewin_omnichannel_telegram \
-  --stop-after-init --no-http
+odoo -d <your-db> -i ewin_omnichannel_core,ewin_omnichannel_telegram --stop-after-init
 ```
 
 Use `-u` instead of `-i` to upgrade modules you already installed after pulling changes.
 
 ## Running tests
 
+Each module ships a `tests/` suite. Run one against a test database:
+
 ```bash
-docker compose exec -T odoo odoo -d <your-db> -u ewin_omnichannel_core,ewin_omnichannel_telegram \
-  --test-enable --stop-after-init --no-http --http-port=8269 --log-level=test
+odoo -d <your-db> -u ewin_omnichannel_telegram --test-enable --stop-after-init \
+  --http-port=8269 --test-tags /ewin_omnichannel_telegram
 ```
 
 Notes:
-- `--test-enable` runs both modules' `tests/` suites during the update.
-- `--http-port=8269` is required even with `--no-http`/`--stop-after-init`: Odoo's test
-  runner still binds an HTTP port internally for controller/webhook tests, and the default
-  `8069` will collide with a normal `odoo-web` container already listening on it. Any free
-  port works; `8269` is just the convention used throughout this project's task history.
-- Telegram API calls are mocked in tests (no real bot token or public webhook URL needed
-  to run the suite).
-- A clean run ends with `Modules loaded.` and no `ERROR`/`CRITICAL` log lines; test
-  failures are reported inline with a summary at the end.
+- `--http-port=8269` avoids colliding with an already-running server on the default `8069`:
+  Odoo's test runner still binds an HTTP port internally for controller/webhook tests. Any
+  free port works.
+- Provider API calls are mocked in tests — no real tokens or public webhook URL are needed
+  to run the suite.
+- A green run ends with `0 failed, 0 error(s) of N tests`.
 
 ## Coding conventions
 
