@@ -1,10 +1,12 @@
 {
-    "name": "EWIN Inbox Live Chat",
+    "name": "EWIN Inbox: Live Chat",
     "summary": "Odoo website Live Chat connector for EWIN Inbox",
     "version": "18.0.1.0.0",
     "category": "Productivity/Discuss",
-    "author": "EWIN",
+    "author": "EWIN.codes",
+    "maintainer": "EWIN.codes",
     "website": "https://ewin.codes",
+    "support": "odoo@ewin.codes",
     "license": "LGPL-3",
     "depends": [
         "ewin_omnichannel_core",

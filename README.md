@@ -1,47 +1,107 @@
 # EWIN Inbox
 
-**Omnichannel customer inbox for Odoo 18.** One place for your team to receive and answer customer messages from Telegram, WhatsApp, Messenger, Instagram, Viber, Email and website Live Chat — threaded into Odoo Discuss, tied to `res.partner`, with routing, delivery status, canned replies and reporting.
+Open-source omnichannel customer inbox for Odoo 18.
+
+Receive and answer customer messages from Telegram, Email, Live Chat,
+WhatsApp, Messenger, Instagram and Viber in one Odoo-native interface.
+
+Messages are linked to Odoo contacts and mirrored into Discuss, with agent
+assignment, delivery statuses, canned replies, retries and reporting.
+
+Developed and maintained by [EWIN.codes](https://ewin.codes).
 
 ![Odoo](https://img.shields.io/badge/Odoo-18.0-714B67) ![License](https://img.shields.io/badge/license-LGPL--3-blue) ![Status](https://img.shields.io/badge/status-active%20development-orange)
 
----
-
-## Why
-
-Support teams juggle a dozen apps. EWIN Inbox pulls every channel into a single Odoo-native inbox: an agent sees one conversation list, replies in one composer, and every message is a first-class Odoo record — searchable, assignable, reportable, and linked to the customer's partner.
+![EWIN Inbox](screenshots/inbox.png)
 
 ## Features
 
-- **Unified inbox** — conversations from all channels in one list, assignable to agents and teams.
-- **Two-way messaging** — inbound and outbound text plus media (images, documents, audio/voice, video, stickers).
-- **Discuss mirror** — every conversation is mirrored into an Odoo Discuss channel, so agents get native notifications, mentions and unread counts.
-- **Contacts** — senders are matched to / created as `res.partner`; conversations carry the partner link.
-- **Routing & queue** — inbound routing service, a retry job queue for outbound, first-response metrics.
-- **Delivery status** — sent / delivered / read / failed reflected on each message (where the channel supports it).
-- **Canned replies & templates** — reusable snippets with `{{name}}` placeholders; WhatsApp HSM templates synced from Meta.
-- **Reporting** — conversation and message analytics (pivot / graph).
-- **Idempotent & resilient** — provider events are de-duplicated; failed sends fall back to a retry queue; webhooks never 500.
+- Unified inbox for all connected channels
+- Two-way text and media messaging
+- Odoo Discuss integration
+- Contact matching with `res.partner`
+- Agent and team assignment
+- Delivery and read statuses where supported
+- Canned replies
+- Retry queue
+- Reporting
 
-## Channels
+## Channel status
 
-| Channel | Module | Transport | Highlights |
-|---|---|---|---|
-| Telegram | `ewin_omnichannel_telegram` | Bot webhook | Full media, instant sync send |
-| WhatsApp Business | `ewin_omnichannel_whatsapp` | Meta Cloud API (Graph) | Media, delivery status, HSM templates, 24h-window handling |
-| Facebook Messenger | `ewin_omnichannel_messenger` | Meta Graph API (Pages) | Media, delivery/read receipts, Graph profile lookup, 24h-window handling |
-| Instagram Direct | `ewin_omnichannel_instagram` | Instagram Graph API (business login) | Media, story mentions/replies, delivery/read receipts, auto token refresh, 24h-window handling |
-| Viber | `ewin_omnichannel_viber` | Bot webhook | Text + media |
-| Email | `ewin_omnichannel_email` | IMAP poll + SMTP | RFC-2822 threading, TLS enforced |
-| Live Chat | `ewin_omnichannel_livechat` | In-process (no webhook) | Bridges website Live Chat; hybrid partner/visitor/guest identity |
+| Channel | Status |
+|---|---|
+| Telegram | Tested |
+| Email | Tested |
+| Live Chat | Tested |
+| WhatsApp | Unverified |
+| Messenger | Tested |
+| Instagram | Unverified |
+| Viber | Unverified |
 
-Each connector is a thin addon over a shared core — adding a channel means writing an API client, a payload normalizer and a webhook/poll entry point, not re-implementing the inbox.
+- **Tested** — manually verified using a real provider account.
+- **Unverified** — implementation is complete but has not yet been tested
+  against a live provider account.
+
+## Installation
+
+1. Clone the repository.
+2. Add the repository path to the Odoo `addons_path`.
+3. Update the Apps list.
+4. Install EWIN Inbox.
+5. Install the required channel connectors.
+6. Grant the user the EWIN Inbox administrator role.
+
+Or install from the command line — the core plus the channels you need:
+
+```bash
+odoo -d <db> -i ewin_omnichannel_core,ewin_omnichannel_telegram --stop-after-init
+```
+
+> Menus that read `omnichannel.*` are visible only to users in an EWIN Inbox
+> security group. Grant yourself the **EWIN Inbox / Administrator** group after
+> install.
+
+## Requirements
+
+- Odoo 18
+- Public HTTPS endpoint for webhook-based connectors
+- Provider accounts and API credentials for selected channels
+- IMAP and SMTP credentials for Email
+
+## Limitations
+
+- WhatsApp and Instagram are subject to Meta API rules and messaging windows.
+- Delivery and read statuses depend on provider capabilities.
+- Unverified connectors should be tested in staging before production use.
+- The module does not bypass provider verification or messaging restrictions.
+
+## Support
+
+For bug reports, use GitHub Issues.
+
+For implementation, customization and commercial support:
+
+odoo@ewin.codes
+
+## License
+
+Licensed under the GNU Lesser General Public License v3.0.
+See [LICENSE](LICENSE).
+
+Copyright © 2026 EWIN.codes
+
+---
 
 ## Architecture
+
+EWIN Inbox is a shared, channel-agnostic core plus one thin connector addon per
+channel. Adding a channel means writing an API client, a payload normalizer and a
+webhook/poll entry point — not re-implementing the inbox.
 
 ```mermaid
 flowchart LR
     subgraph Providers
-      TG[Telegram] & WA[WhatsApp] & MS[Messenger] & IG[Instagram] & VB[Viber] & EM[Email]
+      TG[Telegram] & EM[Email] & LC[Live Chat] & WA[WhatsApp] & MS[Messenger] & IG[Instagram] & VB[Viber]
     end
     subgraph Connectors["Connector addons (thin)"]
       C1[webhook / poll] --> C2[api_client] --> C3[normalizer]
@@ -55,55 +115,51 @@ flowchart LR
     M -->|outbound| Connectors --> Providers
 ```
 
-- **`ewin_omnichannel_core`** owns the domain: channels, accounts, identities, conversations, messages, the routing service, the retry job queue, the Discuss mirror, reporting and canned templates. It knows nothing about any specific provider.
-- **Connector addons** implement one abstract contract (`omnichannel.connector`): parse an inbound provider event into a universal shape, and send an outbound message. Inbound always flows through `routing_service.process_event`; outbound always flows through `connector.send_message`.
+- **`ewin_omnichannel_core`** owns the domain: channels, accounts, identities,
+  conversations, messages, the routing service, the retry job queue, the Discuss
+  mirror, reporting and canned templates. It knows nothing about any specific
+  provider.
+- **Connector addons** implement one abstract contract (`omnichannel.connector`):
+  parse an inbound provider event into a universal shape, and send an outbound
+  message. Inbound always flows through `routing_service.process_event`; outbound
+  always flows through `connector.send_message`.
 
-## Install
+| Channel | Module | Transport |
+|---|---|---|
+| Telegram | `ewin_omnichannel_telegram` | Bot webhook |
+| Email | `ewin_omnichannel_email` | IMAP poll + SMTP |
+| Live Chat | `ewin_omnichannel_livechat` | In-process (no webhook) |
+| WhatsApp | `ewin_omnichannel_whatsapp` | Meta Cloud API (Graph) |
+| Messenger | `ewin_omnichannel_messenger` | Meta Graph API (Pages) |
+| Instagram | `ewin_omnichannel_instagram` | Instagram Graph API (business login) |
+| Viber | `ewin_omnichannel_viber` | Bot webhook |
 
-These are standard Odoo 18 addons. Put the modules under `addons/` on your Odoo `addons_path`, then install the core plus the channels you need (developer mode → Apps, or CLI):
+All modules use Odoo model names in the `omnichannel.*` namespace (e.g.
+`omnichannel.conversation`); only the Odoo *module* names carry the `ewin_` prefix.
 
-```bash
-odoo -d <db> -i ewin_omnichannel_core,ewin_omnichannel_whatsapp --stop-after-init
-```
-
-> Menus that read `omnichannel.*` are visible only to users in an EWIN Inbox security group. Grant yourself the **EWIN Inbox / Administrator** group after install.
-
-## Configure a channel
-
-Open **EWIN Inbox → Configuration → Accounts**, create an account, pick the channel, and fill its credentials. Each connector's own `README.md` documents the provider-side setup (bot token, Meta app + webhook, IMAP/SMTP, …). WhatsApp, for example, needs a Meta Cloud API access token, phone number ID, WABA ID and App Secret, plus the webhook URL `…/omnichannel/webhook/whatsapp/<webhook_uuid>` registered in the Meta app.
-
-## Development & tests
-
-Each module ships a test suite. Run one against a test database:
-
-```bash
-# ‑u to upgrade, ‑i to install first
-odoo -d <test-db> -u ewin_omnichannel_whatsapp --test-enable --stop-after-init \
-  --http-port=8269 --test-tags /ewin_omnichannel_whatsapp
-```
-
-`--http-port=8269` avoids colliding with an already-running server on 8069. A green run ends with `0 failed, 0 error(s) of N tests`.
-
-## Project layout
+## Repository layout
 
 ```
-addons/
-  ewin_omnichannel_core/        # shared domain + services + Discuss mirror + reporting
-  ewin_omnichannel_telegram/    # Telegram bot connector
-  ewin_omnichannel_whatsapp/    # WhatsApp Business (Meta Cloud API) connector
-  ewin_omnichannel_messenger/   # Facebook Messenger (Pages) connector
-  ewin_omnichannel_instagram/   # Instagram Direct (business login) connector
-  ewin_omnichannel_viber/       # Viber bot connector
-  ewin_omnichannel_email/       # Email (IMAP/SMTP) connector
-  ewin_omnichannel_livechat/    # Website Live Chat connector (in-process, no webhook)
+ewin_omnichannel_core/        # shared domain + services + Discuss mirror + reporting
+ewin_omnichannel_telegram/    # Telegram bot connector
+ewin_omnichannel_email/       # Email (IMAP/SMTP) connector
+ewin_omnichannel_livechat/    # Website Live Chat connector (in-process, no webhook)
+ewin_omnichannel_whatsapp/    # WhatsApp Business (Meta Cloud API) connector
+ewin_omnichannel_messenger/   # Facebook Messenger (Pages) connector
+ewin_omnichannel_instagram/   # Instagram Direct (business login) connector
+ewin_omnichannel_viber/       # Viber bot connector
 ```
 
-## Security notes
+## Security
 
-- Provider secrets (tokens, app secrets) are stored under an admin-only security group and never logged.
-- Webhooks are authenticated per provider (e.g. WhatsApp validates the `X-Hub-Signature-256` HMAC over the raw body with the Meta App Secret, constant-time).
-- Real secrets never live in the repo: provider credentials are entered in Odoo (under an admin-only group), and any local runtime config (`odoo.conf`, `.env`, certificates) is git-ignored.
+- Provider secrets (tokens, app secrets) are stored under an admin-only security
+  group and never logged.
+- Webhooks are authenticated per provider (e.g. WhatsApp and Instagram validate the
+  `X-Hub-Signature-256` HMAC over the raw body with the Meta App Secret, constant-time).
+- Real secrets never live in the repo: provider credentials are entered in Odoo, and
+  any local runtime config (`odoo.conf`, `.env`, certificates) is git-ignored.
 
-## License
+## Contributing
 
-LGPL-3.0. See each addon's `__manifest__.py`.
+Bug reports and pull requests are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md).
+For security reports, see [SECURITY.md](SECURITY.md).

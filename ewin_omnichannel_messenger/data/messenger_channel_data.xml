@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="channel_messenger" model="omnichannel.channel">
+        <field name="name">Facebook Messenger</field>
+        <field name="code">messenger</field>
+        <field name="connector_module">ewin_omnichannel_messenger</field>
+        <field name="capabilities">{"text": true, "image": true, "audio": true, "video": true, "file": true, "delivery_status": true, "read_status": true}</field>
+    </record>
+</odoo>

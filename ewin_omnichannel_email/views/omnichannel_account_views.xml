@@ -24,9 +24,11 @@
                     <field name="email_smtp_port"/>
                     <field name="email_smtp_security"/>
                     <field name="email_folder"/>
-                    <field name="email_download_files"/>
-                    <field name="email_max_file_size"/>
-                    <field name="email_create_contacts"/>
+                    <field name="email_download_files" string="Download Files"/>
+                    <field name="email_max_file_size"
+                           string="Max File Size (MB)"/>
+                    <field name="email_create_contacts"
+                           string="Auto-create Contacts"/>
                 </group>
             </xpath>
             <xpath expr="//header" position="inside">

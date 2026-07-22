@@ -8,19 +8,23 @@ class OmnichannelAccount(models.Model):
         string="Bot Token", groups="ewin_omnichannel_core.group_omni_admin",
         copy=False)
     tg_bot_token_masked = fields.Char(
-        string="Token", compute="_compute_tg_bot_token_masked")
+        string="Telegram Token", compute="_compute_tg_bot_token_masked")
     tg_bot_username = fields.Char(string="Bot Username")
-    tg_bot_external_id = fields.Char(string="Bot ID")
+    tg_bot_external_id = fields.Char(string="Telegram Bot ID")
     tg_webhook_secret = fields.Char(
         string="Webhook Secret", groups="ewin_omnichannel_core.group_omni_admin",
         copy=False)
-    tg_webhook_status = fields.Char(string="Webhook Status", readonly=True)
+    tg_webhook_status = fields.Char(
+        string="Telegram Webhook Status", readonly=True)
     tg_api_base_url = fields.Char(
-        string="API Base URL", default="https://api.telegram.org")
-    tg_download_files = fields.Boolean(string="Download Files", default=True)
-    tg_max_file_size = fields.Integer(string="Max File Size (MB)", default=20)
-    tg_welcome_message = fields.Text(string="Welcome Message")
-    tg_create_contacts = fields.Boolean(string="Auto-create Contacts", default=True)
+        string="Telegram API Base URL", default="https://api.telegram.org")
+    tg_download_files = fields.Boolean(
+        string="Telegram Download Files", default=True)
+    tg_max_file_size = fields.Integer(
+        string="Telegram Max File Size (MB)", default=20)
+    tg_welcome_message = fields.Text(string="Telegram Welcome Message")
+    tg_create_contacts = fields.Boolean(
+        string="Telegram Auto-create Contacts", default=True)
 
     @api.depends("tg_bot_token")
     def _compute_tg_bot_token_masked(self):

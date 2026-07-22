@@ -2,12 +2,13 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability — especially anything involving leaked tokens,
-webhook secrets, or authentication bypass — please report it privately to
-**security@ewin.codes**.
+Do not report security vulnerabilities through public GitHub issues. Public disclosure
+before a fix is available puts all users at risk.
 
-**Do not file a public GitHub issue for token, webhook, or other security-sensitive
-vulnerabilities.** Public disclosure before a fix is available puts all users at risk.
+Send reports privately to **odoo@ewin.codes** with the subject **`[SECURITY] EWIN Inbox`**.
+Include the affected module, version, reproduction steps and possible impact — especially
+anything involving leaked tokens, webhook secrets, or authentication bypass. Do not include
+real provider credentials or customer data.
 
 We will acknowledge your report and work with you on a coordinated fix and disclosure
 timeline.

@@ -1,0 +1,67 @@
+<section class="oe_container">
+  <style>
+    .ewin-wrap { max-width: 960px; margin: 0 auto; padding: 0 16px;
+      font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #24243a; }
+    .ewin-wrap h1 { font-size: 36px; margin: 24px 0 8px; letter-spacing: -0.5px; }
+    .ewin-wrap h2 { font-size: 22px; margin: 36px 0 12px; color: #2b2b45;
+      border-bottom: 2px solid #ecebf3; padding-bottom: 8px; }
+    .ewin-lead { font-size: 18px; line-height: 1.6; color: #4a4a68; margin: 0 0 20px; }
+    .ewin-badges { margin: 0 0 24px; }
+    .ewin-badge { display: inline-block; font-size: 13px; font-weight: 600;
+      padding: 4px 12px; border-radius: 999px; margin: 0 6px 6px 0; }
+    .b-odoo { background: #eee3f2; color: #714B67; }
+    .b-lic { background: #e3ecfb; color: #2f5fc4; }
+    .b-unver { background: #fbeede; color: #b46a11; }
+    .ewin-shot { width: 100%; border: 1px solid #e6e5ef; border-radius: 10px; margin: 8px 0 20px; }
+    .ewin-wrap ul { line-height: 1.75; font-size: 16px; padding-left: 22px; }
+    .ewin-req { background: #f7f6fb; border-radius: 10px; padding: 4px 20px; }
+    .ewin-note { border-left: 4px solid #e0a53a; background: #fdf5e8; padding: 14px 18px;
+      border-radius: 6px; margin: 24px 0; font-size: 15px; line-height: 1.6; }
+    .ewin-foot { margin: 36px 0 24px; padding: 18px 20px; background: #f7f6fb;
+      border-radius: 10px; font-size: 15px; color: #4a4a68; }
+    .ewin-foot a { color: #714B67; text-decoration: none; font-weight: 600; }
+  </style>
+
+  <div class="ewin-wrap">
+    <h1>EWIN Inbox: Viber</h1>
+    <p class="ewin-lead">Viber bot connector for EWIN Inbox. Receive and answer Viber messages
+      from the unified Odoo inbox, linked to Odoo contacts and mirrored into Discuss.</p>
+
+    <div class="ewin-badges">
+      <span class="ewin-badge b-odoo">Odoo 18</span>
+      <span class="ewin-badge b-lic">LGPL-3</span>
+      <span class="ewin-badge b-unver">Unverified</span>
+    </div>
+
+    <img class="ewin-shot" src="main_screenshot.png" alt="EWIN Inbox: Viber"/>
+
+    <div class="ewin-note">
+      <strong>Status: Unverified.</strong>
+      This connector has not yet been validated against a live provider account.
+      Test it in a staging environment before production use.
+    </div>
+
+    <h2>Highlights</h2>
+    <ul>
+      <li>Viber Bot API over a webhook</li>
+      <li>Two-way text and media messaging</li>
+      <li>Automatic contact matching and creation as <code>res.partner</code></li>
+      <li>Conversations mirrored into Odoo Discuss</li>
+    </ul>
+
+    <h2>Requirements</h2>
+    <div class="ewin-req">
+      <ul>
+        <li><strong>EWIN Inbox</strong> (<code>ewin_omnichannel_core</code>) installed</li>
+        <li>A Viber bot authentication token</li>
+        <li>A public HTTPS endpoint reachable by Viber for the webhook</li>
+      </ul>
+    </div>
+
+    <div class="ewin-foot">
+      Licensed under the GNU Lesser General Public License v3.0 (LGPL-3).<br/>
+      Developed and maintained by <a href="https://ewin.codes">EWIN.codes</a>.
+      Support: <a href="mailto:odoo@ewin.codes">odoo@ewin.codes</a>.
+    </div>
+  </div>
+</section>

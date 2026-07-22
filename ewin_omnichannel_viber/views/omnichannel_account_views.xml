@@ -11,17 +11,21 @@
                     <field name="viber_auth_token"
                            groups="ewin_omnichannel_core.group_omni_admin"
                            password="True"/>
-                    <field name="viber_auth_token_masked"
+                    <field name="viber_auth_token_masked" string="Token"
                            groups="!ewin_omnichannel_core.group_omni_admin"/>
                     <field name="viber_bot_name"/>
                     <field name="viber_bot_uri" readonly="1"/>
-                    <field name="viber_bot_id" readonly="1"/>
-                    <field name="viber_webhook_status" readonly="1"/>
-                    <field name="viber_api_base_url"/>
-                    <field name="viber_download_files"/>
-                    <field name="viber_max_file_size"/>
-                    <field name="viber_create_contacts"/>
-                    <field name="viber_welcome_message"/>
+                    <field name="viber_bot_id" string="Bot ID" readonly="1"/>
+                    <field name="viber_webhook_status" string="Webhook Status"
+                           readonly="1"/>
+                    <field name="viber_api_base_url" string="API Base URL"/>
+                    <field name="viber_download_files" string="Download Files"/>
+                    <field name="viber_max_file_size"
+                           string="Max File Size (MB)"/>
+                    <field name="viber_create_contacts"
+                           string="Auto-create Contacts"/>
+                    <field name="viber_welcome_message"
+                           string="Welcome Message"/>
                 </group>
             </xpath>
             <xpath expr="//header" position="inside">

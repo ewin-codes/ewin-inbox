@@ -36,7 +36,7 @@ class OmnichannelConversation(models.Model):
         "omnichannel.account", required=True, ondelete="restrict", index=True)
     channel_id = fields.Many2one(related="account_id.channel_id", store=True)
     channel_icon = fields.Html(
-        compute="_compute_channel_icon", sanitize=False, string="Channel")
+        compute="_compute_channel_icon", sanitize=False, string="Channel Icon")
     send_shortcut = fields.Char(
         compute="_compute_send_shortcut",
         help="Composer send shortcut ('enter' or 'ctrl_enter'), from settings.")
