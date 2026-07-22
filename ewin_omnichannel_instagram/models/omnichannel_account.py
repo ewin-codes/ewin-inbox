@@ -24,7 +24,7 @@ class OmnichannelAccount(models.Model):
              "event.")
     ig_username = fields.Char(string="Username", readonly=True)
     ig_access_token = fields.Char(
-        string="Access Token",
+        string="Instagram Access Token",
         groups="ewin_omnichannel_core.group_omni_admin", copy=False,
         help="The long-lived Instagram access token generated in Meta → your "
              "app → Instagram → API setup with Instagram business login → "
@@ -34,28 +34,32 @@ class OmnichannelAccount(models.Model):
         help="When the current access token expires. Refreshed automatically "
              "by a daily job ahead of this date.")
     ig_webhook_url = fields.Char(
-        string="Webhook Callback URL", compute="_compute_ig_webhook_url",
+        string="Instagram Webhook Callback URL",
+        compute="_compute_ig_webhook_url",
         help="Paste this into Meta → your app → Instagram → Webhooks as the "
              "Callback URL.")
     ig_access_token_masked = fields.Char(
-        string="Token", compute="_compute_ig_token_masked")
+        string="Instagram Token", compute="_compute_ig_token_masked")
     ig_app_secret = fields.Char(
-        string="App Secret",
+        string="Instagram App Secret",
         groups="ewin_omnichannel_core.group_omni_admin", copy=False,
         help="Meta → App settings → Basic → App Secret. Required: inbound "
              "webhooks are rejected unless their signature matches it.")
     ig_verify_token = fields.Char(
-        string="Webhook Verify Token",
+        string="Instagram Webhook Verify Token",
         groups="ewin_omnichannel_core.group_omni_admin", copy=False,
         help="Generated automatically. Paste it into Meta → Webhooks as the "
              "Verify Token — you do not invent this value.")
-    ig_graph_version = fields.Char(string="Graph API Version", default="v21.0")
-    ig_download_files = fields.Boolean(string="Download Files", default=True)
-    ig_max_file_size = fields.Integer(string="Max File Size (MB)", default=25)
+    ig_graph_version = fields.Char(
+        string="Instagram Graph API Version", default="v21.0")
+    ig_download_files = fields.Boolean(
+        string="Instagram Download Files", default=True)
+    ig_max_file_size = fields.Integer(
+        string="Instagram Max File Size (MB)", default=25)
     ig_create_contacts = fields.Boolean(
-        string="Auto-create Contacts", default=True)
+        string="Instagram Auto-create Contacts", default=True)
     ig_fetch_profile = fields.Boolean(
-        string="Fetch User Profiles", default=True,
+        string="Instagram Fetch User Profiles", default=True,
         help="Look up the customer's name, @username and picture via the Graph "
              "profile API when a new conversation starts.")
     ig_human_agent = fields.Boolean(

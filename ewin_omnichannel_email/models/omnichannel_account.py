@@ -24,10 +24,12 @@ class OmnichannelAccount(models.Model):
         [("none", "None"), ("starttls", "STARTTLS"), ("ssl", "SSL/TLS")],
         string="SMTP Security", default="starttls")
     email_folder = fields.Char(string="Mailbox Folder", default="INBOX")
-    email_download_files = fields.Boolean(string="Download Files", default=True)
-    email_max_file_size = fields.Integer(string="Max File Size (MB)", default=25)
+    email_download_files = fields.Boolean(
+        string="Email Download Files", default=True)
+    email_max_file_size = fields.Integer(
+        string="Email Max File Size (MB)", default=25)
     email_create_contacts = fields.Boolean(
-        string="Auto-create Contacts", default=True)
+        string="Email Auto-create Contacts", default=True)
 
     @api.depends("email_password")
     def _compute_email_password_masked(self):

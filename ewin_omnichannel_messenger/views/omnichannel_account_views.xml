@@ -52,25 +52,28 @@
                         <field name="mg_page_access_token"
                                groups="ewin_omnichannel_core.group_omni_admin"
                                password="True"/>
-                        <field name="mg_page_access_token_masked"
+                        <field name="mg_page_access_token_masked" string="Token"
                                groups="!ewin_omnichannel_core.group_omni_admin"/>
-                        <field name="mg_app_secret"
+                        <field name="mg_app_secret" string="App Secret"
                                groups="ewin_omnichannel_core.group_omni_admin"
                                password="True"/>
                     </group>
                     <group string="Webhook">
-                        <field name="mg_webhook_url" readonly="1"
-                               widget="CopyClipboardChar"/>
-                        <field name="mg_verify_token" readonly="1"
-                               widget="CopyClipboardChar"
+                        <field name="mg_webhook_url" string="Webhook Callback URL"
+                               readonly="1" widget="CopyClipboardChar"/>
+                        <field name="mg_verify_token" string="Webhook Verify Token"
+                               readonly="1" widget="CopyClipboardChar"
                                groups="ewin_omnichannel_core.group_omni_admin"/>
                     </group>
                     <group string="Options">
-                        <field name="mg_graph_version"/>
-                        <field name="mg_download_files"/>
-                        <field name="mg_max_file_size"/>
-                        <field name="mg_create_contacts"/>
-                        <field name="mg_fetch_profile"/>
+                        <field name="mg_graph_version" string="Graph API Version"/>
+                        <field name="mg_download_files" string="Download Files"/>
+                        <field name="mg_max_file_size"
+                               string="Max File Size (MB)"/>
+                        <field name="mg_create_contacts"
+                               string="Auto-create Contacts"/>
+                        <field name="mg_fetch_profile"
+                               string="Fetch User Profiles"/>
                     </group>
                 </group>
             </xpath>

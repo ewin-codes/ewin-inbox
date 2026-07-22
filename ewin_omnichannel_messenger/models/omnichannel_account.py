@@ -21,28 +21,32 @@ class OmnichannelAccount(models.Model):
              "Page in Meta → Messenger → Settings. Prefer a permanent System "
              "User token for production.")
     mg_webhook_url = fields.Char(
-        string="Webhook Callback URL", compute="_compute_mg_webhook_url",
+        string="Messenger Webhook Callback URL",
+        compute="_compute_mg_webhook_url",
         help="Paste this into Meta → Messenger → Settings → Webhooks as the "
              "Callback URL.")
     mg_page_access_token_masked = fields.Char(
-        string="Token", compute="_compute_mg_token_masked")
+        string="Messenger Token", compute="_compute_mg_token_masked")
     mg_app_secret = fields.Char(
-        string="App Secret",
+        string="Messenger App Secret",
         groups="ewin_omnichannel_core.group_omni_admin", copy=False,
         help="Meta → App Settings → Basic → App Secret. Required: inbound "
              "webhooks are rejected unless their signature matches it.")
     mg_verify_token = fields.Char(
-        string="Webhook Verify Token",
+        string="Messenger Webhook Verify Token",
         groups="ewin_omnichannel_core.group_omni_admin", copy=False,
         help="Generated automatically. Paste it into Meta → Webhooks as the "
              "Verify Token — you do not invent this value.")
-    mg_graph_version = fields.Char(string="Graph API Version", default="v21.0")
-    mg_download_files = fields.Boolean(string="Download Files", default=True)
-    mg_max_file_size = fields.Integer(string="Max File Size (MB)", default=25)
+    mg_graph_version = fields.Char(
+        string="Messenger Graph API Version", default="v21.0")
+    mg_download_files = fields.Boolean(
+        string="Messenger Download Files", default=True)
+    mg_max_file_size = fields.Integer(
+        string="Messenger Max File Size (MB)", default=25)
     mg_create_contacts = fields.Boolean(
-        string="Auto-create Contacts", default=True)
+        string="Messenger Auto-create Contacts", default=True)
     mg_fetch_profile = fields.Boolean(
-        string="Fetch User Profiles", default=True,
+        string="Messenger Fetch User Profiles", default=True,
         help="Look up the customer's name and picture via the Graph profile "
              "API when a new conversation starts.")
 

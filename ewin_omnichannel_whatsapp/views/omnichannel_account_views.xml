@@ -9,23 +9,24 @@
                 <group string="WhatsApp"
                        invisible="channel_code != 'whatsapp'">
                     <field name="channel_code" invisible="1"/>
-                    <field name="wa_access_token"
+                    <field name="wa_access_token" string="Access Token"
                            groups="ewin_omnichannel_core.group_omni_admin"
                            password="True"/>
-                    <field name="wa_access_token_masked"
+                    <field name="wa_access_token_masked" string="Token"
                            groups="!ewin_omnichannel_core.group_omni_admin"/>
                     <field name="wa_phone_number_id"/>
                     <field name="wa_waba_id"/>
                     <field name="wa_business_phone" readonly="1"/>
-                    <field name="wa_app_secret"
+                    <field name="wa_app_secret" string="App Secret"
                            groups="ewin_omnichannel_core.group_omni_admin"
                            password="True"/>
-                    <field name="wa_verify_token"
+                    <field name="wa_verify_token" string="Webhook Verify Token"
                            groups="ewin_omnichannel_core.group_omni_admin"/>
-                    <field name="wa_graph_version"/>
-                    <field name="wa_download_files"/>
-                    <field name="wa_max_file_size"/>
-                    <field name="wa_create_contacts"/>
+                    <field name="wa_graph_version" string="Graph API Version"/>
+                    <field name="wa_download_files" string="Download Files"/>
+                    <field name="wa_max_file_size" string="Max File Size (MB)"/>
+                    <field name="wa_create_contacts"
+                           string="Auto-create Contacts"/>
                 </group>
             </xpath>
             <xpath expr="//header" position="inside">

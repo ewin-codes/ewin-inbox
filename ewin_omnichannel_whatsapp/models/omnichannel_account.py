@@ -7,24 +7,27 @@ class OmnichannelAccount(models.Model):
     _inherit = "omnichannel.account"
 
     wa_access_token = fields.Char(
-        string="Access Token",
+        string="WhatsApp Access Token",
         groups="ewin_omnichannel_core.group_omni_admin", copy=False)
     wa_access_token_masked = fields.Char(
-        string="Token", compute="_compute_wa_access_token_masked")
+        string="WhatsApp Token", compute="_compute_wa_access_token_masked")
     wa_phone_number_id = fields.Char(string="Phone Number ID")
     wa_waba_id = fields.Char(string="WhatsApp Business Account ID")
     wa_business_phone = fields.Char(string="Business Phone", readonly=True)
     wa_app_secret = fields.Char(
-        string="App Secret",
+        string="WhatsApp App Secret",
         groups="ewin_omnichannel_core.group_omni_admin", copy=False)
     wa_verify_token = fields.Char(
-        string="Webhook Verify Token",
+        string="WhatsApp Webhook Verify Token",
         groups="ewin_omnichannel_core.group_omni_admin", copy=False)
-    wa_graph_version = fields.Char(string="Graph API Version", default="v21.0")
-    wa_download_files = fields.Boolean(string="Download Files", default=True)
-    wa_max_file_size = fields.Integer(string="Max File Size (MB)", default=25)
+    wa_graph_version = fields.Char(
+        string="WhatsApp Graph API Version", default="v21.0")
+    wa_download_files = fields.Boolean(
+        string="WhatsApp Download Files", default=True)
+    wa_max_file_size = fields.Integer(
+        string="WhatsApp Max File Size (MB)", default=25)
     wa_create_contacts = fields.Boolean(
-        string="Auto-create Contacts", default=True)
+        string="WhatsApp Auto-create Contacts", default=True)
 
     @api.depends("wa_access_token")
     def _compute_wa_access_token_masked(self):

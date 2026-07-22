@@ -8,21 +8,24 @@ class OmnichannelAccount(models.Model):
         string="Auth Token", groups="ewin_omnichannel_core.group_omni_admin",
         copy=False)
     viber_auth_token_masked = fields.Char(
-        string="Token", compute="_compute_viber_auth_token_masked")
+        string="Viber Token", compute="_compute_viber_auth_token_masked")
     viber_bot_name = fields.Char(
         string="Bot Name",
         help="Sender name shown to the customer (max 28 chars). "
              "Filled automatically on 'Check Connection'.")
     viber_bot_uri = fields.Char(string="Bot URI", readonly=True)
-    viber_bot_id = fields.Char(string="Bot ID", readonly=True)
-    viber_webhook_status = fields.Char(string="Webhook Status", readonly=True)
+    viber_bot_id = fields.Char(string="Viber Bot ID", readonly=True)
+    viber_webhook_status = fields.Char(
+        string="Viber Webhook Status", readonly=True)
     viber_api_base_url = fields.Char(
-        string="API Base URL", default="https://chatapi.viber.com/pa")
-    viber_download_files = fields.Boolean(string="Download Files", default=True)
-    viber_max_file_size = fields.Integer(string="Max File Size (MB)", default=50)
-    viber_welcome_message = fields.Text(string="Welcome Message")
+        string="Viber API Base URL", default="https://chatapi.viber.com/pa")
+    viber_download_files = fields.Boolean(
+        string="Viber Download Files", default=True)
+    viber_max_file_size = fields.Integer(
+        string="Viber Max File Size (MB)", default=50)
+    viber_welcome_message = fields.Text(string="Viber Welcome Message")
     viber_create_contacts = fields.Boolean(
-        string="Auto-create Contacts", default=True)
+        string="Viber Auto-create Contacts", default=True)
 
     @api.depends("viber_auth_token")
     def _compute_viber_auth_token_masked(self):
