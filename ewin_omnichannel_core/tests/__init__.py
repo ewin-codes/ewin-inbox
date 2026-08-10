@@ -13,3 +13,4 @@ from . import test_auto_assign
 from . import test_template
 from . import test_reporting
 from . import test_close_reason
+from . import test_history

@@ -124,6 +124,24 @@ class OmnichannelConversation(models.Model):
             else:
                 conv.first_response_seconds = 0
 
+    @api.model
+    def _history_link_fields(self):
+        """Fields whose change re-points where this conversation's history is
+        mirrored. Bridge modules extend the list (the CRM bridge adds
+        ``lead_id``), which is what keeps ``write`` free of any knowledge of
+        which links exist."""
+        return ["partner_id"]
+
+    def _history_targets(self):
+        """The mail.thread records whose chatter must hold this conversation.
+
+        A *list* of singleton records, not a recordset: a contact and a lead
+        are different models and cannot share one, so callers diff them by
+        ``(model, id)`` instead of by set arithmetic.
+        """
+        self.ensure_one()
+        return [record for record in (self.partner_id,) if record]
+
     def _compute_send_shortcut(self):
         value = self.env["ir.config_parameter"].sudo().get_param(
             "ewin_omnichannel.send_shortcut", "ctrl_enter")

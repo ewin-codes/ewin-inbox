@@ -47,6 +47,12 @@ class OmnichannelMessage(models.Model):
     state = fields.Selection(MESSAGE_STATES, default="received", required=True, index=True)
     mail_message_id = fields.Many2one("mail.message")
     attachment_ids = fields.Many2many("ir.attachment", string="Attachments")
+    history_message_ids = fields.Many2many(
+        "mail.message", "omni_message_history_rel", "omni_message_id",
+        "mail_message_id", string="History Copies", copy=False,
+        help="Chatter copies of this message on the customer records this "
+             "conversation is linked to. Tracked so unlinking a contact or a "
+             "lead removes exactly the copies that link created.")
     attachment_preview = fields.Html(
         compute="_compute_attachment_preview", sanitize=False,
         help="Rendered thumbnails/chips for the message attachments.")
