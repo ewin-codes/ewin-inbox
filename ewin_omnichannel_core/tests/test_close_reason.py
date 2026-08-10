@@ -110,3 +110,52 @@ class TestCloseReason(OmnichannelCase):
             self.assertEqual(
                 self.env["omnichannel.conversation"]._close_reason_policy(),
                 value)
+
+    def test_close_records_the_reason_and_the_note(self):
+        conv = self._new_conv()
+        conv._close(reason=self.reason, note="Refund issued")
+        self.assertEqual(conv.state, "closed")
+        self.assertEqual(conv.close_reason_id, self.reason)
+        self.assertEqual(conv.close_note, "Refund issued")
+
+    def test_close_posts_the_reason_to_the_chatter(self):
+        """The fields hold the current closure; the chatter holds the history,
+        including closures that were later reopened."""
+        conv = self._new_conv()
+        conv._close(reason=self.reason, note="Refund issued")
+        body = conv.message_ids[0].body
+        self.assertIn(self.reason.name, body)
+        self.assertIn("Refund issued", body)
+        self.assertIn(self.env.user.name, body)
+
+    def test_close_without_a_reason_still_posts_who_closed_it(self):
+        conv = self._new_conv()
+        conv._close()
+        self.assertEqual(conv.state, "closed")
+        self.assertFalse(conv.close_reason_id)
+        self.assertFalse(conv.close_note)
+        self.assertIn(self.env.user.name, conv.message_ids[0].body)
+
+    def test_close_escapes_the_note(self):
+        """The note is operator free text posted into an HTML chatter body."""
+        conv = self._new_conv()
+        conv._close(note="<script>x</script>")
+        body = conv.message_ids[0].body
+        self.assertNotIn("<script>", body)
+        self.assertIn("&lt;script&gt;", body)
+
+    def test_close_handles_several_conversations_at_once(self):
+        first, second = self._new_conv(), self._new_conv()
+        (first | second)._close(reason=self.reason, note="Batch")
+        for conv in (first, second):
+            self.assertEqual(conv.state, "closed")
+            self.assertEqual(conv.close_reason_id, self.reason)
+
+    def test_reopen_clears_the_reason_and_the_note(self):
+        """The fields describe the closure that was just undone."""
+        conv = self._new_conv()
+        conv._close(reason=self.reason, note="Refund issued")
+        conv.action_reopen()
+        self.assertEqual(conv.state, "open")
+        self.assertFalse(conv.close_reason_id)
+        self.assertFalse(conv.close_note)

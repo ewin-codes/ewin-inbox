@@ -86,6 +86,15 @@ class OmnichannelConversation(models.Model):
     discuss_channel_id = fields.Many2one("discuss.channel", copy=False)
     closed_at = fields.Datetime(readonly=True)
     closed_by = fields.Many2one("res.users", readonly=True)
+    close_reason_id = fields.Many2one(
+        "omnichannel.close.reason", string="Close Reason", readonly=True,
+        index=True, copy=False, ondelete="restrict",
+        help="Why the conversation was closed. Cleared when it is reopened; "
+             "the chatter keeps the history.")
+    close_note = fields.Text(
+        string="Close Comment", readonly=True, copy=False,
+        help="The operator's own words about the closure, for anything the "
+             "preset reasons do not cover.")
     tag_ids = fields.Many2many("omnichannel.tag", string="Tags")
     omni_message_ids = fields.One2many(
         "omnichannel.message", "conversation_id", string="Omnichannel Messages")
@@ -301,13 +310,44 @@ class OmnichannelConversation(models.Model):
         self.write({"state": "pending"})
 
     def action_close(self):
-        self.write({"state": "closed", "closed_at": fields.Datetime.now(),
-                    "closed_by": self.env.uid})
+        return self._close()
+
+    def _close(self, reason=None, note=None):
+        """Close the conversations, recording why.
+
+        The single door every close goes through — the header button, the
+        close wizard, and anything automated later. Keeping the write in one
+        place is what lets the 'required' policy refuse to close at all: the
+        caller decides whether to open this door, and nothing writes the
+        Closed state behind its back.
+        """
+        self.write({
+            "state": "closed",
+            "closed_at": fields.Datetime.now(),
+            "closed_by": self.env.uid,
+            "close_reason_id": reason.id if reason else False,
+            "close_note": note or False,
+        })
         for conv in self:
+            conv.message_post(body=conv._close_message(reason, note))
             conv._notify_omni_event("conversation_closed")
+        return True
+
+    def _close_message(self, reason, note):
+        """Chatter body for a closure: who closed it, why, and their words."""
+        self.ensure_one()
+        if reason:
+            line = _("Closed by %(user)s — %(reason)s",
+                     user=self.env.user.name, reason=reason.name)
+        else:
+            line = _("Closed by %(user)s", user=self.env.user.name)
+        if not note:
+            return escape(line)
+        return Markup("%s<br/>%s") % (line, note)
 
     def action_reopen(self):
-        self.write({"state": "open", "closed_at": False, "closed_by": False})
+        self.write({"state": "open", "closed_at": False, "closed_by": False,
+                    "close_reason_id": False, "close_note": False})
 
     def _notify_omni_event(self, event_name, payload=None):
         """Push a lightweight realtime signal so the Inbox thread and list
