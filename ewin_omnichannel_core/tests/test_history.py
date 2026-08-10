@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from odoo.tests import tagged
 
 from .common import OmnichannelCase
@@ -111,3 +113,57 @@ class TestHistory(OmnichannelCase):
             conv, attachment_ids=[(6, 0, attachment.ids)])
         self.history.mirror(message)
         self.assertEqual(self._notes(self.partner).attachment_ids, attachment)
+
+    def _event(self, uid="123", text="Hello", message_id="987"):
+        return {
+            "event_id": f"test:update:{message_id}",
+            "external_message_id": message_id,
+            "external_user": {"id": uid, "name": "Ada Lovelace"},
+            "conversation": {"external_id": uid, "type": "private"},
+            "message": {"type": "text", "text": text, "attachments": [],
+                        "reply_to_external_message_id": None},
+            "raw_payload": {},
+        }
+
+    def test_an_inbound_message_reaches_the_contact_chatter(self):
+        """The full inbound path, not the service in isolation: routing
+        auto-creates the contact and links it, so the copy must appear without
+        anyone touching the conversation."""
+        message = self.env["omnichannel.routing.service"].process_event(
+            self.account, self._event(text="My parcel is late"))
+        partner = message.conversation_id.partner_id
+        self.assertTrue(partner)
+        self.assertIn("My parcel is late", self._notes(partner).body)
+
+    def test_an_outbound_reply_reaches_the_contact_chatter(self):
+        conv = self._new_conv(partner_id=self.partner.id)
+        with patch("odoo.addons.ewin_omnichannel_core.services."
+                   "routing_service.RoutingService.deliver_outbound"):
+            self.env["omnichannel.message.service"].create_outbound(
+                conv, "It ships tomorrow")
+        self.assertIn("It ships tomorrow", self._notes(self.partner).body)
+
+    def test_an_internal_note_reaches_the_contact_chatter(self):
+        """A note about a customer belongs on the customer's card; it is never
+        sent to them, so nothing leaks outward by mirroring it."""
+        conv = self._new_conv(partner_id=self.partner.id)
+        self.env["omnichannel.message.service"].create_outbound(
+            conv, "Warehouse says Friday", is_internal=True)
+        notes = self._notes(self.partner)
+        self.assertIn("Warehouse says Friday", notes.body)
+        self.assertIn("o_omni_internal_marker", notes.body)
+
+    def test_a_reply_typed_in_discuss_reaches_the_contact_chatter(self):
+        """The operator can answer from the mirrored Discuss channel instead of
+        the Inbox form; that path builds the omni message itself and would
+        otherwise skip the history."""
+        conv = self._new_conv(partner_id=self.partner.id)
+        channel = conv._ensure_discuss_channel()
+        mail_message = channel.with_context(omni_mirror=True).message_post(
+            body="Answered from Discuss", message_type="comment",
+            subtype_xmlid="mail.mt_comment")
+        with patch("odoo.addons.ewin_omnichannel_core.services."
+                   "routing_service.RoutingService.deliver_outbound"):
+            self.env["omnichannel.message.service"].\
+                create_outbound_from_discuss(conv, mail_message)
+        self.assertIn("Answered from Discuss", self._notes(self.partner).body)
