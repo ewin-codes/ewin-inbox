@@ -66,13 +66,22 @@ the public internet.
 4. Click **Register Webhook**. This subscribes to the `message`, `subscribed`,
    `unsubscribed` and `conversation_started` events.
 5. Click **Webhook Status** to confirm Viber has the callback on file.
-6. Message the bot from Viber. The conversation appears in the **Inbox** with a
-   linked Discuss channel.
+6. Message the bot from Viber, in **the bot's own chat** — open
+   `viber://pa?chatURI=<bot uri>` (the **Bot URI** filled in by step 3, also
+   reachable as `https://viber.me/<bot uri>`) and send something. The
+   conversation appears in the **Inbox** with a linked Discuss channel.
 
 **Register Webhook requires a public HTTPS `web.base.url`** (Settings →
 Technical → System Parameters) that Viber's servers can actually reach — Viber
 rejects a callback URL it cannot verify, and a local `http://localhost:8069`
 will not work.
+
+**Only the bot's own chat produces events.** A `https://viber.me/<phone>` link
+opens a personal conversation with a person, not with the bot, and Viber has no
+reason to call the webhook for it — the account stays silent while looking
+perfectly connected. Being an admin of the account is not the same as being
+subscribed to it either: the customer has to write first, and until they do,
+outbound sends are refused with `notSubscribed`.
 
 Use **Remove Webhook** to disconnect. The account's **state** and **last error**
 fields are the at-a-glance health check.

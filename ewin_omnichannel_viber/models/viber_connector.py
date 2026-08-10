@@ -62,13 +62,19 @@ class ViberConnector(models.AbstractModel):
 
     @api.model
     def register_webhook(self, account):
+        # Viber validates the URL synchronously: set_webhook only returns once
+        # Viber has POSTed an {"event": "webhook"} callback to us and got a 200
+        # back. That callback commits a write to this account row, so both
+        # outcomes below have to be persisted out of the current transaction —
+        # see omnichannel.account._write_isolated.
         url = self._webhook_url(account)
         try:
             self._client(account).set_webhook(url, VIBER_EVENT_TYPES)
         except ViberApiError as err:
-            account._set_error(err.description)
+            account.sudo()._write_isolated({
+                "state": "error", "last_error": err.description})
             raise UserError(self._friendly(err))
-        account.sudo().write({
+        account.sudo()._write_isolated({
             "viber_webhook_status": "registered",
             "state": "connected",
         })
