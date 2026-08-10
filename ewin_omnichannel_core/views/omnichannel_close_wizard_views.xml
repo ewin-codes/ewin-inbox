@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_close_wizard_form" model="ir.ui.view">
+        <field name="name">omnichannel.close.wizard.form</field>
+        <field name="model">omnichannel.close.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Close Conversation">
+                <field name="conversation_ids" invisible="1"/>
+                <field name="policy" invisible="1"/>
+                <group string="Why is this conversation being closed?">
+                    <field name="reason_id" widget="radio" nolabel="1"/>
+                </group>
+                <group>
+                    <field name="note" nolabel="1"
+                           placeholder="Add a comment..."/>
+                </group>
+                <div class="text-muted" invisible="policy != 'required'">
+                    <i class="fa fa-info-circle me-1"/>
+                    Pick a reason or write a comment — the conversation stays
+                    open until one of the two is filled in.
+                </div>
+                <footer>
+                    <button name="action_confirm" type="object"
+                            string="Close Conversation" class="btn-primary"/>
+                    <button string="Discard" class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

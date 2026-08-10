@@ -14,3 +14,4 @@ from . import omnichannel_event
 from . import omnichannel_job
 from . import omnichannel_error_log
 from . import res_config_settings
+from . import omnichannel_close_wizard

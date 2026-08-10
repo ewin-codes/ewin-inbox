@@ -1,4 +1,4 @@
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
 from odoo.tests import tagged
 
 from .common import OmnichannelCase
@@ -159,3 +159,74 @@ class TestCloseReason(OmnichannelCase):
         self.assertEqual(conv.state, "open")
         self.assertFalse(conv.close_reason_id)
         self.assertFalse(conv.close_note)
+
+    def _wizard(self, convs):
+        return self.env["omnichannel.close.wizard"].create(
+            {"conversation_ids": [(6, 0, convs.ids)]})
+
+    def test_wizard_confirm_closes_with_the_chosen_reason(self):
+        self._set_policy("optional")
+        conv = self._new_conv()
+        wizard = self._wizard(conv)
+        wizard.reason_id = self.reason
+        result = wizard.action_confirm()
+        self.assertEqual(result["type"], "ir.actions.act_window_close")
+        self.assertEqual(conv.state, "closed")
+        self.assertEqual(conv.close_reason_id, self.reason)
+
+    def test_wizard_confirm_may_be_empty_when_optional(self):
+        self._set_policy("optional")
+        conv = self._new_conv()
+        self._wizard(conv).action_confirm()
+        self.assertEqual(conv.state, "closed")
+        self.assertFalse(conv.close_reason_id)
+
+    def test_wizard_refuses_an_empty_answer_when_required(self):
+        """The whole point of the policy: no answer, no Closed state."""
+        self._set_policy("required")
+        conv = self._new_conv()
+        wizard = self._wizard(conv)
+        with self.assertRaises(UserError):
+            wizard.action_confirm()
+        self.assertNotEqual(conv.state, "closed")
+        self.assertFalse(conv.closed_at)
+
+    def test_wizard_treats_whitespace_as_an_empty_answer(self):
+        self._set_policy("required")
+        conv = self._new_conv()
+        wizard = self._wizard(conv)
+        wizard.note = "   \n  "
+        with self.assertRaises(UserError):
+            wizard.action_confirm()
+        self.assertNotEqual(conv.state, "closed")
+
+    def test_wizard_accepts_a_note_alone_when_required(self):
+        """An operator facing a case the preset list does not cover types it
+        instead of being stuck."""
+        self._set_policy("required")
+        conv = self._new_conv()
+        wizard = self._wizard(conv)
+        wizard.note = "Customer called instead"
+        wizard.action_confirm()
+        self.assertEqual(conv.state, "closed")
+        self.assertEqual(conv.close_note, "Customer called instead")
+        self.assertFalse(conv.close_reason_id)
+
+    def test_wizard_accepts_a_reason_alone_when_required(self):
+        self._set_policy("required")
+        conv = self._new_conv()
+        wizard = self._wizard(conv)
+        wizard.reason_id = self.reason
+        wizard.action_confirm()
+        self.assertEqual(conv.state, "closed")
+        self.assertEqual(conv.close_reason_id, self.reason)
+
+    def test_wizard_closes_every_conversation_it_was_given(self):
+        self._set_policy("required")
+        first, second = self._new_conv(), self._new_conv()
+        wizard = self._wizard(first | second)
+        wizard.reason_id = self.reason
+        wizard.action_confirm()
+        for conv in (first, second):
+            self.assertEqual(conv.state, "closed")
+            self.assertEqual(conv.close_reason_id, self.reason)
