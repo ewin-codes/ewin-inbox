@@ -230,3 +230,32 @@ class TestCloseReason(OmnichannelCase):
         for conv in (first, second):
             self.assertEqual(conv.state, "closed")
             self.assertEqual(conv.close_reason_id, self.reason)
+
+    def test_close_button_closes_directly_when_the_policy_is_off(self):
+        self._set_policy("off")
+        conv = self._new_conv()
+        self.assertTrue(conv.action_close())
+        self.assertEqual(conv.state, "closed")
+
+    def test_close_button_opens_the_wizard_when_a_reason_is_wanted(self):
+        for policy in ("optional", "required"):
+            self._set_policy(policy)
+            conv = self._new_conv()
+            action = conv.action_close()
+            self.assertEqual(action["type"], "ir.actions.act_window")
+            self.assertEqual(action["res_model"], "omnichannel.close.wizard")
+            self.assertEqual(action["target"], "new")
+            self.assertEqual(
+                action["context"]["default_conversation_ids"],
+                [(6, 0, conv.ids)])
+            # the button itself must not have closed anything
+            self.assertNotEqual(conv.state, "closed")
+            self.assertFalse(conv.closed_at)
+
+    def test_close_button_hands_every_selected_conversation_to_the_wizard(self):
+        self._set_policy("required")
+        first, second = self._new_conv(), self._new_conv()
+        action = (first | second).action_close()
+        self.assertEqual(
+            action["context"]["default_conversation_ids"],
+            [(6, 0, (first | second).ids)])

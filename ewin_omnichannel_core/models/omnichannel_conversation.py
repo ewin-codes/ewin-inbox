@@ -310,7 +310,23 @@ class OmnichannelConversation(models.Model):
         self.write({"state": "pending"})
 
     def action_close(self):
-        return self._close()
+        """Close the conversations — asking why first when the setting says so.
+
+        Returns the wizard action instead of closing when a reason is wanted.
+        The state change then happens in the wizard's own call to ``_close``,
+        which is what lets the 'required' policy refuse to close at all: the
+        button never writes the Closed state itself.
+        """
+        if self._close_reason_policy() == "off":
+            return self._close()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Close Conversation"),
+            "res_model": "omnichannel.close.wizard",
+            "view_mode": "form",
+            "target": "new",
+            "context": {"default_conversation_ids": [(6, 0, self.ids)]},
+        }
 
     def _close(self, reason=None, note=None):
         """Close the conversations, recording why.
