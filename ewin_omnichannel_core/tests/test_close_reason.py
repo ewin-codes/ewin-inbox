@@ -69,3 +69,26 @@ class TestCloseReason(OmnichannelCase):
         owned = model.create(
             {"name": "Escalated", "company_id": self.company.id})
         self.assertNotEqual(shared, owned)
+
+    def test_archived_reason_may_share_a_name_with_an_active_one(self):
+        """Archiving exists so a name can be retired and reused: the
+        uniqueness invariant only covers active rows, so a duplicate of an
+        archived reason must stay legal."""
+        model = self.env["omnichannel.close.reason"]
+        archived = model.create({"name": "Escalated", "company_id": False})
+        archived.active = False
+        active = model.create({"name": "Escalated", "company_id": False})
+        self.assertFalse(archived.active)
+        self.assertTrue(active.active)
+
+    def test_reactivating_a_reason_re_triggers_uniqueness_check(self):
+        """Regression test: archive a reason, let a new one take its name,
+        then reactivate the first. The write touches only `active` — if
+        that field isn't wired into the check, two active duplicates end
+        up coexisting with no error."""
+        model = self.env["omnichannel.close.reason"]
+        archived = model.create({"name": "Escalated", "company_id": False})
+        archived.active = False
+        model.create({"name": "Escalated", "company_id": False})
+        with self.assertRaises(ValidationError):
+            archived.active = True

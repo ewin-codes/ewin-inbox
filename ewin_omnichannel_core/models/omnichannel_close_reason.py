@@ -1,4 +1,4 @@
-from odoo import api, fields, models
+from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
 
@@ -21,7 +21,7 @@ class OmnichannelCloseReason(models.Model):
         help="Leave empty to offer this reason to every company.")
 
     # Uniqueness is enforced in Python, not with a `unique(name, company_id)`
-    # SQL constraint, for two reasons that a plain SQL index cannot handle:
+    # SQL constraint, for three reasons a plain SQL index cannot handle:
     # 1. NULL semantics — Postgres treats NULL as distinct from NULL, so a
     #    SQL unique constraint never fires for two *shared* reasons
     #    (company_id empty on both), which is the common case since all the
@@ -34,14 +34,28 @@ class OmnichannelCloseReason(models.Model):
     #    text is identical could still dodge it if their language keys
     #    differ. Reading `reason.name` below compares the active language's
     #    label instead.
-    @api.constrains("name", "company_id")
+    # 3. Archiving — the invariant only covers *active* rows: retiring a
+    #    reason and reusing its name later must stay legal, and an archived
+    #    record must be free to duplicate an active one. `active` therefore
+    #    joins the constrained fields below, so reactivating a record
+    #    re-triggers the check even though that write touches neither name
+    #    nor company_id; an inactive record under validation is skipped
+    #    outright, since it cannot violate an invariant that only speaks
+    #    about active rows.
+    @api.constrains("name", "company_id", "active")
     def _check_name_unique_per_company(self):
-        for reason in self:
+        for reason in self.filtered("active"):
             domain = [
                 ("id", "!=", reason.id),
                 ("name", "=", reason.name),
                 ("company_id", "=", reason.company_id.id),
+                # Explicit rather than relying on the ORM's default
+                # active_test: the record under validation may be reached
+                # from a context where that default is already off (e.g.
+                # an "Archived" list view), and this check is only correct
+                # when it compares against active siblings.
+                ("active", "=", True),
             ]
             if self.search_count(domain):
                 raise ValidationError(
-                    "Close reason must be unique per company.")
+                    _("Close reason must be unique per company."))
