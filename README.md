@@ -20,7 +20,8 @@ Developed and maintained by [EWIN.codes](https://ewin.codes).
 - Two-way text and media messaging
 - Odoo Discuss integration
 - Contact matching with `res.partner`
-- Agent and team assignment
+- Agent and team assignment — replying takes an unassigned conversation
+- Realtime thread and list updates, no manual reload
 - Delivery and read statuses where supported
 - Canned replies
 - Retry queue

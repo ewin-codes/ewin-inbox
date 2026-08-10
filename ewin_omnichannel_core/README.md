@@ -18,6 +18,15 @@ Depends on `base`, `mail`, `contacts`.
   `omnichannel.identity` (the customer as the provider knows them) and, from
   there, to a `res.partner`. The same person writing again reuses the existing
   identity, contact and open conversation — no duplicates.
+- **Replying takes the conversation.** Answering an unassigned conversation
+  assigns it to you — there is no separate Take click on the normal path. An
+  internal note does not take it (writing a note is not answering the
+  customer), and an existing assignment is never overridden, so a colleague's
+  conversation stays theirs. The **Take** button remains for claiming a
+  conversation without writing anything yet.
+- **Realtime.** New messages and assignment changes are pushed over the bus to
+  the assigned operator, so the open thread and the conversation list update
+  without a manual reload.
 - **Discuss mirror.** Every conversation is mirrored into a `discuss.channel`,
   so operators get native Odoo unread badges and notifications, and can reply
   either from the Inbox composer or straight from Discuss — both paths reach
