@@ -14,6 +14,7 @@
                 <field name="operator_id"/>
                 <field name="team_id"/>
                 <field name="state" widget="badge"/>
+                <field name="close_reason_id" optional="hide"/>
                 <field name="priority" widget="priority"/>
                 <field name="company_id" groups="base.group_multi_company"/>
             </list>
@@ -69,6 +70,10 @@
                                 <field name="team_id"/>
                                 <field name="priority" widget="priority"/>
                                 <field name="tag_ids" widget="many2many_tags"/>
+                                <field name="close_reason_id"
+                                       invisible="state != 'closed'"/>
+                                <field name="close_note"
+                                       invisible="state != 'closed' or not close_note"/>
                             </group>
                         </group>
                     </details>
@@ -124,6 +129,7 @@
                 <field name="partner_id"/>
                 <field name="subject"/>
                 <field name="account_id"/>
+                <field name="close_reason_id"/>
                 <filter name="my" string="My" domain="[('operator_id','=',uid)]"/>
                 <filter name="unassigned" string="Unassigned"
                         domain="[('operator_id','=',False)]"/>
@@ -145,6 +151,8 @@
                             context="{'group_by':'operator_id'}"/>
                     <filter name="g_account" string="Account"
                             context="{'group_by':'account_id'}"/>
+                    <filter name="g_close_reason" string="Close Reason"
+                            context="{'group_by':'close_reason_id'}"/>
                 </group>
             </search>
         </field>

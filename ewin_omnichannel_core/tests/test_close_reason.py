@@ -259,3 +259,17 @@ class TestCloseReason(OmnichannelCase):
         self.assertEqual(
             action["context"]["default_conversation_ids"],
             [(6, 0, (first | second).ids)])
+
+    def test_the_reason_is_groupable_from_the_search_view(self):
+        """A manager answering 'why are we closing chats' should not need SQL."""
+        view = self.env.ref("ewin_omnichannel_core.view_conversation_search")
+        self.assertIn("g_close_reason", view.arch)
+        self.assertIn("close_reason_id", view.arch)
+
+    def test_grouping_conversations_by_close_reason_works(self):
+        conv = self._new_conv()
+        conv._close(reason=self.reason)
+        groups = self.env["omnichannel.conversation"]._read_group(
+            [("id", "=", conv.id)], ["close_reason_id"], ["__count"])
+        self.assertEqual(len(groups), 1)
+        self.assertEqual(groups[0][0], self.reason)
