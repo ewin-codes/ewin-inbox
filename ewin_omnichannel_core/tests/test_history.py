@@ -167,3 +167,72 @@ class TestHistory(OmnichannelCase):
             self.env["omnichannel.message.service"].\
                 create_outbound_from_discuss(conv, mail_message)
         self.assertIn("Answered from Discuss", self._notes(self.partner).body)
+
+    def test_linking_a_contact_backfills_the_whole_conversation(self):
+        conv = self._new_conv()
+        self._new_message(conv, body="First")
+        self._new_message(conv, body="Second")
+        conv.partner_id = self.partner
+        bodies = self._notes(self.partner).mapped("body")
+        self.assertEqual(len(bodies), 2)
+        self.assertTrue(any("First" in body for body in bodies))
+        self.assertTrue(any("Second" in body for body in bodies))
+
+    def test_backfill_keeps_the_original_timestamps(self):
+        """A history dumped into the chatter all at "now" reads as one event;
+        the dates are what make it a conversation."""
+        conv = self._new_conv()
+        message = self._new_message(conv, body="First")
+        message.received_at = "2026-01-02 03:04:05"
+        conv.partner_id = self.partner
+        self.assertEqual(
+            str(self._notes(self.partner).date), "2026-01-02 03:04:05")
+
+    def test_backfilling_twice_does_not_duplicate(self):
+        conv = self._new_conv()
+        self._new_message(conv)
+        conv.partner_id = self.partner
+        self.history.backfill(conv, [self.partner])
+        self.assertEqual(len(self._notes(self.partner)), 1)
+
+    def test_unlinking_a_contact_removes_its_copies(self):
+        conv = self._new_conv(partner_id=self.partner.id)
+        message = self._new_message(conv)
+        self.history.mirror(message)
+        conv.partner_id = False
+        self.assertFalse(self._notes(self.partner))
+        self.assertFalse(message.history_message_ids)
+
+    def test_changing_the_contact_moves_the_history(self):
+        """The recovery path for a mis-attribution: the wrong customer's card
+        must not keep somebody else's texts."""
+        other = self.env["res.partner"].with_context(
+            mail_create_nolog=True).create({"name": "Grace Hopper"})
+        conv = self._new_conv(partner_id=self.partner.id)
+        self.history.mirror(self._new_message(conv, body="My parcel is late"))
+        conv.partner_id = other
+        self.assertFalse(self._notes(self.partner))
+        self.assertIn("My parcel is late", self._notes(other).body)
+
+    def test_unlinking_leaves_a_neighbour_conversation_untouched(self):
+        """Two conversations on one contact: purging one must not take the
+        other's copies with it — the reason copies are tracked per message
+        instead of matched by subtype."""
+        kept = self._new_conv(partner_id=self.partner.id)
+        self.history.mirror(self._new_message(kept, body="Kept text"))
+        dropped = self._new_conv(partner_id=self.partner.id)
+        self.history.mirror(self._new_message(dropped, body="Dropped text"))
+        dropped.partner_id = False
+        bodies = self._notes(self.partner).mapped("body")
+        self.assertEqual(len(bodies), 1)
+        self.assertIn("Kept text", bodies[0])
+
+    def test_a_write_that_touches_no_link_field_skips_the_history_work(self):
+        """The hook runs on every write; making it pay only when a link field
+        is present is what keeps ordinary field updates cheap."""
+        conv = self._new_conv(partner_id=self.partner.id)
+        self.history.mirror(self._new_message(conv))
+        with patch("odoo.addons.ewin_omnichannel_core.services."
+                   "history_service.HistoryService.backfill") as backfill:
+            conv.priority = "2"
+            self.assertFalse(backfill.called)

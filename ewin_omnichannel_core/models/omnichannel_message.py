@@ -106,3 +106,13 @@ class OmnichannelMessage(models.Model):
         self.ensure_one()
         from odoo.tools import html2plaintext
         return html2plaintext(self.body or "") if self.body else ""
+
+    def _history_date(self):
+        """When this message happened, for a chatter copy.
+
+        Inbound messages carry ``received_at`` and outbound ones ``sent_at``;
+        an outbound message still queued has neither yet, and falls back to
+        when the row was written.
+        """
+        self.ensure_one()
+        return self.received_at or self.sent_at or self.create_date

@@ -142,6 +142,41 @@ class OmnichannelConversation(models.Model):
         self.ensure_one()
         return [record for record in (self.partner_id,) if record]
 
+    def _history_target_map(self):
+        """``_history_targets`` keyed by ``(model, id)``.
+
+        Targets can be of different models, so they cannot be diffed as
+        recordsets; the key is what lets ``write`` tell an added link from a
+        removed one.
+        """
+        self.ensure_one()
+        return {(record._name, record.id): record
+                for record in self._history_targets()}
+
+    def write(self, vals):
+        """Keep the mirrored history pointing at the linked records.
+
+        The snapshot is taken before ``super`` and compared after, so the hook
+        never needs to know which field changed or which models a bridge
+        module added — only that the set of targets moved.
+        """
+        if not any(field in vals for field in self._history_link_fields()):
+            return super().write(vals)
+        before = {conv.id: conv._history_target_map() for conv in self}
+        result = super().write(vals)
+        history = self.env["omnichannel.history.service"]
+        for conv in self:
+            after = conv._history_target_map()
+            gone = [record for key, record in before[conv.id].items()
+                    if key not in after]
+            added = [record for key, record in after.items()
+                     if key not in before[conv.id]]
+            if gone:
+                history.purge(conv, gone)
+            if added:
+                history.backfill(conv, added)
+        return result
+
     def _compute_send_shortcut(self):
         value = self.env["ir.config_parameter"].sudo().get_param(
             "ewin_omnichannel.send_shortcut", "ctrl_enter")

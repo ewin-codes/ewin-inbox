@@ -80,3 +80,49 @@ class HistoryService(models.AbstractModel):
             body = INTERNAL_BADGE + body
         return Markup(
             '<div class="o_omni_history_entry">%s %s</div>') % (badge, body)
+
+    @api.model
+    def backfill(self, conversation, targets):
+        """Copy the conversation's whole past into records just linked to it.
+
+        Deliberately not a loop over ``mirror``: ``message_post`` runs the
+        notification machinery once per call, and a linked conversation can be
+        hundreds of messages long. A batch ``create`` writes them in one go,
+        which is also what lets each copy keep the timestamp of the message it
+        represents — a history stamped "now" reads as a single event rather
+        than a conversation.
+        """
+        subtype = self.env.ref("mail.mt_note")
+        messages = conversation.omni_message_ids.sorted("id")
+        for target in targets:
+            pending = messages.filtered(
+                lambda message: not self._existing_copy(message, target))
+            if not pending:
+                continue
+            copies = self.env["mail.message"].sudo().create([{
+                "model": target._name,
+                "res_id": target.id,
+                "body": self._history_body(message),
+                "author_id": self._history_author(message).id,
+                "message_type": "comment",
+                "subtype_id": subtype.id,
+                "date": message._history_date(),
+                "attachment_ids": [(6, 0, message.attachment_ids.ids)],
+            } for message in pending])
+            for message, copy in zip(pending, copies):
+                message.sudo().history_message_ids = [(4, copy.id)]
+        return True
+
+    @api.model
+    def purge(self, conversation, targets):
+        """Delete the copies this conversation put on records it left.
+
+        Unlinking the ``mail.message`` clears the ledger rows with it, so the
+        conversation is left exactly as it was before it was ever linked.
+        """
+        copies = conversation.omni_message_ids.history_message_ids
+        for target in targets:
+            copies.filtered(
+                lambda copy: copy.model == target._name
+                and copy.res_id == target.id).sudo().unlink()
+        return True
