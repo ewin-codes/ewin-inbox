@@ -1,5 +1,8 @@
 from odoo.tests import tagged
+from odoo.tools import file_open
 
+from ..models.omnichannel_conversation import (
+    CHANNEL_ICON_DEFAULT, CHANNEL_ICONS, CHANNEL_IMAGE_ICONS)
 from .common import OmnichannelCase
 
 
@@ -121,6 +124,57 @@ class TestConversation(OmnichannelCase):
         # unknown channel code falls back to a generic icon, never blank
         conv2 = self._new_conv()  # uses the "test" channel
         self.assertIn("fa-comments-o", conv2.channel_icon)
+
+    def test_channel_icon_uses_the_brand_image_where_fontawesome_has_none(self):
+        """Odoo bundles FontAwesome 4.7, which has no fa-viber: the glyph is
+        silently blank, so the brand PNG has to stand in."""
+        viber = self.env["omnichannel.channel"].search(
+            [("code", "=", "viber")], limit=1) or \
+            self.env["omnichannel.channel"].create(
+                {"name": "Viber", "code": "viber"})
+        acc = self.env["omnichannel.account"].create(
+            {"name": "ViberBot", "channel_id": viber.id})
+        ident = self.env["omnichannel.identity"].create(
+            {"account_id": acc.id, "external_id": "10"})
+        conv = self.env["omnichannel.conversation"].create({
+            "name": "C", "account_id": acc.id, "identity_id": ident.id})
+        for markup in (conv.channel_icon, conv.customer_label):
+            self.assertNotIn("fa-viber", markup)
+            self.assertIn(
+                "/ewin_omnichannel_core/static/src/img/channel_viber.png",
+                markup)
+
+    def test_every_glyph_referenced_exists_in_the_bundled_fontawesome(self):
+        """A class FontAwesome does not carry is not an error, it is a blank
+        cell — which is exactly how ``fa-viber`` shipped. Pin every glyph we
+        name against the stylesheet Odoo actually serves."""
+        path = "web/static/src/libs/fontawesome/css/font-awesome.css"
+        try:
+            with file_open(path) as fh:
+                css = fh.read()
+        except (FileNotFoundError, OSError):
+            self.skipTest("bundled FontAwesome not found at %s" % path)
+        for glyph, _colour in [*CHANNEL_ICONS.values(), CHANNEL_ICON_DEFAULT]:
+            self.assertIn(
+                ".%s:before" % glyph, css,
+                "%s is not in the bundled FontAwesome and would render "
+                "as an empty icon" % glyph)
+
+    def test_every_connector_channel_has_its_own_brand_marker(self):
+        """A connector that forgets to register an icon would fall through to
+        the generic bubble and be indistinguishable from the other channels."""
+        channels = self.env["omnichannel.channel"].search(
+            [("connector_module", "!=", False)])
+        for channel in channels:
+            self.assertTrue(
+                channel.code in CHANNEL_ICONS
+                or channel.code in CHANNEL_IMAGE_ICONS,
+                "channel %r has no brand marker of its own" % channel.code)
+        for code in CHANNEL_IMAGE_ICONS:
+            # the PNG the markup points at has to actually be on disk
+            self.assertTrue(
+                self.env["omnichannel.conversation"]._channel_avatar_b64(code),
+                "no brand PNG shipped for %r" % code)
 
     def test_send_shortcut_reads_config(self):
         conv = self._new_conv()

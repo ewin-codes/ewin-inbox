@@ -157,9 +157,18 @@ after installing, grant yourself **EWIN Inbox / Administrator**.
 5. Add a normalizer that turns the provider payload into the universal shape,
    and — for webhook channels — a public controller that authenticates the
    callback before handing it to the connector.
+6. Register the channel's brand marker in `omnichannel_conversation.py`, so the
+   conversation lists show it instead of the generic bubble: an entry in
+   `CHANNEL_ICONS` when the bundled FontAwesome 4.7 carries the brand glyph, or
+   a 128×128 PNG at `static/src/img/channel_<code>.png` listed in
+   `CHANNEL_IMAGE_ICONS` when it does not (FontAwesome has no Viber or
+   Messenger glyph, and a missing class renders as a blank cell rather than
+   failing).
 
 The core's `test_connector_contract.py` covers the contract itself; the shipped
-connectors are the worked examples.
+connectors are the worked examples. `test_conversation.py` fails a connector
+that ships no brand marker, and pins every glyph referenced against the
+stylesheet Odoo actually serves.
 
 ## Out of scope
 

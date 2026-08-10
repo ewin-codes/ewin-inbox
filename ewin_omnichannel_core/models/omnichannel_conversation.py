@@ -8,17 +8,23 @@ from odoo.tools import file_open
 # Channel code -> (fontawesome class, brand colour) for the list icon.
 CHANNEL_ICONS = {
     "telegram": ("fa-telegram", "#29a9eb"),
-    "viber": ("fa-viber", "#7360f2"),
+    "whatsapp": ("fa-whatsapp", "#25d366"),
+    "instagram": ("fa-instagram", "#e1306c"),
     "email": ("fa-envelope", "#d44638"),
     "livechat": ("fa-comments", "#00a09d"),
-    "instagram": ("fa-instagram", "#e1306c"),
 }
 CHANNEL_ICON_DEFAULT = ("fa-comments-o", "#6c757d")
 
-# Channel codes that ship a brand avatar PNG under static/src/img, used as the
-# mirrored Discuss channel's avatar so the source is recognisable in the
-# Discuss sidebar (which shows an avatar, not the FontAwesome list icon).
-CHANNEL_AVATAR_CODES = ("telegram", "viber", "email")
+# Channel codes that ship a brand PNG under static/src/img. It is the mirrored
+# Discuss channel's avatar, so the source is recognisable in the Discuss
+# sidebar (which shows an avatar, not the FontAwesome list icon).
+CHANNEL_AVATAR_CODES = ("telegram", "viber", "email", "messenger")
+CHANNEL_AVATAR_URL = "/ewin_omnichannel_core/static/src/img/channel_%s.png"
+
+# Channel codes drawn from that brand PNG in the lists too, because Odoo
+# bundles FontAwesome 4.7 and it carries no glyph for Viber or Messenger — an
+# <i class="fa fa-viber"> is a valid-looking tag that renders as a blank cell.
+CHANNEL_IMAGE_ICONS = ("viber", "messenger")
 
 
 class OmnichannelConversation(models.Model):
@@ -124,15 +130,12 @@ class OmnichannelConversation(models.Model):
     def _compute_customer_label(self):
         for conv in self:
             code = conv.channel_id.code or ""
-            icon, color = CHANNEL_ICONS.get(code, CHANNEL_ICON_DEFAULT)
             chan = escape(conv.channel_id.name or code or "Channel")
             name = escape(
                 conv.partner_id.display_name
                 or conv.identity_id.display_name or conv.name or "Unknown")
             parts = [
-                Markup('<i class="fa %s" style="color:%s;'
-                       'line-height:1;font-size:15px" title="%s"></i>') % (
-                    icon, color, chan),
+                self._channel_badge(code, chan, 15),
                 Markup('<span>%s</span>') % name,
             ]
             if conv.unread_count:
@@ -147,12 +150,28 @@ class OmnichannelConversation(models.Model):
     def _compute_channel_icon(self):
         for conv in self:
             code = conv.channel_id.code or ""
-            icon, color = CHANNEL_ICONS.get(code, CHANNEL_ICON_DEFAULT)
             label = escape(conv.channel_id.name or code or "Channel")
-            conv.channel_icon = Markup(
-                '<i class="fa %s" style="color:%s;font-size:16px" '
-                'title="%s" role="img" aria-label="%s"></i>') % (
-                icon, color, label, label)
+            conv.channel_icon = self._channel_badge(code, label, 16)
+
+    @api.model
+    def _channel_badge(self, code, label, size):
+        """Return the inline channel marker for ``code``, ``size`` px square.
+
+        A FontAwesome glyph where one exists, the brand PNG otherwise: the
+        bundled FontAwesome has no glyph for every channel we support, and a
+        missing one fails silently as an empty cell rather than as a fallback
+        shape. ``label`` must already be escaped.
+        """
+        if code in CHANNEL_IMAGE_ICONS:
+            return Markup(
+                '<img src="%s" alt="%s" title="%s" style="width:%dpx;'
+                'height:%dpx;border-radius:2px;vertical-align:middle"/>') % (
+                CHANNEL_AVATAR_URL % code, label, label, size, size)
+        icon, color = CHANNEL_ICONS.get(code, CHANNEL_ICON_DEFAULT)
+        return Markup(
+            '<i class="fa %s" style="color:%s;line-height:1;font-size:%dpx" '
+            'title="%s" role="img" aria-label="%s"></i>') % (
+            icon, color, size, label, label)
 
     @api.model
     def _channel_avatar_b64(self, code):
@@ -160,9 +179,7 @@ class OmnichannelConversation(models.Model):
         if code not in CHANNEL_AVATAR_CODES:
             return False
         try:
-            with file_open(
-                "ewin_omnichannel_core/static/src/img/channel_%s.png" % code,
-                "rb") as fh:
+            with file_open((CHANNEL_AVATAR_URL % code).lstrip("/"), "rb") as fh:
                 return base64.b64encode(fh.read())
         except (FileNotFoundError, OSError):
             return False
