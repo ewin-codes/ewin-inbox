@@ -1,0 +1,13 @@
+# Text files are stored with LF in the repository and checked out with LF on
+# every platform. Odoo runs on Linux; a Windows checkout must not smuggle CRLF
+# back into Python, XML or CSV that the server parses.
+* text=auto eol=lf
+
+# Binary assets — never touch the bytes.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.pdf  binary
+*.zip  binary
