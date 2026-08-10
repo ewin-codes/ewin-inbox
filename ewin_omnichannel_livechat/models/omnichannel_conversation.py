@@ -9,8 +9,8 @@ class OmnichannelConversation(models.Model):
         help="The current livechat discuss.channel that transports this "
              "conversation to the visitor.")
 
-    def action_close(self):
-        res = super().action_close()
+    def _close(self, reason=None, note=None):
+        res = super()._close(reason=reason, note=note)
         for conv in self.filtered("livechat_channel_id"):
             channel = conv.livechat_channel_id
             if not channel.exists() or not channel.livechat_active:

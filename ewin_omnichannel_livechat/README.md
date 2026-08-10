@@ -100,11 +100,12 @@ an operator attaches to a reply in Inbox is passed straight through
   (`discuss.channel._close_livechat_session()`), the linked
   `omnichannel.conversation` is moved to **pending** rather than closed, so
   an operator can review and close it deliberately.
-- **Operator closes in EWIN** — closing the conversation from Inbox
-  (`omnichannel.conversation.action_close()`) posts a closing notice into L
-  (so the visitor sees the conversation ended) and then ends the live
-  session (`_close_livechat_session()`). The notice is a plain system post,
-  not a new inbound message — it does not get re-ingested.
+- **Operator closes in EWIN** — a conversation that actually closes
+  (`omnichannel.conversation._close()`, reached from the Close button or the
+  close-reason wizard) posts a closing notice into L (so the visitor sees the
+  conversation ended) and then ends the live session
+  (`_close_livechat_session()`). The notice is a plain system post, not a new
+  inbound message — it does not get re-ingested.
 
 ## Bridge presence heartbeat
 

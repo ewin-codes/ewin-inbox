@@ -39,3 +39,23 @@ class TestLivechatLifecycle(LivechatCase):
         inbound = conv.omni_message_ids.filtered(
             lambda m: m.direction == "inbound")
         self.assertEqual(len(inbound), 1)
+
+    def test_close_button_leaves_the_session_alone_when_a_reason_is_wanted(
+            self):
+        """action_close() opens the close-reason wizard instead of closing
+        when the policy asks why (Finding 1 regression). The visitor-facing
+        side effects belong to the actual state transition, ``_close``: if
+        action_close ended the session and posted the notice regardless, an
+        operator who then hits Discard (or a 'required' validation error)
+        would leave the visitor told the chat is over and the session dead,
+        with the conversation itself stuck in pending."""
+        conv, channel = self._conversation()
+        conv.operator_id = self.env.user
+        self.env["ir.config_parameter"].sudo().set_param(
+            "ewin_omnichannel.close_reason_policy", "required")
+        action = conv.action_close()
+        self.assertEqual(action["res_model"], "omnichannel.close.wizard")
+        self.assertNotEqual(conv.state, "closed")
+        self.assertTrue(channel.livechat_active)
+        self.assertFalse(any(
+            "closed" in (m.body or "").lower() for m in channel.message_ids))
