@@ -5,7 +5,7 @@
 Do not report security vulnerabilities through public GitHub issues. Public disclosure
 before a fix is available puts all users at risk.
 
-Send reports privately to **odoo@ewin.codes** with the subject **`[SECURITY] EWIN Inbox`**.
+Send reports privately to **info@ewin.codes** with the subject **`[SECURITY] EWIN Inbox`**.
 Include the affected module, version, reproduction steps and possible impact — especially
 anything involving leaked tokens, webhook secrets, or authentication bypass. Do not include
 real provider credentials or customer data.

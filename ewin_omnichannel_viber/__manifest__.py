@@ -6,7 +6,7 @@
     "author": "EWIN.codes",
     "maintainer": "EWIN.codes",
     "website": "https://ewin.codes",
-    "support": "odoo@ewin.codes",
+    "support": "info@ewin.codes",
     "license": "LGPL-3",
     "depends": [
         "ewin_omnichannel_core",

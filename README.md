@@ -82,7 +82,7 @@ For bug reports, use GitHub Issues.
 
 For implementation, customization and commercial support:
 
-odoo@ewin.codes
+info@ewin.codes
 
 ## License
 
