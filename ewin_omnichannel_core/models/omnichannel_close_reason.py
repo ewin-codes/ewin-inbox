@@ -56,6 +56,15 @@ class OmnichannelCloseReason(models.Model):
                 # when it compares against active siblings.
                 ("active", "=", True),
             ]
+            # search_count runs as the current user on purpose, not sudo:
+            # the domain pins company_id to this record's own value, and
+            # the record rule filters that same column, so whatever
+            # visibility applies to `reason` applies identically to every
+            # sibling the search could match. sudo() would not widen what
+            # is genuinely uniqueness-relevant — it would let the check
+            # raise on the strength of a company-scoped row the user
+            # cannot see, turning a validation message into a way to probe
+            # for records across companies.
             if self.search_count(domain):
                 raise ValidationError(
                     _("Close reason must be unique per company."))

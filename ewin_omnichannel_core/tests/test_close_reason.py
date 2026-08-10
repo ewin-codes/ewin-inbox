@@ -20,9 +20,11 @@ class TestCloseReason(OmnichannelCase):
             "name": "Conv", "account_id": self.account.id,
             "identity_id": self.identity.id})
 
-    def test_shipped_reasons_are_shared_across_companies(self):
-        """The reasons ship as data with no company, so a second company sees
-        them without anyone re-creating the list."""
+    def test_shipped_reasons_are_not_owned_by_a_company(self):
+        """The seed data leaves company_id empty on every shipped reason —
+        the mechanism a second company would need to see them without
+        anyone re-creating the list. (Proving that outcome itself needs a
+        second-company fixture, which is out of scope here.)"""
         reasons = self.env["omnichannel.close.reason"].search([])
         self.assertGreaterEqual(len(reasons), 5)
         for xmlid in ("close_reason_resolved", "close_reason_no_answer",
@@ -160,6 +162,28 @@ class TestCloseReason(OmnichannelCase):
         self.assertFalse(conv.close_reason_id)
         self.assertFalse(conv.close_note)
 
+    def test_reopen_posts_the_cleared_reason_to_the_chatter(self):
+        """action_reopen wipes close_reason_id, which is also its only
+        reportable copy — the chatter is the sole place the reason survives
+        after that, including for the auto-reopen on an inbound reply.
+
+        Checks the *new* top message, not just that the reason name
+        appears somewhere: the close message posted earlier already
+        contains it, so a body-less reopen would pass a laxer assertion
+        without ever posting anything."""
+        conv = self._new_conv()
+        conv._close(reason=self.reason, note="Refund issued")
+        conv.action_reopen()
+        body = conv.message_ids[0].body
+        self.assertIn("Reopened", body)
+        self.assertIn(self.reason.name, body)
+
+    def test_reopen_without_a_reason_still_posts_a_notice(self):
+        conv = self._new_conv()
+        conv._close()
+        conv.action_reopen()
+        self.assertIn("Reopened", conv.message_ids[0].body)
+
     def _wizard(self, convs):
         return self.env["omnichannel.close.wizard"].create(
             {"conversation_ids": [(6, 0, convs.ids)]})
@@ -252,7 +276,8 @@ class TestCloseReason(OmnichannelCase):
             self.assertNotEqual(conv.state, "closed")
             self.assertFalse(conv.closed_at)
 
-    def test_close_button_hands_every_selected_conversation_to_the_wizard(self):
+    def test_close_button_hands_every_selected_conversation_to_the_wizard(
+            self):
         self._set_policy("required")
         first, second = self._new_conv(), self._new_conv()
         action = (first | second).action_close()
@@ -261,7 +286,8 @@ class TestCloseReason(OmnichannelCase):
             [(6, 0, (first | second).ids)])
 
     def test_the_reason_is_groupable_from_the_search_view(self):
-        """A manager answering 'why are we closing chats' should not need SQL."""
+        """A manager answering 'why are we closing chats' should not need
+        SQL."""
         view = self.env.ref("ewin_omnichannel_core.view_conversation_search")
         self.assertIn("g_close_reason", view.arch)
         self.assertIn("close_reason_id", view.arch)

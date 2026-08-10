@@ -171,6 +171,14 @@ after installing, grant yourself **EWIN Inbox / Administrator**.
    Messenger glyph, and a missing class renders as a blank cell rather than
    failing).
 
+If your connector needs to react when a conversation actually closes (ending
+a live session, notifying a third party, and so on), override
+`_close(reason, note)`, not `action_close`. `action_close` is the button: with
+the close-reason setting on `optional` or `required` it opens a wizard and
+writes nothing, so any side effect hung off it fires before — or even without
+— the conversation ever closing. `_close` is the one place every close, from
+any source, actually goes through.
+
 The core's `test_connector_contract.py` covers the contract itself; the shipped
 connectors are the worked examples. `test_conversation.py` fails a connector
 that ships no brand marker, and pins every glyph referenced against the

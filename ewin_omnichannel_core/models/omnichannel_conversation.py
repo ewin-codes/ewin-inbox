@@ -310,7 +310,8 @@ class OmnichannelConversation(models.Model):
         self.write({"state": "pending"})
 
     def action_close(self):
-        """Close the conversations — asking why first when the setting says so.
+        """Close the conversations — asking why first when the setting
+        says so.
 
         Returns the wizard action instead of closing when a reason is wanted.
         The state change then happens in the wizard's own call to ``_close``,
@@ -334,8 +335,10 @@ class OmnichannelConversation(models.Model):
         The single door every close goes through — the header button, the
         close wizard, and anything automated later. Keeping the write in one
         place is what lets the 'required' policy refuse to close at all: the
-        caller decides whether to open this door, and nothing writes the
-        Closed state behind its back.
+        caller decides whether to open this door, and no code path in this
+        suite writes the Closed state behind it. A direct ``write({"state":
+        "closed"})`` over RPC still bypasses this method entirely — this is
+        a workflow guard, not a database-level invariant.
         """
         self.write({
             "state": "closed",
@@ -362,8 +365,20 @@ class OmnichannelConversation(models.Model):
         return Markup("%s<br/>%s") % (line, note)
 
     def action_reopen(self):
+        for conv in self:
+            conv.message_post(body=conv._reopen_message())
         self.write({"state": "open", "closed_at": False, "closed_by": False,
                     "close_reason_id": False, "close_note": False})
+
+    def _reopen_message(self):
+        """Chatter body for a reopen: names the close reason about to be
+        wiped, so it survives in the history even after the field is
+        cleared (e.g. an inbound reply auto-reopening a closed thread)."""
+        self.ensure_one()
+        if self.close_reason_id:
+            return _("Reopened — clearing the close reason (%s).",
+                     self.close_reason_id.name)
+        return _("Reopened.")
 
     def _notify_omni_event(self, event_name, payload=None):
         """Push a lightweight realtime signal so the Inbox thread and list

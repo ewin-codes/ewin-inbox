@@ -22,8 +22,9 @@ class OmnichannelCloseWizard(models.TransientModel):
              "answer is mandatory.")
 
     def _compute_policy(self):
-        # "off" never reaches the wizard — action_close closes directly then —
-        # so anything that is not "required" is presented as optional.
+        # "off" never reaches the wizard — action_close closes directly
+        # then — so anything that is not "required" is presented as
+        # optional.
         policy = self.env["omnichannel.conversation"]._close_reason_policy()
         for wizard in self:
             wizard.policy = "required" if policy == "required" else "optional"
