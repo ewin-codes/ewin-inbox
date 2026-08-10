@@ -172,16 +172,9 @@ class OmnichannelConversation(models.Model):
         self.ensure_one()
         if self.discuss_channel_id:
             return self.discuss_channel_id
-        partners = self.env["res.users"]
-        if self.operator_id:
-            partners |= self.operator_id
         vals = {
             "name": self.name or _("Conversation"),
             "channel_type": "channel",
-            "channel_member_ids": [
-                (0, 0, {"partner_id": pid})
-                for pid in partners.mapped("partner_id").ids
-            ],
         }
         avatar = self._channel_avatar_b64(self.channel_id.code)
         if avatar:
@@ -189,6 +182,9 @@ class OmnichannelConversation(models.Model):
         channel = self.env["discuss.channel"].create(vals)
         self.discuss_channel_id = channel
         channel.omni_conversation_id = self.id
+        # Membership is added afterwards, through _sync_channel_members, so it
+        # goes via discuss.channel.add_members like every other path.
+        self._sync_channel_members()
         return channel
 
     def _sync_channel_members(self):
@@ -202,11 +198,20 @@ class OmnichannelConversation(models.Model):
             partner = conv.operator_id.partner_id
             if not partner:
                 continue
-            member = channel.channel_member_ids.filtered(
+            # add_members, never a bare discuss.channel.member create: it is
+            # what pushes "discuss.channel/joined" to the operator's own bus
+            # channel, and that notification is what makes an already-open
+            # browser subscribe to this channel's bus. A raw create writes a
+            # correct membership row that the running session never hears
+            # about — so no live message, no unread badge and no sound until
+            # the operator reloads the page. add_members is idempotent: it
+            # skips partners who are members already.
+            # post_joined_message=False keeps the customer-facing mirror thread
+            # free of "joined the channel" notices.
+            channel.sudo().add_members(
+                partner_ids=partner.ids, post_joined_message=False)
+            member = channel.sudo().channel_member_ids.filtered(
                 lambda m: m.partner_id == partner)
-            if not member:
-                member = self.env["discuss.channel.member"].create({
-                    "channel_id": channel.id, "partner_id": partner.id})
             # notify on every message (default channel setting is mentions-only,
             # which is why the operator got no push/sound) so the Discuss systray
             # raises the badge + sound like a direct message.

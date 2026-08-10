@@ -62,3 +62,49 @@ class TestAutoAssign(OmnichannelCase):
             self.conv._notify_omni_event("message_received")
         self.assertFalse(
             send.called, "no operator to notify -> no bus traffic")
+
+    def test_member_sync_goes_through_add_members(self):
+        """Membership must be granted with discuss.channel.add_members.
+
+        It is the only path that pushes "discuss.channel/joined" to the new
+        member, and that notification is what makes an already-open browser
+        subscribe to the channel's bus. Creating the member row directly
+        leaves the running session unsubscribed: no live message, no unread
+        badge, no sound until a reload.
+        """
+        self.conv.operator_id = self.env.user
+        channel = self.conv._ensure_discuss_channel()
+        partner = self.env.user.partner_id
+        member = channel.channel_member_ids.filtered(
+            lambda m: m.partner_id == partner)
+        self.assertTrue(member, "the operator must be a channel member")
+        self.assertEqual(
+            member.custom_notifications, "all",
+            "the default 'mentions only' would silence the systray")
+
+        # Drop the membership and re-sync, watching the bus.
+        member.unlink()
+        sent = []
+        original = type(self.env["bus.bus"])._sendone
+
+        def _spy(bus_self, target, notification_type, message):
+            sent.append(notification_type)
+            return original(bus_self, target, notification_type, message)
+
+        with patch.object(type(self.env["bus.bus"]), "_sendone", _spy):
+            self.conv._sync_channel_members()
+
+        self.assertIn(
+            "discuss.channel/joined", sent,
+            "add_members must announce the join over the bus, otherwise an "
+            "open browser never subscribes to this channel")
+
+    def test_member_sync_is_idempotent(self):
+        self.conv.operator_id = self.env.user
+        channel = self.conv._ensure_discuss_channel()
+        self.conv._sync_channel_members()
+        self.conv._sync_channel_members()
+        members = channel.channel_member_ids.filtered(
+            lambda m: m.partner_id == self.env.user.partner_id)
+        self.assertEqual(len(members), 1,
+                         "repeated syncs must not duplicate the membership")
