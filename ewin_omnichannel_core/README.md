@@ -41,6 +41,11 @@ Depends on `base`, `mail`, `contacts`.
   the UI.
 - **Quick replies.** Canned templates with a shortcut, optionally scoped to one
   channel, rendered against the current conversation.
+- **Close reasons.** Closing a conversation can ask the operator why, from an
+  admin-editable list of preset answers plus a free-text comment. The question
+  is off by default and can be made optional or mandatory — mandatory means a
+  conversation without an answer stays open. The reason is stored on the
+  conversation and groupable in the Inbox and the reports.
 - **Reporting.** Pivot and graph views over conversations and message volume,
   including a stored first-response time per conversation.
 
@@ -51,13 +56,13 @@ Depends on `base`, `mail`, `contacts`.
 | `omnichannel.channel` | A channel *type* (Telegram, Email, …). Created by the connector addons as data. |
 | `omnichannel.account` | One configured provider account. Holds credentials, defaults, the per-account `webhook_uuid`, and a `draft`/`connected`/`error`/`disabled` state. |
 | `omnichannel.identity` | A customer as one provider knows them. Unique per `(account, external_id)`; links to `res.partner`. |
-| `omnichannel.conversation` | A thread with one customer on one account. States `new`/`open`/`pending`/`closed`, priority, team, operator, tags, and the linked `discuss.channel`. Inherits `mail.thread`. |
+| `omnichannel.conversation` | A thread with one customer on one account. States `new`/`open`/`pending`/`closed`, priority, team, operator, tags, close reason, and the linked `discuss.channel`. Inherits `mail.thread`. |
 | `omnichannel.message` | A single message, inbound or outbound, with type, body, attachments, provider ids and the delivery state machine. |
 | `omnichannel.event` | Raw provider events, deduplicated per `(account, external event id)` — this is what makes redelivered webhooks harmless. |
 | `omnichannel.job` | The retry queue: `pending`/`running`/`done`/`failed`, `next_run_at`, `retry_count`, `max_retries`. |
 | `omnichannel.team` | An operator team, used for routing and for the "my team" scope. |
 | `omnichannel.tag` | Free-form conversation labels. |
-| `omnichannel.close.reason` | Preset reasons an operator can pick when closing a conversation. Admin-editable, ordered by `sequence`, shared across companies unless scoped to one. |
+| `omnichannel.close.reason` | Preset answers for "why was this closed". Shipped with five defaults, editable under Configuration. |
 | `omnichannel.template` | Canned reply with a shortcut, optionally channel-specific. |
 | `omnichannel.error.log` | Operator-readable failure log, with the technical detail kept alongside the friendly text. |
 

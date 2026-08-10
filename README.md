@@ -24,6 +24,7 @@ Developed and maintained by [EWIN.codes](https://ewin.codes).
 - Realtime thread and list updates, no manual reload
 - Delivery and read statuses where supported
 - Canned replies
+- Close reasons — optional or mandatory, from a configurable list
 - Retry queue
 - Reporting
 
