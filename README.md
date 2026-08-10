@@ -124,15 +124,19 @@ flowchart LR
   message. Inbound always flows through `routing_service.process_event`; outbound
   always flows through `connector.send_message`.
 
+Each module documents its own setup, security model and limits — follow the
+links below.
+
 | Channel | Module | Transport |
 |---|---|---|
-| Telegram | `ewin_omnichannel_telegram` | Bot webhook |
-| Email | `ewin_omnichannel_email` | IMAP poll + SMTP |
-| Live Chat | `ewin_omnichannel_livechat` | In-process (no webhook) |
-| WhatsApp | `ewin_omnichannel_whatsapp` | Meta Cloud API (Graph) |
-| Messenger | `ewin_omnichannel_messenger` | Meta Graph API (Pages) |
-| Instagram | `ewin_omnichannel_instagram` | Instagram Graph API (business login) |
-| Viber | `ewin_omnichannel_viber` | Bot webhook |
+| — | [`ewin_omnichannel_core`](ewin_omnichannel_core/README.md) | Shared domain, required by every connector |
+| Telegram | [`ewin_omnichannel_telegram`](ewin_omnichannel_telegram/README.md) | Bot webhook |
+| Email | [`ewin_omnichannel_email`](ewin_omnichannel_email/README.md) | IMAP poll + SMTP |
+| Live Chat | [`ewin_omnichannel_livechat`](ewin_omnichannel_livechat/README.md) | In-process (no webhook) |
+| WhatsApp | [`ewin_omnichannel_whatsapp`](ewin_omnichannel_whatsapp/README.md) | Meta Cloud API (Graph) |
+| Messenger | [`ewin_omnichannel_messenger`](ewin_omnichannel_messenger/README.md) | Meta Graph API (Pages) |
+| Instagram | [`ewin_omnichannel_instagram`](ewin_omnichannel_instagram/README.md) | Instagram Graph API (business login) |
+| Viber | [`ewin_omnichannel_viber`](ewin_omnichannel_viber/README.md) | Bot webhook |
 
 All modules use Odoo model names in the `omnichannel.*` namespace (e.g.
 `omnichannel.conversation`); only the Odoo *module* names carry the `ewin_` prefix.
