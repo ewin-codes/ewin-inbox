@@ -92,3 +92,21 @@ class TestCloseReason(OmnichannelCase):
         model.create({"name": "Escalated", "company_id": False})
         with self.assertRaises(ValidationError):
             archived.active = True
+
+    def _set_policy(self, value):
+        self.env["ir.config_parameter"].sudo().set_param(
+            "ewin_omnichannel.close_reason_policy", value)
+
+    def test_policy_defaults_to_off(self):
+        """An existing installation must keep closing conversations the way it
+        always did until an administrator turns the question on."""
+        self._set_policy("")
+        self.assertEqual(
+            self.env["omnichannel.conversation"]._close_reason_policy(), "off")
+
+    def test_policy_follows_the_setting(self):
+        for value in ("optional", "required", "off"):
+            self._set_policy(value)
+            self.assertEqual(
+                self.env["omnichannel.conversation"]._close_reason_policy(),
+                value)

@@ -26,6 +26,9 @@ CHANNEL_AVATAR_URL = "/ewin_omnichannel_core/static/src/img/channel_%s.png"
 # <i class="fa fa-viber"> is a valid-looking tag that renders as a blank cell.
 CHANNEL_IMAGE_ICONS = ("viber", "messenger")
 
+# How hard the Close button asks why: "off" | "optional" | "required".
+CLOSE_REASON_POLICY_PARAM = "ewin_omnichannel.close_reason_policy"
+
 
 class OmnichannelConversation(models.Model):
     _name = "omnichannel.conversation"
@@ -280,6 +283,19 @@ class OmnichannelConversation(models.Model):
             conv.message_post(
                 body=_("Assigned to %s on reply.", self.env.user.name))
             conv._notify_omni_event("conversation_assigned")
+
+    @api.model
+    def _close_reason_policy(self):
+        """Return the closing-reason policy: 'off', 'optional' or 'required'.
+
+        Read from the parameter on every call rather than cached on the
+        record, so flipping the setting takes effect for the next click and
+        not the next registry reload. ``get_param`` falls back to the default
+        for a missing *or* empty value, which is what makes an installation
+        that never touched the setting behave exactly as before.
+        """
+        return self.env["ir.config_parameter"].sudo().get_param(
+            CLOSE_REASON_POLICY_PARAM, "off")
 
     def action_set_pending(self):
         self.write({"state": "pending"})

@@ -20,6 +20,14 @@
                                 With Ctrl+Enter, plain Enter inserts a newline.
                             </div>
                         </group>
+                        <group string="Closing">
+                            <field name="omni_close_reason_policy" widget="radio"/>
+                            <div class="text-muted" colspan="2">
+                                Ask the operator why a conversation is being
+                                closed. Manage the preset answers under
+                                Configuration → Close Reasons.
+                            </div>
+                        </group>
                     </group>
                 </sheet>
             </form>
