@@ -243,6 +243,22 @@ class OmnichannelConversation(models.Model):
             conv.message_post(body=_("Taken by %s", self.env.user.name))
             conv._notify_omni_event("conversation_assigned")
 
+    def _ensure_operator(self):
+        """Assign the current user as operator when the conversation is still
+        unassigned and they act on it (e.g. send a reply), so replying doubles
+        as taking it — no separate Take click needed. Never overrides an
+        existing assignment (a colleague's conversation stays theirs)."""
+        for conv in self:
+            if conv.operator_id:
+                continue
+            conv.operator_id = self.env.user
+            if conv.state == "new":
+                conv.state = "open"
+            conv._sync_channel_members()
+            conv.message_post(
+                body=_("Assigned to %s on reply.", self.env.user.name))
+            conv._notify_omni_event("conversation_assigned")
+
     def action_set_pending(self):
         self.write({"state": "pending"})
 
@@ -256,8 +272,27 @@ class OmnichannelConversation(models.Model):
         self.write({"state": "open", "closed_at": False, "closed_by": False})
 
     def _notify_omni_event(self, event_name, payload=None):
-        """Hook point for future automations/CRM/AI. No-op body in MVP."""
+        """Push a lightweight realtime signal so the Inbox thread and list
+        refresh without a manual reload.
+
+        It targets the assigned operator's own partner bus channel, which is
+        always subscribed — unlike a mirror discuss.channel, whose client-side
+        bus subscription only settles after a page reload when membership was
+        just granted. Also a hook point for future automations/CRM/AI.
+        """
         self.ensure_one()
+        partner = self.operator_id.partner_id
+        if not partner:
+            return True
+        data = {
+            "event": event_name,
+            "conversation_id": self.id,
+            "channel_id": self.discuss_channel_id.id,
+            "state": self.state,
+        }
+        if payload:
+            data.update(payload)
+        self.env["bus.bus"]._sendone(partner, "omni.inbox", data)
         return True
 
     def action_send_reply(self):

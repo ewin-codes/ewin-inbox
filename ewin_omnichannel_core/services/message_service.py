@@ -88,6 +88,10 @@ class MessageService(models.AbstractModel):
     @api.model
     def create_outbound(self, conversation, body, is_internal=False, attachments=None):
         now = fields.Datetime.now()
+        # Replying to a customer takes an unassigned conversation automatically
+        # (internal notes do not — writing a note is not answering the customer).
+        if not is_internal:
+            conversation._ensure_operator()
         message = self.env["omnichannel.message"].create({
             "conversation_id": conversation.id,
             "direction": "outbound",
@@ -107,6 +111,7 @@ class MessageService(models.AbstractModel):
             conv_vals["first_operator_message_at"] = now
         conversation.write(conv_vals)
         self._mirror_to_discuss(conversation, message)
+        conversation._notify_omni_event("message_sent")
         if not is_internal:
             # The first attempt is immediate (synchronous). Only retries go
             # through the ir.cron queue.
@@ -124,6 +129,9 @@ class MessageService(models.AbstractModel):
         if existing:
             return existing
         now = fields.Datetime.now()
+        # An operator answering from the mirrored Discuss channel also takes
+        # the conversation if it is still unassigned.
+        conversation._ensure_operator()
         message = self.env["omnichannel.message"].create({
             "conversation_id": conversation.id,
             "direction": "outbound",
@@ -143,5 +151,6 @@ class MessageService(models.AbstractModel):
         if not conversation.first_operator_message_at:
             conv_vals["first_operator_message_at"] = now
         conversation.write(conv_vals)
+        conversation._notify_omni_event("message_sent")
         self.env["omnichannel.routing.service"].deliver_outbound(message)
         return message
