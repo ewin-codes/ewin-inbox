@@ -24,8 +24,6 @@
                            string="Max File Size (MB)"/>
                     <field name="viber_create_contacts"
                            string="Auto-create Contacts"/>
-                    <field name="viber_welcome_message"
-                           string="Welcome Message"/>
                 </group>
             </xpath>
             <xpath expr="//header" position="inside">

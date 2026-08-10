@@ -22,7 +22,6 @@ class OmnichannelAccount(models.Model):
         string="Telegram Download Files", default=True)
     tg_max_file_size = fields.Integer(
         string="Telegram Max File Size (MB)", default=20)
-    tg_welcome_message = fields.Text(string="Telegram Welcome Message")
     tg_create_contacts = fields.Boolean(
         string="Telegram Auto-create Contacts", default=True)
 

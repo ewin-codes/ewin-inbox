@@ -24,7 +24,6 @@
                     <field name="tg_max_file_size" string="Max File Size (MB)"/>
                     <field name="tg_create_contacts"
                            string="Auto-create Contacts"/>
-                    <field name="tg_welcome_message" string="Welcome Message"/>
                 </group>
             </xpath>
             <xpath expr="//header" position="inside">

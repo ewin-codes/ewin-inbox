@@ -23,7 +23,6 @@ class OmnichannelAccount(models.Model):
         string="Viber Download Files", default=True)
     viber_max_file_size = fields.Integer(
         string="Viber Max File Size (MB)", default=50)
-    viber_welcome_message = fields.Text(string="Viber Welcome Message")
     viber_create_contacts = fields.Boolean(
         string="Viber Auto-create Contacts", default=True)
 
