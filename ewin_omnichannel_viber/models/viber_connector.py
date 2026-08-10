@@ -1,6 +1,6 @@
 import logging
 
-from odoo import _, api, fields, models
+from odoo import _, _lt, api, fields, models
 from odoo.exceptions import UserError
 
 from ..services.viber_api_client import ViberApiClient, ViberApiError
@@ -8,15 +8,18 @@ from ..services.viber_api_client import ViberApiClient, ViberApiError
 _logger = logging.getLogger(__name__)
 
 # Viber send_message status codes → operator-friendly explanations.
+# Module-level strings use _lt (lazy translation): _() at import time has no
+# language context and would freeze the string in the source language. _lt
+# defers the lookup to render time, when the user's language is known.
 FRIENDLY_ERRORS = {
-    1: _("The webhook URL is invalid."),
-    2: _("The Viber auth token is invalid."),
-    3: _("Viber rejected the message data."),
-    5: _("The customer is not registered on Viber."),
-    6: _("The customer must message the bot before it can reply."),
-    7: _("The bot is blocked by the customer."),
-    8: _("The Viber public account was not found."),
-    9: _("The Viber public account is suspended."),
+    1: _lt("The webhook URL is invalid."),
+    2: _lt("The Viber auth token is invalid."),
+    3: _lt("Viber rejected the message data."),
+    5: _lt("The customer is not registered on Viber."),
+    6: _lt("The customer must message the bot before it can reply."),
+    7: _lt("The bot is blocked by the customer."),
+    8: _lt("The Viber public account was not found."),
+    9: _lt("The Viber public account is suspended."),
 }
 
 VIBER_EVENT_TYPES = ["message", "subscribed", "unsubscribed",
@@ -208,7 +211,10 @@ class ViberConnector(models.AbstractModel):
         if message is not None:
             vals["message_id"] = message.id
             vals["conversation_id"] = message.conversation_id.id
-            message.write({"error_code": vals["code"], "error_message": summary})
+            # str(): the friendly text is a lazy (_lt) translation; resolve it
+            # before storing so the DB column holds a plain string.
+            message.write({"error_code": vals["code"],
+                           "error_message": str(summary)})
         self.env["omnichannel.error.log"].log("provider", summary, **vals)
         return summary
 

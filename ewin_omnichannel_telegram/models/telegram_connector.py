@@ -1,18 +1,21 @@
 import hmac
 import logging
 
-from odoo import _, api, fields, models
+from odoo import _, _lt, api, fields, models
 from odoo.exceptions import UserError
 
 from ..services.telegram_api_client import TelegramApiClient, TelegramApiError
 
 _logger = logging.getLogger(__name__)
 
+# Module-level strings use _lt (lazy translation): _() at import time has no
+# language context and would freeze the string in the source language. _lt
+# defers the lookup to render time, when the user's language is known.
 FRIENDLY_ERRORS = {
-    "bot was blocked by the user": _("The user has blocked the Telegram bot."),
-    "chat not found": _("The Telegram chat was not found."),
-    "unauthorized": _("The Telegram bot token is invalid."),
-    "not enough rights": _("The bot lacks the required permissions."),
+    "bot was blocked by the user": _lt("The user has blocked the Telegram bot."),
+    "chat not found": _lt("The Telegram chat was not found."),
+    "unauthorized": _lt("The Telegram bot token is invalid."),
+    "not enough rights": _lt("The bot lacks the required permissions."),
 }
 
 
@@ -188,7 +191,10 @@ class TelegramConnector(models.AbstractModel):
         if message is not None:
             vals["message_id"] = message.id
             vals["conversation_id"] = message.conversation_id.id
-            message.write({"error_code": vals["code"], "error_message": summary})
+            # str(): the friendly text is a lazy (_lt) translation; resolve it
+            # before storing so the DB column holds a plain string.
+            message.write({"error_code": vals["code"],
+                           "error_message": str(summary)})
         self.env["omnichannel.error.log"].log("provider", summary, **vals)
         return summary
 
