@@ -5,6 +5,7 @@ from . import omnichannel_account
 from . import omnichannel_identity
 from . import res_partner
 from . import omnichannel_tag
+from . import omnichannel_close_reason
 from . import omnichannel_template
 from . import omnichannel_conversation
 from . import omnichannel_message

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_close_reason_list" model="ir.ui.view">
+        <field name="name">omnichannel.close.reason.list</field>
+        <field name="model">omnichannel.close.reason</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_close_reason_form" model="ir.ui.view">
+        <field name="name">omnichannel.close.reason.form</field>
+        <field name="model">omnichannel.close.reason</field>
+        <field name="arch" type="xml">
+            <form><sheet><group>
+                <field name="name"/>
+                <field name="sequence"/>
+                <field name="active" widget="boolean_toggle"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </group></sheet></form>
+        </field>
+    </record>
+
+    <record id="view_close_reason_search" model="ir.ui.view">
+        <field name="name">omnichannel.close.reason.search</field>
+        <field name="model">omnichannel.close.reason</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <filter name="inactive" string="Archived"
+                        domain="[('active','=',False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_close_reason" model="ir.actions.act_window">
+        <field name="name">Close Reasons</field>
+        <field name="res_model">omnichannel.close.reason</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Add a closing reason</p>
+            <p>
+                These are the answers an operator picks from when closing a
+                conversation. Whether they are asked at all — and whether an
+                answer is mandatory — is set under Configuration → Settings.
+            </p>
+        </field>
+    </record>
+</odoo>

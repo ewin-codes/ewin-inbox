@@ -44,6 +44,9 @@
               parent="menu_omni_config" action="action_team" sequence="30"/>
     <menuitem id="menu_omni_tags" name="Tags"
               parent="menu_omni_config" action="action_tag" sequence="40"/>
+    <menuitem id="menu_omni_close_reasons" name="Close Reasons"
+              parent="menu_omni_config" action="action_close_reason"
+              sequence="42"/>
     <menuitem id="menu_omni_templates" name="Quick Replies"
               parent="menu_omni_config" action="action_template" sequence="45"/>
     <menuitem id="menu_omni_errorlogs" name="Error Logs"

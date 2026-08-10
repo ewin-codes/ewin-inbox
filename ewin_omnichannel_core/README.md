@@ -57,6 +57,7 @@ Depends on `base`, `mail`, `contacts`.
 | `omnichannel.job` | The retry queue: `pending`/`running`/`done`/`failed`, `next_run_at`, `retry_count`, `max_retries`. |
 | `omnichannel.team` | An operator team, used for routing and for the "my team" scope. |
 | `omnichannel.tag` | Free-form conversation labels. |
+| `omnichannel.close.reason` | Preset reasons an operator can pick when closing a conversation. Admin-editable, ordered by `sequence`, shared across companies unless scoped to one. |
 | `omnichannel.template` | Canned reply with a shortcut, optionally channel-specific. |
 | `omnichannel.error.log` | Operator-readable failure log, with the technical detail kept alongside the friendly text. |
 
@@ -140,8 +141,8 @@ Three groups, under the **EWIN Inbox** application category:
 Provider secrets live on fields restricted to the admin group; connectors expose
 a masked companion field so an operator can confirm *a* token is set without
 reading it. Record rules scope accounts, identities, conversations, messages,
-events, teams and error logs by company, and conversations additionally by
-operator/team for the operator role.
+events, teams, close reasons and error logs by company, and conversations
+additionally by operator/team for the operator role.
 
 Menus that read `omnichannel.*` are invisible to users outside these groups —
 after installing, grant yourself **EWIN Inbox / Administrator**.

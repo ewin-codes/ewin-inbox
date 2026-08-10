@@ -23,3 +23,5 @@ access_event_admin,event.admin,model_omnichannel_event,ewin_omnichannel_core.gro
 access_job_admin,job.admin,model_omnichannel_job,ewin_omnichannel_core.group_omni_admin,1,1,1,1
 access_errorlog_manager,errorlog.manager,model_omnichannel_error_log,ewin_omnichannel_core.group_omni_manager,1,1,0,0
 access_errorlog_admin,errorlog.admin,model_omnichannel_error_log,ewin_omnichannel_core.group_omni_admin,1,1,1,1
+access_close_reason_operator,close.reason.operator,model_omnichannel_close_reason,ewin_omnichannel_core.group_omni_operator,1,0,0,0
+access_close_reason_manager,close.reason.manager,model_omnichannel_close_reason,ewin_omnichannel_core.group_omni_manager,1,1,1,1
