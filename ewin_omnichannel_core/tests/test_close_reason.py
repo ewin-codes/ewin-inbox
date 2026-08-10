@@ -1,7 +1,5 @@
-from psycopg2 import IntegrityError
-
+from odoo.exceptions import ValidationError
 from odoo.tests import tagged
-from odoo.tools import mute_logger
 
 from .common import OmnichannelCase
 
@@ -44,10 +42,30 @@ class TestCloseReason(OmnichannelCase):
         ordered = model.search([("id", "in", (first | last).ids)])
         self.assertEqual(ordered.ids, [first.id, last.id])
 
-    def test_reason_name_is_unique_per_company(self):
+    def test_reason_name_unique_among_shared_reasons(self):
+        """This is the regression test for the gap a plain SQL
+        unique(name, company_id) constraint leaves open: Postgres treats
+        two empty company_id values as distinct, so it never fires for two
+        shared reasons — exactly the common case, since every shipped
+        default is shared."""
         model = self.env["omnichannel.close.reason"]
         model.create({"name": "Escalated", "company_id": False})
-        with self.assertRaises(IntegrityError), \
-                mute_logger("odoo.sql_db"):
-            with self.cr.savepoint():
-                model.create({"name": "Escalated", "company_id": False})
+        with self.assertRaises(ValidationError):
+            model.create({"name": "Escalated", "company_id": False})
+
+    def test_reason_name_unique_within_a_company(self):
+        model = self.env["omnichannel.close.reason"]
+        model.create({"name": "Escalated", "company_id": self.company.id})
+        with self.assertRaises(ValidationError):
+            model.create(
+                {"name": "Escalated", "company_id": self.company.id})
+
+    def test_reason_name_may_repeat_across_scopes(self):
+        """The same label may exist once shared and once owned by a
+        specific company: the uniqueness scope is the (name, company)
+        pair, not the name alone."""
+        model = self.env["omnichannel.close.reason"]
+        shared = model.create({"name": "Escalated", "company_id": False})
+        owned = model.create(
+            {"name": "Escalated", "company_id": self.company.id})
+        self.assertNotEqual(shared, owned)
