@@ -42,13 +42,19 @@ class IdentityService(models.AbstractModel):
         if not auto_create:
             return self.env["res.partner"]
         name = self._build_partner_name(identity)
-        partner = self.env["res.partner"].create({
+        vals = {
             "name": name,
             "omni_source": identity.account_id.channel_id.name,
             "omni_external_id": identity.external_id,
             "omni_username": identity.username,
             "omni_first_contact": identity.first_seen_at,
-        })
+        }
+        # mail_create_nolog: a bare create() would log its own "Contact
+        # created" note, indistinguishable from a mirrored history entry and
+        # redundant with the customer's own first message landing right
+        # after it once the conversation links back here.
+        partner = self.env["res.partner"].with_context(
+            mail_create_nolog=True).create(vals)
         identity.partner_id = partner
         return partner
 
