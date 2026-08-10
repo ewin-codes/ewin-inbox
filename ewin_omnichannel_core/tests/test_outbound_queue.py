@@ -21,7 +21,7 @@ class TestOutboundQueue(OmnichannelCase):
             "identity_id": self.identity.id})
 
     def test_outbound_reply_sends_immediately(self):
-        # §11: the first attempt is synchronous — no waiting for the cron.
+        # The first attempt is synchronous — no waiting for the cron.
         with patch("odoo.addons.ewin_omnichannel_telegram.services."
                    "telegram_api_client.TelegramApiClient.send_message",
                    return_value={"message_id": 7}) as mock_send:
@@ -89,7 +89,7 @@ class TestOutboundQueue(OmnichannelCase):
         self.assertFalse(self.conv.composer_body)
 
     def test_operator_reply_in_discuss_forwards_to_telegram(self):
-        # §6: an operator typing directly in the linked Discuss channel is
+        # An operator typing directly in the linked Discuss channel is
         # forwarded to the customer through the connector.
         channel = self.conv._ensure_discuss_channel()
         operator = self.env["res.users"].create({

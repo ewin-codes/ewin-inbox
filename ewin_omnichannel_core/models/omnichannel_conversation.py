@@ -194,7 +194,7 @@ class OmnichannelConversation(models.Model):
     def _sync_channel_members(self):
         """Ensure the assigned operator is a member of the mirror channel so
         Odoo's Discuss systray raises the native unread badge / notification
-        on new inbound messages (§ notifications)."""
+        on new inbound messages."""
         for conv in self:
             if not conv.operator_id:
                 continue

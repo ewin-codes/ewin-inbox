@@ -14,7 +14,7 @@ class DiscussChannel(models.Model):
         return message
 
     def _omni_forward_operator_reply(self, message):
-        """§6: when an operator types directly in the linked Discuss channel,
+        """When an operator types directly in the linked Discuss channel,
         forward it to the customer through the connector. Our own mirror posts
         carry the ``omni_mirror`` context and are ignored to avoid a loop."""
         if self.env.context.get("omni_mirror"):

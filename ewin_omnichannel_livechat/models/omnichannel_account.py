@@ -29,7 +29,7 @@ class OmnichannelAccount(models.Model):
 
     def _livechat_ensure_bridge_presence(self):
         """Pin the bridge user's bus.presence to online so im_livechat treats
-        it as an available operator (design §12b)."""
+        it as an available operator."""
         Presence = self.env["bus.presence"].sudo()
         now = fields.Datetime.now()
         for account in self.filtered("livechat_bridge_user_id"):

@@ -7,7 +7,7 @@ class RoutingService(models.AbstractModel):
 
     @api.model
     def process_event(self, account, normalized_event):
-        """Run the inbound flow from a universal normalized event (§8/§10)."""
+        """Run the inbound flow from a universal normalized event."""
         external_user = normalized_event["external_user"]
         identity = self.env["omnichannel.identity.service"].find_or_create(
             account, external_user)
@@ -56,7 +56,7 @@ class RoutingService(models.AbstractModel):
 
     @api.model
     def deliver_outbound(self, message):
-        """Attempt the first send synchronously (§11: first attempt immediate).
+        """Attempt the first send synchronously.
 
         Runs in the operator's request so the reply is delivered without
         waiting for the cron. A retriable failure is handed off to the retry
@@ -100,7 +100,7 @@ class RoutingService(models.AbstractModel):
 
     @api.model
     def _on_job_permanent_failure(self, method, args, error):
-        """Hook invoked by omnichannel.job when retries are exhausted (§11).
+        """Hook invoked by omnichannel.job when retries are exhausted.
 
         Keeps the job queue channel-agnostic: it only knows to call this
         hook if the target model defines it, not that it deals with

@@ -74,7 +74,7 @@ class MessageService(models.AbstractModel):
         if message.is_internal:
             body = INTERNAL_BADGE + body
         # omni_mirror flags this as our own mirror so the discuss.channel
-        # override does not treat it as an operator reply to forward (§6).
+        # override does not treat it as an operator reply to forward.
         mail_message = channel.with_context(omni_mirror=True).message_post(
             body=body,
             author_id=author.id,
@@ -108,14 +108,14 @@ class MessageService(models.AbstractModel):
         conversation.write(conv_vals)
         self._mirror_to_discuss(conversation, message)
         if not is_internal:
-            # §11: first attempt is immediate (synchronous). Only retries go
+            # The first attempt is immediate (synchronous). Only retries go
             # through the ir.cron queue.
             self.env["omnichannel.routing.service"].deliver_outbound(message)
         return message
 
     @api.model
     def create_outbound_from_discuss(self, conversation, mail_message):
-        """§6: an operator typed directly in the linked Discuss channel. Wrap
+        """An operator typed directly in the linked Discuss channel. Wrap
         the existing mail.message as an outbound omni message and deliver it to
         the provider — without re-mirroring, since it is already in the channel.
         Idempotent on mail_message_id."""
