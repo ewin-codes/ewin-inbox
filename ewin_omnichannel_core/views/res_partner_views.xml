@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_partner_form_omni" model="ir.ui.view">
+        <field name="name">res.partner.form.omnichannel</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button type="object" name="action_omni_conversations"
+                        class="oe_stat_button" icon="fa-comments"
+                        groups="ewin_omnichannel_core.group_omni_operator"
+                        invisible="omni_conversation_count == 0">
+                    <field name="omni_conversation_count" widget="statinfo"
+                           string="Conversations"/>
+                </button>
+            </xpath>
+        </field>
+    </record>
+</odoo>

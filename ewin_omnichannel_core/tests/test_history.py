@@ -274,3 +274,27 @@ class TestHistory(OmnichannelCase):
         self.history.mirror(self._new_message(conv, body="Still history"))
         conv.active = False
         self.assertIn("Still history", self._notes(self.partner).body)
+
+    def test_the_contact_counts_its_conversations(self):
+        self._new_conv(partner_id=self.partner.id)
+        self._new_conv(partner_id=self.partner.id)
+        self.partner.invalidate_recordset()
+        self.assertEqual(self.partner.omni_conversation_count, 2)
+
+    def test_a_contact_without_conversations_counts_zero(self):
+        """The smart button hides on zero, so the compute has to produce it
+        rather than leaving the field unset."""
+        self.assertEqual(self.partner.omni_conversation_count, 0)
+
+    def test_the_contact_button_opens_only_its_own_conversations(self):
+        conv = self._new_conv(partner_id=self.partner.id)
+        self._new_conv()
+        action = self.partner.action_omni_conversations()
+        found = self.env["omnichannel.conversation"].search(action["domain"])
+        self.assertEqual(found, conv)
+
+    def test_conversations_can_be_filtered_down_to_the_unattributed(self):
+        """Triage view: an operator has to be able to find the conversations
+        nobody has put a name to."""
+        view = self.env.ref("ewin_omnichannel_core.view_conversation_search")
+        self.assertIn("no_contact", view.arch)

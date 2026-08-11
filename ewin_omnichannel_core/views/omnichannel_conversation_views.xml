@@ -60,7 +60,9 @@
                         </summary>
                         <group class="mt-2">
                             <group>
-                                <field name="partner_id"/>
+                                <field name="company_id" invisible="1"/>
+                                <field name="partner_id"
+                                       domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]"/>
                                 <field name="identity_id"/>
                                 <field name="channel_id"/>
                                 <field name="account_id"/>
@@ -133,6 +135,8 @@
                 <filter name="my" string="My" domain="[('operator_id','=',uid)]"/>
                 <filter name="unassigned" string="Unassigned"
                         domain="[('operator_id','=',False)]"/>
+                <filter name="no_contact" string="No contact"
+                        domain="[('partner_id','=',False)]"/>
                 <separator/>
                 <filter name="new" string="New" domain="[('state','=','new')]"/>
                 <filter name="open" string="Open" domain="[('state','=','open')]"/>

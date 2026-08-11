@@ -31,6 +31,7 @@
         "views/omnichannel_template_views.xml",
         "views/omnichannel_reporting_views.xml",
         "views/res_config_settings_views.xml",
+        "views/res_partner_views.xml",
         "views/omnichannel_menus.xml",
     ],
     "assets": {
