@@ -40,3 +40,18 @@ class ResPartner(models.Model):
             "domain": [("partner_id", "=", self.id)],
             "context": {"default_partner_id": self.id},
         }
+
+    def action_omni_link_conversations(self):
+        """Open the picker that attaches existing conversations to this
+        contact."""
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Link Conversations"),
+            "res_model": "omnichannel.conversation.link.wizard",
+            "view_mode": "form",
+            "view_id": self.env.ref(
+                "ewin_omnichannel_core.view_conversation_link_wizard_form").id,
+            "target": "new",
+            "context": {"default_partner_id": self.id},
+        }

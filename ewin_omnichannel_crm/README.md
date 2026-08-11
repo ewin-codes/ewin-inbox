@@ -18,7 +18,9 @@ an installation that has no sales pipeline never sees any of this.
   knows about the customer — name, phone, email — already linked, so its chatter
   fills up immediately.
 - **Conversations** on the lead counts and opens what is linked; **Link
-  Conversation** attaches existing ones.
+  Conversation** opens core's picker wizard (`omnichannel.conversation.link.wizard`,
+  the same one a contact uses) extended here with a `lead_id`, so pressing it
+  attaches existing conversations to the lead instead.
 - Unlinking or re-pointing a lead removes exactly the copies that link created.
   Mis-attributing a conversation is recoverable, and no customer's texts are left
   on another customer's card.
@@ -43,6 +45,17 @@ Core's `write` diffs the targets before and after and calls the service itself,
 so adding a link backfills, removing one purges, and neither path needs a line of
 CRM-specific code.
 
+Installing or upgrading this module also backfills the history of every
+conversation already linked to a lead, through its own
+`migrations/18.0.1.1.0/post-migrate.py`. Core ships the same kind of pass, but
+Odoo migrates one module at a time and runs each one's post-migrate right
+after that module's own models are registered — before this module has
+extended `_history_targets()` with `lead_id`. Core's pass therefore only ever
+sees the contact; this module's pass, running after its own override is in
+force, is what actually reaches a lead. It is idempotent for the same reason
+core's is — `backfill` skips a message that already has a copy on a given
+target — so it costs nothing on a database core already caught up.
+
 ## Access
 
 Linking uses ordinary Odoo access rules: an operator who cannot read a lead
@@ -58,6 +71,15 @@ different things, and only one of them writes to the pipeline:
 
 Deleting a lead clears `lead_id` (`ondelete="set null"`) and leaves the
 conversation untouched.
+
+The wizard's own ACL row moved to core along with the model it grants access
+to; this module no longer ships one. **Upgrade this module together with
+core** (`-u ewin_omnichannel_core`, which cascades to every dependent) rather
+than on its own: upgrading only `ewin_omnichannel_crm` makes
+`ir.model.data._process_end` delete this module's old, now-undeclared ACL
+row while core — never marked `to upgrade` — does not recreate its
+replacement, leaving the wizard with zero access rows and both Link
+Conversation buttons raising an `AccessError` for anyone but the superuser.
 
 ## Merging leads
 

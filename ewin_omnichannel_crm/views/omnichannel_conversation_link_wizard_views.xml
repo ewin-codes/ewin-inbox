@@ -8,10 +8,13 @@
                 <field name="lead_id" invisible="1"/>
                 <field name="lead_partner_id" invisible="1"/>
                 <group>
+                    <!-- active_test: False lets the picker reach an archived
+                         conversation too, same as core's contact form. -->
                     <field name="conversation_ids" nolabel="1"
                            widget="many2many"
                            domain="[('lead_id', '=', False)]"
-                           context="{'search_default_partner_id': lead_partner_id}"/>
+                           context="{'search_default_partner_id': lead_partner_id,
+                                     'active_test': False}"/>
                 </group>
                 <footer>
                     <button name="action_confirm" string="Link" type="object"

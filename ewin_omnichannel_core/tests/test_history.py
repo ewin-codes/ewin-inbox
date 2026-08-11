@@ -2,6 +2,8 @@ from unittest.mock import patch
 
 from odoo.tests import tagged
 
+from odoo.addons.ewin_omnichannel_core.hooks import backfill_existing_history
+
 from .common import OmnichannelCase
 
 
@@ -342,3 +344,106 @@ class TestHistory(OmnichannelCase):
         nobody has put a name to."""
         view = self.env.ref("ewin_omnichannel_core.view_conversation_search")
         self.assertIn("no_contact", view.arch)
+
+    def test_the_backfill_hook_fills_a_conversation_linked_before_the_feature(
+            self):
+        """The state every existing installation is in: the routing service
+        set the contact when it created the conversation, so no link ever
+        *changed* and nothing backfilled. Without this the feature looks inert
+        on exactly the databases with the most history to show."""
+        conv = self._new_conv(partner_id=self.partner.id)
+        self._new_message(conv, body="Older than the feature")
+        self.assertFalse(self._notes(self.partner))
+        backfill_existing_history(self.env)
+        self.assertIn("Older than the feature", self._notes(self.partner).body)
+
+    def test_the_backfill_hook_is_idempotent(self):
+        """It runs on install and again on every upgrade that bumps the
+        version; a second pass must not double the customer's history."""
+        conv = self._new_conv(partner_id=self.partner.id)
+        self._new_message(conv, body="Only once")
+        backfill_existing_history(self.env)
+        backfill_existing_history(self.env)
+        self.assertEqual(len(self._notes(self.partner)), 1)
+
+    def test_the_backfill_hook_covers_archived_conversations(self):
+        """An archived conversation is still part of the customer's history,
+        and a plain search would silently skip it."""
+        conv = self._new_conv(partner_id=self.partner.id)
+        self._new_message(conv, body="Archived but real")
+        conv.active = False
+        backfill_existing_history(self.env)
+        self.assertIn("Archived but real", self._notes(self.partner).body)
+
+    def test_the_backfill_hook_skips_conversations_with_no_link(self):
+        """Most conversations on a fresh install have no contact at all; the
+        hook must walk past them rather than fail on them."""
+        self._new_message(self._new_conv(), body="Nobody's")
+        backfill_existing_history(self.env)
+        self.assertFalse(self._notes(self.partner))
+
+    def _link_wizard(self, convs):
+        return self.env["omnichannel.conversation.link.wizard"].create({
+            "partner_id": self.partner.id,
+            "conversation_ids": [(6, 0, convs.ids)]})
+
+    def test_the_contact_button_hands_the_contact_to_the_wizard(self):
+        action = self.partner.action_omni_link_conversations()
+        self.assertEqual(
+            action["res_model"], "omnichannel.conversation.link.wizard")
+        self.assertEqual(action["target"], "new")
+        self.assertEqual(
+            action["context"]["default_partner_id"], self.partner.id)
+
+    def test_confirming_links_every_selected_conversation_to_the_contact(self):
+        first, second = self._new_conv(), self._new_conv()
+        result = self._link_wizard(first | second).action_confirm()
+        self.assertEqual(result["type"], "ir.actions.act_window_close")
+        self.assertEqual(first.partner_id, self.partner)
+        self.assertEqual(second.partner_id, self.partner)
+
+    def test_confirming_backfills_the_history_into_the_contact(self):
+        """The wizard writes through the conversation, so linking from the
+        contact has to fill the chatter exactly as the field on the
+        conversation form does."""
+        conv = self._new_conv()
+        self._new_message(conv, body="Attached from the contact")
+        self._link_wizard(conv).action_confirm()
+        self.assertIn(
+            "Attached from the contact", self._notes(self.partner).body)
+
+    def test_the_picker_view_offers_an_archived_unlinked_conversation(self):
+        """hooks.py deliberately backfills an archived conversation on the
+        grounds that it is still part of the customer's history
+        (test_the_backfill_hook_covers_archived_conversations); a plain
+        search silently drops it, so the search dialog needs active_test:
+        False in its view context or an operator tidying up an old
+        conversation by hand has nothing to select."""
+        conv = self._new_conv()
+        conv.active = False
+        domain = [("partner_id", "=", False)]
+        self.assertNotIn(
+            conv, self.env["omnichannel.conversation"].search(domain))
+        self.assertIn(
+            conv,
+            self.env["omnichannel.conversation"].with_context(
+                active_test=False).search(domain))
+        view = self.env.ref(
+            "ewin_omnichannel_core.view_conversation_link_wizard_form")
+        self.assertIn("'active_test': False", view.arch)
+
+    def test_linking_an_archived_conversation_through_the_wizard_backfills_it(
+            self):
+        """Finding it in the search dialog is only half of it: the same
+        active_test: False has to sit on conversation_ids itself, or Odoo's
+        own Many2many.convert_to_record silently drops the archived
+        conversation from self.conversation_ids inside action_confirm even
+        though it was correctly picked and written — the button's own
+        context carries no such override."""
+        conv = self._new_conv()
+        self._new_message(conv, body="Archived but still history")
+        conv.active = False
+        self._link_wizard(conv).action_confirm()
+        self.assertEqual(conv.partner_id, self.partner)
+        self.assertIn(
+            "Archived but still history", self._notes(self.partner).body)

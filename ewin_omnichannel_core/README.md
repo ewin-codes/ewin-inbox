@@ -112,6 +112,18 @@ installed. Every message is then copied into that record's chatter as an
 internal log note, so the customer's own history holds the texts: the salesperson
 reading a contact sees what was said on WhatsApp without opening the Inbox.
 
+A contact carries both a **Conversations** smart button, which opens what is
+already linked, and a **Link Conversation** button, which opens a picker and
+attaches existing ones — the button an operator reaches for when they went
+looking for a conversation on a contact that has none yet, which is exactly
+when it must not be hidden. The picker itself,
+`omnichannel.conversation.link.wizard`, is a single shared model: it writes a
+`partner_id` by default, and a bridge overriding its `_link_values()` hook can
+point the write at its own record instead — `ewin_omnichannel_crm` does this to
+link a lead, reusing the same wizard and the same write-through-`write()`
+guarantee, with its own picker form, rather than shipping a second,
+near-identical wizard.
+
 `omnichannel.history.service` owns those copies:
 
 | Method | When | How |
@@ -159,6 +171,23 @@ service themselves.
 
 `ewin_omnichannel_crm` implements exactly that override to add CRM leads as a
 second destination — see its own README.
+
+Installing or upgrading core backfills the history of every conversation
+already linked to a contact, so an existing database shows its past
+immediately rather than only mirroring from the moment of install onward. It
+runs once through `post_init_hook` on a fresh install and through
+`migrations/18.0.1.1.0/post-migrate.py` on an upgrade, it is idempotent, and
+it logs its progress — on a database with years of conversations it is the
+slow part of the install.
+
+Core's own pass only ever sees `_history_targets()` as core itself defines
+it: Odoo migrates one module at a time, in dependency order, and runs each
+module's post-migrate right after that module's own models are registered —
+before a dependent like `ewin_omnichannel_crm` has extended anything. A
+conversation linked to a lead and nothing else is walked past by core's
+backfill, contact-only, with no error. Reaching it takes the bridge's own
+pass, over the same conversations, once its own override is in force — see
+`ewin_omnichannel_crm`'s README.
 
 ## The connector contract
 
