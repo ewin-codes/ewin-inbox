@@ -46,8 +46,15 @@ CRM-specific code.
 ## Access
 
 Linking uses ordinary Odoo access rules: an operator who cannot read a lead
-cannot select it. The **Create Lead** and **Link Conversation** buttons are shown
-only to users in *Sales / User*, since both write to the pipeline.
+cannot select it. The two buttons carry different groups because they do
+different things, and only one of them writes to the pipeline:
+
+- **Create Lead** creates a `crm.lead`, so it is gated on
+  `sales_team.group_sale_salesman`.
+- **Link Conversation** creates no lead — it writes `lead_id` on conversations,
+  and write access to `omnichannel.conversation` belongs to
+  `ewin_omnichannel_core.group_omni_operator`, not to sales users. Gating it on
+  Sales / User would show a button that fails on submit.
 
 Deleting a lead clears `lead_id` (`ondelete="set null"`) and leaves the
 conversation untouched.

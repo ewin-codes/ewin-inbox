@@ -145,6 +145,9 @@ That is the whole of what `ewin_omnichannel_crm` has to say about mirroring;
 `write` and `unlink` in core diff the targets by `(model, id)` and call the
 service themselves.
 
+`ewin_omnichannel_crm` implements exactly that override to add CRM leads as a
+second destination — see its own README.
+
 ## The connector contract
 
 A channel addon implements the `omnichannel.connector` AbstractModel and
