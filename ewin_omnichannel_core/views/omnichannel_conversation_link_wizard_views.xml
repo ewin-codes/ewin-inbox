@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_conversation_link_wizard_form" model="ir.ui.view">
+        <field name="name">omnichannel.conversation.link.wizard.form</field>
+        <field name="model">omnichannel.conversation.link.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Link Conversations">
+                <field name="partner_id" invisible="1"/>
+                <group>
+                    <!-- Only conversations nobody has attributed yet:
+                         re-pointing one that belongs to another customer is
+                         the Contact field's job on the conversation itself,
+                         not a bulk picker's. -->
+                    <field name="conversation_ids" nolabel="1"
+                           widget="many2many"
+                           domain="[('partner_id', '=', False)]"/>
+                </group>
+                <footer>
+                    <button name="action_confirm" string="Link" type="object"
+                            class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

@@ -1,2 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_conversation_link_wizard_operator,conversation.link.wizard.operator,model_omnichannel_conversation_link_wizard,ewin_omnichannel_core.group_omni_operator,1,1,1,1

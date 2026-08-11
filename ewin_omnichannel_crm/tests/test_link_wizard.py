@@ -39,3 +39,16 @@ class TestLinkWizard(OmnichannelCrmCase):
         self.lead.partner_id = self.partner
         wizard = self._wizard(self._new_conv())
         self.assertEqual(wizard.lead_partner_id, self.partner)
+
+    def test_the_wizard_prefers_the_lead_when_both_links_are_set(self):
+        """The inherited wizard carries a contact field too. A lead picker
+        that quietly rewrote the conversation's contact as well would be a
+        second, invisible side effect of pressing Link."""
+        conv = self._new_conv()
+        wizard = self.env["omnichannel.conversation.link.wizard"].create({
+            "lead_id": self.lead.id,
+            "partner_id": self.partner.id,
+            "conversation_ids": [(6, 0, conv.ids)]})
+        wizard.action_confirm()
+        self.assertEqual(conv.lead_id, self.lead)
+        self.assertFalse(conv.partner_id)

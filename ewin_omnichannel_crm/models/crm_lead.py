@@ -72,6 +72,8 @@ class CrmLead(models.Model):
             "name": _("Link Conversations"),
             "res_model": "omnichannel.conversation.link.wizard",
             "view_mode": "form",
+            "view_id": self.env.ref(
+                "ewin_omnichannel_crm.view_conversation_link_wizard_form").id,
             "target": "new",
             "context": {"default_lead_id": self.id},
         }

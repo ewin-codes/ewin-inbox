@@ -112,6 +112,17 @@ installed. Every message is then copied into that record's chatter as an
 internal log note, so the customer's own history holds the texts: the salesperson
 reading a contact sees what was said on WhatsApp without opening the Inbox.
 
+A contact carries both a **Conversations** smart button, which opens what is
+already linked, and a **Link Conversation** button, which opens a picker and
+attaches existing ones — the button an operator reaches for when they went
+looking for a conversation on a contact that has none yet, which is exactly
+when it must not be hidden. The picker itself,
+`omnichannel.conversation.link.wizard`, is a single shared model: it writes a
+`partner_id` by default, and a bridge overriding its `_link_values()` hook can
+point the write at its own record instead — `ewin_omnichannel_crm` does this to
+link a lead, reusing the same form and the same write-through-`write()`
+guarantee rather than shipping a second, near-identical wizard.
+
 `omnichannel.history.service` owns those copies:
 
 | Method | When | How |

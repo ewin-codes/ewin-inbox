@@ -18,7 +18,9 @@ an installation that has no sales pipeline never sees any of this.
   knows about the customer — name, phone, email — already linked, so its chatter
   fills up immediately.
 - **Conversations** on the lead counts and opens what is linked; **Link
-  Conversation** attaches existing ones.
+  Conversation** opens core's picker wizard (`omnichannel.conversation.link.wizard`,
+  the same one a contact uses) extended here with a `lead_id`, so pressing it
+  attaches existing conversations to the lead instead.
 - Unlinking or re-pointing a lead removes exactly the copies that link created.
   Mis-attributing a conversation is recoverable, and no customer's texts are left
   on another customer's card.

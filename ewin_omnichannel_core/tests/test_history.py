@@ -381,3 +381,33 @@ class TestHistory(OmnichannelCase):
         self._new_message(self._new_conv(), body="Nobody's")
         backfill_existing_history(self.env)
         self.assertFalse(self._notes(self.partner))
+
+    def _link_wizard(self, convs):
+        return self.env["omnichannel.conversation.link.wizard"].create({
+            "partner_id": self.partner.id,
+            "conversation_ids": [(6, 0, convs.ids)]})
+
+    def test_the_contact_button_hands_the_contact_to_the_wizard(self):
+        action = self.partner.action_omni_link_conversations()
+        self.assertEqual(
+            action["res_model"], "omnichannel.conversation.link.wizard")
+        self.assertEqual(action["target"], "new")
+        self.assertEqual(
+            action["context"]["default_partner_id"], self.partner.id)
+
+    def test_confirming_links_every_selected_conversation_to_the_contact(self):
+        first, second = self._new_conv(), self._new_conv()
+        result = self._link_wizard(first | second).action_confirm()
+        self.assertEqual(result["type"], "ir.actions.act_window_close")
+        self.assertEqual(first.partner_id, self.partner)
+        self.assertEqual(second.partner_id, self.partner)
+
+    def test_confirming_backfills_the_history_into_the_contact(self):
+        """The wizard writes through the conversation, so linking from the
+        contact has to fill the chatter exactly as the field on the
+        conversation form does."""
+        conv = self._new_conv()
+        self._new_message(conv, body="Attached from the contact")
+        self._link_wizard(conv).action_confirm()
+        self.assertIn(
+            "Attached from the contact", self._notes(self.partner).body)

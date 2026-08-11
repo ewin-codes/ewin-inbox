@@ -13,7 +13,6 @@
         "crm",
     ],
     "data": [
-        "security/ir.model.access.csv",
         "views/omnichannel_conversation_views.xml",
         "views/omnichannel_conversation_link_wizard_views.xml",
         "views/crm_lead_views.xml",

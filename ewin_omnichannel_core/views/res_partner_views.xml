@@ -6,6 +6,14 @@
         <field name="inherit_id" ref="base.view_partner_form"/>
         <field name="arch" type="xml">
             <xpath expr="//div[@name='button_box']" position="inside">
+                <button type="object" name="action_omni_link_conversations"
+                        class="oe_stat_button" icon="fa-link"
+                        groups="ewin_omnichannel_core.group_omni_operator">
+                    <div class="o_stat_info">
+                        <span class="o_stat_text">Link</span>
+                        <span class="o_stat_text">Conversation</span>
+                    </div>
+                </button>
                 <button type="object" name="action_omni_conversations"
                         class="oe_stat_button" icon="fa-comments"
                         groups="ewin_omnichannel_core.group_omni_operator"

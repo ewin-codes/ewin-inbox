@@ -28,6 +28,7 @@
         "views/omnichannel_event_views.xml",
         "views/omnichannel_conversation_views.xml",
         "views/omnichannel_close_wizard_views.xml",
+        "views/omnichannel_conversation_link_wizard_views.xml",
         "views/omnichannel_template_views.xml",
         "views/omnichannel_reporting_views.xml",
         "views/res_config_settings_views.xml",
