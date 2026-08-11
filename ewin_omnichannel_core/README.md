@@ -120,8 +120,9 @@ when it must not be hidden. The picker itself,
 `omnichannel.conversation.link.wizard`, is a single shared model: it writes a
 `partner_id` by default, and a bridge overriding its `_link_values()` hook can
 point the write at its own record instead — `ewin_omnichannel_crm` does this to
-link a lead, reusing the same form and the same write-through-`write()`
-guarantee rather than shipping a second, near-identical wizard.
+link a lead, reusing the same wizard and the same write-through-`write()`
+guarantee, with its own picker form, rather than shipping a second,
+near-identical wizard.
 
 `omnichannel.history.service` owns those copies:
 
