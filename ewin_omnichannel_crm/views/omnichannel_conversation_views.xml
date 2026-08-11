@@ -6,6 +6,12 @@
         <field name="inherit_id"
                ref="ewin_omnichannel_core.view_conversation_form"/>
         <field name="arch" type="xml">
+            <xpath expr="//header/button[@name='action_set_pending']"
+                   position="before">
+                <button name="action_create_lead" string="Create Lead"
+                        type="object" invisible="lead_id"
+                        groups="sales_team.group_sale_salesman"/>
+            </xpath>
             <!-- Anchored with an explicit xpath, not `<field name="partner_id"
                  position="after">`: partner_id appears twice in the parent
                  arch and the plain locator matches the first one, which is the
