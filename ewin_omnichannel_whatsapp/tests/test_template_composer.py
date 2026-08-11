@@ -70,6 +70,29 @@ class TestTemplateComposer(TransactionCase):
         self.assertEqual(message.body_text(), "Hi Ann, order A-100.")
         self.assertEqual(message.state, "sent")
 
+    def test_a_template_send_reaches_the_customer_history(self):
+        """A template is how an operator re-opens the 24-hour window, so it is
+        still something the customer was told and belongs on their contact like
+        any other reply. This path builds its own omnichannel.message instead of
+        going through the message service, which is how it came to skip it."""
+        partner = self.env["res.partner"].with_context(
+            mail_create_nolog=True).create({"name": "Ann Customer"})
+        self.conversation.partner_id = partner
+        wizard = self.env["omnichannel.whatsapp.send_template.wizard"].create({
+            "conversation_id": self.conversation.id,
+            "template_id": self.template.id})
+        wizard._onchange_template_id()
+        lines = wizard.line_ids.sorted("sequence")
+        lines[0].value = "Ann"
+        lines[1].value = "A-100"
+        with patch("odoo.addons.ewin_omnichannel_whatsapp.services."
+                   "whatsapp_api_client.WhatsAppApiClient.send_template",
+                   return_value={"messages": [{"id": "wamid.T"}]}):
+            wizard.action_send()
+        notes = partner.message_ids.filtered(
+            lambda note: note.subtype_id == self.env.ref("mail.mt_note"))
+        self.assertIn("Hi Ann, order A-100.", " ".join(notes.mapped("body")))
+
     def test_wa_window_closed(self):
         self.conversation.last_customer_message_at = fields.Datetime.now()
         self.assertFalse(self.conversation.wa_window_closed)

@@ -55,6 +55,7 @@ class MessageService(models.AbstractModel):
             conv_vals["first_customer_message_at"] = now
         conversation.write(conv_vals)
         self._mirror_to_discuss(conversation, message)
+        self.env["omnichannel.history.service"].mirror(message)
         # keep the assigned operator subscribed to the mirror channel so the
         # Discuss systray notifies them of this inbound even when the record
         # is not open (membership may predate their assignment).
@@ -111,6 +112,7 @@ class MessageService(models.AbstractModel):
             conv_vals["first_operator_message_at"] = now
         conversation.write(conv_vals)
         self._mirror_to_discuss(conversation, message)
+        self.env["omnichannel.history.service"].mirror(message)
         conversation._notify_omni_event("message_sent")
         if not is_internal:
             # The first attempt is immediate (synchronous). Only retries go
@@ -151,6 +153,7 @@ class MessageService(models.AbstractModel):
         if not conversation.first_operator_message_at:
             conv_vals["first_operator_message_at"] = now
         conversation.write(conv_vals)
+        self.env["omnichannel.history.service"].mirror(message)
         conversation._notify_omni_event("message_sent")
         self.env["omnichannel.routing.service"].deliver_outbound(message)
         return message

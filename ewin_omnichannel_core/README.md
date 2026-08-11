@@ -67,7 +67,8 @@ Depends on `base`, `mail`, `contacts`.
 | `omnichannel.error.log` | Operator-readable failure log, with the technical detail kept alongside the friendly text. |
 
 `res.partner` gains `omni_source`, `omni_external_id`, `omni_username`,
-`omni_first_contact` and the reverse `omni_identity_ids`, so a contact created
+`omni_first_contact`, the reverse `omni_identity_ids` and `omni_conversation_ids`,
+plus a **Conversations** smart button on the contact form, so a contact created
 from a chat still looks like an ordinary Odoo contact.
 
 ## How a message flows
@@ -102,6 +103,62 @@ Replies typed directly in Discuss are caught by an override of
 `discuss.channel.message_post`. The core's own mirror posts carry an
 `omni_mirror` context flag and are skipped, which is what keeps the mirror from
 echoing messages back to the customer in a loop.
+
+## Customer history
+
+A conversation can be linked to the customer records it belongs to — a contact
+(`res.partner`) out of the box, a CRM lead when `ewin_omnichannel_crm` is
+installed. Every message is then copied into that record's chatter as an
+internal log note, so the customer's own history holds the texts: the salesperson
+reading a contact sees what was said on WhatsApp without opening the Inbox.
+
+`omnichannel.history.service` owns those copies:
+
+| Method | When | How |
+|---|---|---|
+| `mirror(message)` | a message is created | `message_post` with `mail.mt_note`, so the chatter refreshes live and no follower is emailed |
+| `backfill(conversation, targets)` | a link is added | one batched `mail.message` create, ledger rows included |
+| `purge(conversation, targets)` | a link is removed, or the conversation or one of its messages is deleted | deletes exactly the copies that link created |
+
+Both paths produce the same copy: the timestamp of the message it represents —
+a history stamped "now" reads as a single event rather than a conversation —
+and the very same `ir.attachment` records, so one binary serves however many
+records the history reaches. The live path links those attachments after
+posting rather than passing them to `message_post`, which keeps only the
+attachments the *calling user* drafted on a composer: an inbound webhook has no
+real user behind it, and `sudo()` raises privileges without changing who is
+calling.
+
+Copies are tracked on `omnichannel.message.history_message_ids` (its other end
+is `mail.message.omni_message_ids`, which is what lets a backfill write the
+ledger in the same create as the copies). That ledger is what lets a
+mis-attributed conversation be re-pointed without leaving one customer's texts
+on another customer's card, and what makes deleting a message or a conversation
+take its copies with it. `mail.mt_note` is an internal subtype, so the copies
+are never visible to a portal user reading their own contact record.
+
+Which records receive the history is a per-installation question, so core does
+not hard-code it:
+
+```python
+class OmnichannelConversation(models.Model):
+    _inherit = "omnichannel.conversation"
+
+    @api.model
+    def _history_link_fields(self):
+        return super()._history_link_fields() + ["lead_id"]
+
+    def _history_targets(self):
+        return super()._history_targets() + [
+            record for record in (self.lead_id,) if record]
+```
+
+That is the whole of what `ewin_omnichannel_crm` has to say about mirroring;
+`write` and `unlink` in core diff the targets by `(model, id)` and call the
+service themselves.
+
+`ewin_omnichannel_crm` implements exactly that override to add CRM leads as a
+second destination — see its own README.
 
 ## The connector contract
 

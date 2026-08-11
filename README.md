@@ -121,6 +121,11 @@ flowchart LR
   conversations, messages, the routing service, the retry job queue, the Discuss
   mirror, reporting and canned templates. It knows nothing about any specific
   provider.
+- **Customer history.** A conversation can be linked to a contact and — with
+  `ewin_omnichannel_crm` — to a CRM lead. Every message is then copied into that
+  record's chatter as an internal note, live, so the customer's own history holds
+  what was said on any channel. One lead carries as many conversations as the
+  customer starts; unlinking removes exactly the copies linking created.
 - **Connector addons** implement one abstract contract (`omnichannel.connector`):
   parse an inbound provider event into a universal shape, and send an outbound
   message. Inbound always flows through `routing_service.process_event`; outbound
@@ -140,6 +145,12 @@ links below.
 | Instagram | [`ewin_omnichannel_instagram`](ewin_omnichannel_instagram/README.md) | Instagram Graph API (business login) |
 | Viber | [`ewin_omnichannel_viber`](ewin_omnichannel_viber/README.md) | Bot webhook |
 
+One module is not a channel:
+
+| Module | What it adds |
+|---|---|
+| [`ewin_omnichannel_crm`](ewin_omnichannel_crm/README.md) | Links conversations to CRM leads and mirrors their texts into the lead's history |
+
 All modules use Odoo model names in the `omnichannel.*` namespace (e.g.
 `omnichannel.conversation`); only the Odoo *module* names carry the `ewin_` prefix.
 
@@ -154,6 +165,7 @@ ewin_omnichannel_whatsapp/    # WhatsApp Business (Meta Cloud API) connector
 ewin_omnichannel_messenger/   # Facebook Messenger (Pages) connector
 ewin_omnichannel_instagram/   # Instagram Direct (business login) connector
 ewin_omnichannel_viber/       # Viber bot connector
+ewin_omnichannel_crm/         # CRM bridge: conversations ↔ leads (optional)
 ```
 
 ## Security

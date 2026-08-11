@@ -47,6 +47,12 @@ class OmnichannelMessage(models.Model):
     state = fields.Selection(MESSAGE_STATES, default="received", required=True, index=True)
     mail_message_id = fields.Many2one("mail.message")
     attachment_ids = fields.Many2many("ir.attachment", string="Attachments")
+    history_message_ids = fields.Many2many(
+        "mail.message", "omni_message_history_rel", "omni_message_id",
+        "mail_message_id", string="History Copies", copy=False,
+        help="Chatter copies of this message on the customer records this "
+             "conversation is linked to. Tracked so unlinking a contact or a "
+             "lead removes exactly the copies that link created.")
     attachment_preview = fields.Html(
         compute="_compute_attachment_preview", sanitize=False,
         help="Rendered thumbnails/chips for the message attachments.")
@@ -96,7 +102,29 @@ class OmnichannelMessage(models.Model):
                 Markup('<div class="o_omni_atts">%s</div>') % Markup("").join(parts)
                 if parts else False)
 
+    def unlink(self):
+        """Take this message's chatter copies down with it.
+
+        The ledger is the only thing that knows where the copies are, and it
+        lives in a relation table keyed on this row — so deleting the message
+        first leaves the customer's card holding a text nothing points at any
+        more. Same invariant ``omnichannel.conversation.unlink`` protects, one
+        message at a time.
+        """
+        self.history_message_ids.sudo().unlink()
+        return super().unlink()
+
     def body_text(self):
         self.ensure_one()
         from odoo.tools import html2plaintext
         return html2plaintext(self.body or "") if self.body else ""
+
+    def _history_date(self):
+        """When this message happened, for a chatter copy.
+
+        Inbound messages carry ``received_at`` and outbound ones ``sent_at``;
+        an outbound message still queued has neither yet, and falls back to
+        when the row was written.
+        """
+        self.ensure_one()
+        return self.received_at or self.sent_at or self.create_date

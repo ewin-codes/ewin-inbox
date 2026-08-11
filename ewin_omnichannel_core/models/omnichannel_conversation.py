@@ -124,6 +124,97 @@ class OmnichannelConversation(models.Model):
             else:
                 conv.first_response_seconds = 0
 
+    @api.model
+    def _history_link_fields(self):
+        """Fields whose change re-points where this conversation's history is
+        mirrored. Bridge modules extend the list (the CRM bridge adds
+        ``lead_id``), which is what keeps ``write`` free of any knowledge of
+        which links exist."""
+        return ["partner_id"]
+
+    def _history_targets(self):
+        """The mail.thread records whose chatter must hold this conversation.
+
+        A *list* of singleton records, not a recordset: a contact and a lead
+        are different models and cannot share one, so callers diff them by
+        ``(model, id)`` instead of by set arithmetic.
+        """
+        self.ensure_one()
+        return [record for record in (self.partner_id,) if record]
+
+    def _history_target_map(self):
+        """``_history_targets`` keyed by ``(model, id)``.
+
+        Targets can be of different models, so they cannot be diffed as
+        recordsets; the key is what lets ``write`` tell an added link from a
+        removed one.
+        """
+        self.ensure_one()
+        return {(record._name, record.id): record
+                for record in self._history_targets()}
+
+    def write(self, vals):
+        """Keep the mirrored history pointing at the linked records.
+
+        The snapshot is taken before ``super`` and compared after, so the hook
+        never needs to know which field changed or which models a bridge
+        module added — only that the set of targets moved.
+        """
+        if not any(field in vals for field in self._history_link_fields()):
+            return super().write(vals)
+        before = {conv.id: conv._history_target_map() for conv in self}
+        result = super().write(vals)
+        history = self.env["omnichannel.history.service"]
+        for conv in self:
+            after = conv._history_target_map()
+            gone = [record for key, record in before[conv.id].items()
+                    if key not in after]
+            added = [record for key, record in after.items()
+                     if key not in before[conv.id]]
+            if gone:
+                history.purge(conv, gone)
+            if added:
+                history.backfill(conv, added)
+        if "partner_id" in vals:
+            self._propagate_partner_to_identity()
+        return result
+
+    def _propagate_partner_to_identity(self):
+        """Point the external identity at the contact the operator just chose.
+
+        Without it, the next inbound message from the same external account
+        auto-creates yet another nameless contact and the operator re-links by
+        hand forever. An identity that already has a contact is left alone:
+        overwriting it would reroute every future conversation from that
+        account on the strength of one operator's click here.
+        """
+        for conv in self:
+            identity = conv.identity_id
+            if not conv.partner_id or not identity or identity.partner_id:
+                continue
+            identity.sudo().partner_id = conv.partner_id
+            conv.message_post(body=_(
+                "Contact %(partner)s linked to this %(channel)s identity — "
+                "future conversations from it land on the same contact.",
+                partner=conv.partner_id.display_name,
+                channel=conv.channel_id.name or _("channel")))
+
+    def unlink(self):
+        """Take the mirrored copies down with the conversation.
+
+        The ledger that finds them lives on ``omnichannel.message``, which is
+        cascade-deleted with the conversation, so this has to happen before
+        ``super`` — afterwards nothing points at the copies and they sit on the
+        customer's card forever. Archiving is deliberately not affected: an
+        archived conversation is still part of the customer's history.
+        """
+        history = self.env["omnichannel.history.service"]
+        for conv in self:
+            targets = conv._history_targets()
+            if targets:
+                history.purge(conv, targets)
+        return super().unlink()
+
     def _compute_send_shortcut(self):
         value = self.env["ir.config_parameter"].sudo().get_param(
             "ewin_omnichannel.send_shortcut", "ctrl_enter")
