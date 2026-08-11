@@ -175,7 +175,29 @@ class OmnichannelConversation(models.Model):
                 history.purge(conv, gone)
             if added:
                 history.backfill(conv, added)
+        if "partner_id" in vals:
+            self._propagate_partner_to_identity()
         return result
+
+    def _propagate_partner_to_identity(self):
+        """Point the external identity at the contact the operator just chose.
+
+        Without it, the next inbound message from the same external account
+        auto-creates yet another nameless contact and the operator re-links by
+        hand forever. An identity that already has a contact is left alone:
+        overwriting it would reroute every future conversation from that
+        account on the strength of one operator's click here.
+        """
+        for conv in self:
+            identity = conv.identity_id
+            if not conv.partner_id or not identity or identity.partner_id:
+                continue
+            identity.sudo().partner_id = conv.partner_id
+            conv.message_post(body=_(
+                "Contact %(partner)s linked to this %(channel)s identity — "
+                "future conversations from it land on the same contact.",
+                partner=conv.partner_id.display_name,
+                channel=conv.channel_id.name or _("channel")))
 
     def _compute_send_shortcut(self):
         value = self.env["ir.config_parameter"].sudo().get_param(

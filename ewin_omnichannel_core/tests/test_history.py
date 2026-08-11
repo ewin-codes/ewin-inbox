@@ -236,3 +236,25 @@ class TestHistory(OmnichannelCase):
                    "history_service.HistoryService.backfill") as backfill:
             conv.priority = "2"
             self.assertFalse(backfill.called)
+
+    def test_linking_a_contact_points_the_identity_at_it(self):
+        """Otherwise the next message from the same external account creates
+        another nameless contact and the operator re-links by hand forever."""
+        conv = self._new_conv()
+        conv.partner_id = self.partner
+        self.assertEqual(conv.identity_id.partner_id, self.partner)
+
+    def test_linking_a_contact_leaves_an_identity_that_already_has_one(self):
+        """Re-pointing an identity would silently reroute every future
+        conversation from that account, which is not what linking one
+        conversation asked for."""
+        known = self.env["res.partner"].create({"name": "Grace Hopper"})
+        self.identity.partner_id = known
+        conv = self._new_conv()
+        conv.partner_id = self.partner
+        self.assertEqual(conv.identity_id.partner_id, known)
+
+    def test_the_identity_link_is_recorded_in_the_conversation_chatter(self):
+        conv = self._new_conv()
+        conv.partner_id = self.partner
+        self.assertIn(self.partner.display_name, conv.message_ids[0].body)
