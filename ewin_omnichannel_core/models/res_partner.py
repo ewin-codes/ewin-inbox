@@ -12,8 +12,11 @@ class ResPartner(models.Model):
         "omnichannel.identity", "partner_id", string="External Identities")
     omni_conversation_ids = fields.One2many(
         "omnichannel.conversation", "partner_id", string="Conversations")
+    # No string: the only place this renders is the stat button in
+    # res_partner_views.xml, which sets its own label — a second
+    # "Conversations" here only collides with omni_conversation_ids's.
     omni_conversation_count = fields.Integer(
-        compute="_compute_omni_conversation_count", string="Conversations")
+        compute="_compute_omni_conversation_count")
 
     @api.depends("omni_conversation_ids")
     def _compute_omni_conversation_count(self):
