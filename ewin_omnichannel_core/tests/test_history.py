@@ -258,3 +258,19 @@ class TestHistory(OmnichannelCase):
         conv = self._new_conv()
         conv.partner_id = self.partner
         self.assertIn(self.partner.display_name, conv.message_ids[0].body)
+
+    def test_deleting_a_conversation_removes_its_copies(self):
+        """The ledger lives on omnichannel.message, which is cascade-deleted
+        with the conversation — so the copies have to go first or they are
+        orphaned on the customer card with nothing left pointing at them."""
+        conv = self._new_conv(partner_id=self.partner.id)
+        self.history.mirror(self._new_message(conv, body="Orphan risk"))
+        conv.unlink()
+        self.assertFalse(self._notes(self.partner))
+
+    def test_archiving_a_conversation_keeps_its_copies(self):
+        """An archived conversation is still part of what the customer said."""
+        conv = self._new_conv(partner_id=self.partner.id)
+        self.history.mirror(self._new_message(conv, body="Still history"))
+        conv.active = False
+        self.assertIn("Still history", self._notes(self.partner).body)

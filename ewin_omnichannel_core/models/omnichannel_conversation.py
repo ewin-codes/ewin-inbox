@@ -199,6 +199,22 @@ class OmnichannelConversation(models.Model):
                 partner=conv.partner_id.display_name,
                 channel=conv.channel_id.name or _("channel")))
 
+    def unlink(self):
+        """Take the mirrored copies down with the conversation.
+
+        The ledger that finds them lives on ``omnichannel.message``, which is
+        cascade-deleted with the conversation, so this has to happen before
+        ``super`` — afterwards nothing points at the copies and they sit on the
+        customer's card forever. Archiving is deliberately not affected: an
+        archived conversation is still part of the customer's history.
+        """
+        history = self.env["omnichannel.history.service"]
+        for conv in self:
+            targets = conv._history_targets()
+            if targets:
+                history.purge(conv, targets)
+        return super().unlink()
+
     def _compute_send_shortcut(self):
         value = self.env["ir.config_parameter"].sudo().get_param(
             "ewin_omnichannel.send_shortcut", "ctrl_enter")
