@@ -33,3 +33,15 @@ class CrmLead(models.Model):
             "domain": [("lead_id", "=", self.id)],
             "context": {"default_lead_id": self.id},
         }
+
+    def action_omni_link_conversations(self):
+        """Open the picker that attaches existing conversations to this lead."""
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Link Conversations"),
+            "res_model": "omnichannel.conversation.link.wizard",
+            "view_mode": "form",
+            "target": "new",
+            "context": {"default_lead_id": self.id},
+        }

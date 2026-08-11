@@ -14,6 +14,11 @@
                            string="Conversations"/>
                 </button>
             </xpath>
+            <xpath expr="//header" position="inside">
+                <button name="action_omni_link_conversations"
+                        string="Link Conversation" type="object"
+                        groups="ewin_omnichannel_core.group_omni_operator"/>
+            </xpath>
         </field>
     </record>
 </odoo>
