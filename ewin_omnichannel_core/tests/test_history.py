@@ -411,3 +411,39 @@ class TestHistory(OmnichannelCase):
         self._link_wizard(conv).action_confirm()
         self.assertIn(
             "Attached from the contact", self._notes(self.partner).body)
+
+    def test_the_picker_view_offers_an_archived_unlinked_conversation(self):
+        """hooks.py deliberately backfills an archived conversation on the
+        grounds that it is still part of the customer's history
+        (test_the_backfill_hook_covers_archived_conversations); a plain
+        search silently drops it, so the search dialog needs active_test:
+        False in its view context or an operator tidying up an old
+        conversation by hand has nothing to select."""
+        conv = self._new_conv()
+        conv.active = False
+        domain = [("partner_id", "=", False)]
+        self.assertNotIn(
+            conv, self.env["omnichannel.conversation"].search(domain))
+        self.assertIn(
+            conv,
+            self.env["omnichannel.conversation"].with_context(
+                active_test=False).search(domain))
+        view = self.env.ref(
+            "ewin_omnichannel_core.view_conversation_link_wizard_form")
+        self.assertIn("'active_test': False", view.arch)
+
+    def test_linking_an_archived_conversation_through_the_wizard_backfills_it(
+            self):
+        """Finding it in the search dialog is only half of it: the same
+        active_test: False has to sit on conversation_ids itself, or Odoo's
+        own Many2many.convert_to_record silently drops the archived
+        conversation from self.conversation_ids inside action_confirm even
+        though it was correctly picked and written — the button's own
+        context carries no such override."""
+        conv = self._new_conv()
+        self._new_message(conv, body="Archived but still history")
+        conv.active = False
+        self._link_wizard(conv).action_confirm()
+        self.assertEqual(conv.partner_id, self.partner)
+        self.assertIn(
+            "Archived but still history", self._notes(self.partner).body)

@@ -10,10 +10,17 @@
                     <!-- Only conversations nobody has attributed yet:
                          re-pointing one that belongs to another customer is
                          the Contact field's job on the conversation itself,
-                         not a bulk picker's. -->
+                         not a bulk picker's. active_test: False so the
+                         search dialog offers an archived conversation too —
+                         still part of the customer's history, per hooks.py's
+                         own backfill search — matching the field's own
+                         context in wizards/omnichannel_conversation_link_wizard.py,
+                         which is what keeps action_confirm from dropping one
+                         that was already picked. -->
                     <field name="conversation_ids" nolabel="1"
                            widget="many2many"
-                           domain="[('partner_id', '=', False)]"/>
+                           domain="[('partner_id', '=', False)]"
+                           context="{'active_test': False}"/>
                 </group>
                 <footer>
                     <button name="action_confirm" string="Link" type="object"
