@@ -40,6 +40,14 @@ class TestLeadMerge(OmnichannelCrmCase):
         self.assertIn("Need 500 units", copies.body)
         self.assertEqual(message.history_message_ids, copies)
 
+    def test_an_archived_conversation_follows_the_merge_too(self):
+        """Archiving does not detach a conversation from its history, so a
+        merge must not be the thing that does — its copies move to the survivor
+        whether the search sees it or not."""
+        conv = self._new_conv(lead_id=self.merged_away.id, active=False)
+        self.pair.merge_opportunity()
+        self.assertEqual(conv.lead_id, self.survivor)
+
     def test_the_history_of_a_merged_lead_can_still_be_unlinked(self):
         """What keeping the ledger honest buys: after a merge the operator can
         still detach the conversation and take the texts with it."""

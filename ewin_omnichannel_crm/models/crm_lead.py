@@ -43,9 +43,13 @@ class CrmLead(models.Model):
         # sudo, like Odoo's own _merge_dependences_history: whoever works the
         # pipeline is not necessarily an Inbox operator, and a merge that left
         # links dangling because the salesperson cannot read conversations
-        # would be worse than one that repairs them.
-        self.env["omnichannel.conversation"].sudo().search(
-            [("lead_id", "in", opportunities.ids)]).write({"lead_id": self.id})
+        # would be worse than one that repairs them. active_test=False for the
+        # same reason — an archived conversation is still part of what the
+        # customer said, and its copies moved to the survivor like any other.
+        self.env["omnichannel.conversation"].sudo().with_context(
+            active_test=False).search(
+                [("lead_id", "in", opportunities.ids)]).write(
+                    {"lead_id": self.id})
         return result
 
     def action_omni_conversations(self):
