@@ -12,7 +12,10 @@
         "ewin_omnichannel_core",
         "crm",
     ],
-    "data": [],
+    "data": [
+        "views/omnichannel_conversation_views.xml",
+        "views/crm_lead_views.xml",
+    ],
     "application": False,
     "installable": True,
 }

@@ -62,3 +62,34 @@ class TestLeadLink(OmnichannelCrmCase):
         self.lead.unlink()
         self.assertTrue(conv.exists())
         self.assertFalse(conv.lead_id)
+
+    def test_one_lead_collects_several_conversations(self):
+        """Many conversations per lead is the feature; the one2many is what
+        the smart button, the count and the backfill all read."""
+        first = self._new_conv(lead_id=self.lead.id)
+        second = self._new_conv(name="Second", lead_id=self.lead.id)
+        self.assertEqual(self.lead.omni_conversation_ids, first | second)
+
+    def test_the_lead_counts_its_conversations(self):
+        self._new_conv(lead_id=self.lead.id)
+        self._new_conv(name="Second", lead_id=self.lead.id)
+        self.lead.invalidate_recordset()
+        self.assertEqual(self.lead.omni_conversation_count, 2)
+
+    def test_a_lead_without_conversations_counts_zero(self):
+        self.assertEqual(self.lead.omni_conversation_count, 0)
+
+    def test_the_lead_button_opens_only_its_own_conversations(self):
+        conv = self._new_conv(lead_id=self.lead.id)
+        self._new_conv(name="Unrelated")
+        action = self.lead.action_omni_conversations()
+        found = self.env["omnichannel.conversation"].search(action["domain"])
+        self.assertEqual(found, conv)
+
+    def test_conversations_can_be_filtered_down_to_the_leadless(self):
+        """`arch` holds a view's own definition; the bridge's filter only
+        exists in the arch combined with its inheriting views, which is also
+        what proves the inheritance resolved at all."""
+        arch = self.env.ref(
+            "ewin_omnichannel_core.view_conversation_search").get_combined_arch()
+        self.assertIn("no_lead", arch)
