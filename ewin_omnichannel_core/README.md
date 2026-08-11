@@ -172,13 +172,22 @@ service themselves.
 `ewin_omnichannel_crm` implements exactly that override to add CRM leads as a
 second destination — see its own README.
 
-Installing or upgrading to this version backfills the history of every
-conversation that already carries a link, so an existing database shows its
-past immediately rather than only mirroring from the moment of install
-onward. It runs once through `post_init_hook` on a fresh install and through
+Installing or upgrading core backfills the history of every conversation
+already linked to a contact, so an existing database shows its past
+immediately rather than only mirroring from the moment of install onward. It
+runs once through `post_init_hook` on a fresh install and through
 `migrations/18.0.1.1.0/post-migrate.py` on an upgrade, it is idempotent, and
 it logs its progress — on a database with years of conversations it is the
 slow part of the install.
+
+Core's own pass only ever sees `_history_targets()` as core itself defines
+it: Odoo migrates one module at a time, in dependency order, and runs each
+module's post-migrate right after that module's own models are registered —
+before a dependent like `ewin_omnichannel_crm` has extended anything. A
+conversation linked to a lead and nothing else is walked past by core's
+backfill, contact-only, with no error. Reaching it takes the bridge's own
+pass, over the same conversations, once its own override is in force — see
+`ewin_omnichannel_crm`'s README.
 
 ## The connector contract
 
