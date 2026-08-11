@@ -114,6 +114,36 @@ class TestHistory(OmnichannelCase):
         self.history.mirror(message)
         self.assertEqual(self._notes(self.partner).attachment_ids, attachment)
 
+    def test_a_webhook_mirrors_the_attachment_too(self):
+        """Every inbound message is mirrored by the public user, because a
+        webhook request has no real one behind it: message_post keeps only the
+        attachments the *calling* user drafted on a composer, and sudo raises
+        privileges without changing who is calling. Running as admin, as the
+        test above does, cannot see it — the customer's photo would reach the
+        contact's chatter as text with no file."""
+        attachment = self.env["ir.attachment"].create(
+            {"name": "parcel.jpg", "datas": b"Zm9v"})
+        conv = self._new_conv(partner_id=self.partner.id)
+        message = self._new_message(
+            conv, message_type="image", attachment_ids=[(6, 0, attachment.ids)])
+        # Exactly what a connector holds inside request.env[...].sudo():
+        # the public user, with sudo raised.
+        webhook = self.env(user=self.env.ref("base.public_user"), su=True)
+        webhook["omnichannel.history.service"].mirror(
+            message.with_env(webhook))
+        self.assertEqual(self._notes(self.partner).attachment_ids, attachment)
+
+    def test_the_live_copy_keeps_the_message_timestamp(self):
+        """The email connector polls, so a message can be hours old by the time
+        it is mirrored; stamping the copy "now" would put it in the wrong place
+        in the customer's history — and disagree with what backfill writes."""
+        conv = self._new_conv(partner_id=self.partner.id)
+        message = self._new_message(conv)
+        message.received_at = "2026-01-02 03:04:05"
+        self.history.mirror(message)
+        self.assertEqual(
+            self._notes(self.partner).date, message._history_date())
+
     def _event(self, uid="123", text="Hello", message_id="987"):
         return {
             "event_id": f"test:update:{message_id}",
@@ -267,6 +297,20 @@ class TestHistory(OmnichannelCase):
         self.history.mirror(self._new_message(conv, body="Orphan risk"))
         conv.unlink()
         self.assertFalse(self._notes(self.partner))
+
+    def test_deleting_a_single_message_removes_its_copy(self):
+        """The ledger row goes with the message, so the copy has to go first —
+        the same orphaning conversation.unlink guards against, one message at a
+        time."""
+        conv = self._new_conv(partner_id=self.partner.id)
+        kept = self._new_message(conv, body="Kept text")
+        dropped = self._new_message(conv, body="Dropped text")
+        self.history.mirror(kept)
+        self.history.mirror(dropped)
+        dropped.unlink()
+        bodies = self._notes(self.partner).mapped("body")
+        self.assertEqual(len(bodies), 1)
+        self.assertIn("Kept text", bodies[0])
 
     def test_archiving_a_conversation_keeps_its_copies(self):
         """An archived conversation is still part of what the customer said."""

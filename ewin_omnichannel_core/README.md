@@ -117,13 +117,25 @@ reading a contact sees what was said on WhatsApp without opening the Inbox.
 | Method | When | How |
 |---|---|---|
 | `mirror(message)` | a message is created | `message_post` with `mail.mt_note`, so the chatter refreshes live and no follower is emailed |
-| `backfill(conversation, targets)` | a link is added | one batched `mail.message` create, each copy keeping its own message's timestamp |
-| `purge(conversation, targets)` | a link is removed, or the conversation is deleted | deletes exactly the copies that link created |
+| `backfill(conversation, targets)` | a link is added | one batched `mail.message` create, ledger rows included |
+| `purge(conversation, targets)` | a link is removed, or the conversation or one of its messages is deleted | deletes exactly the copies that link created |
 
-Copies are tracked on `omnichannel.message.history_message_ids`, which is what
-lets a mis-attributed conversation be re-pointed without leaving one customer's
-texts on another customer's card. `mail.mt_note` is an internal subtype, so the
-copies are never visible to a portal user reading their own contact record.
+Both paths produce the same copy: the timestamp of the message it represents —
+a history stamped "now" reads as a single event rather than a conversation —
+and the very same `ir.attachment` records, so one binary serves however many
+records the history reaches. The live path links those attachments after
+posting rather than passing them to `message_post`, which keeps only the
+attachments the *calling user* drafted on a composer: an inbound webhook has no
+real user behind it, and `sudo()` raises privileges without changing who is
+calling.
+
+Copies are tracked on `omnichannel.message.history_message_ids` (its other end
+is `mail.message.omni_message_ids`, which is what lets a backfill write the
+ledger in the same create as the copies). That ledger is what lets a
+mis-attributed conversation be re-pointed without leaving one customer's texts
+on another customer's card, and what makes deleting a message or a conversation
+take its copies with it. `mail.mt_note` is an internal subtype, so the copies
+are never visible to a portal user reading their own contact record.
 
 Which records receive the history is a per-installation question, so core does
 not hard-code it:

@@ -20,8 +20,9 @@ class ResPartner(models.Model):
 
     @api.depends("omni_conversation_ids")
     def _compute_omni_conversation_count(self):
-        # Grouped rather than len(omni_conversation_ids): the list view of
-        # contacts computes this for every visible row.
+        # Grouped rather than len(omni_conversation_ids): one query whatever
+        # the size of self, and no conversation rows read into memory just to
+        # be counted.
         groups = self.env["omnichannel.conversation"]._read_group(
             [("partner_id", "in", self.ids)], ["partner_id"], ["__count"])
         counts = {partner.id: count for partner, count in groups}

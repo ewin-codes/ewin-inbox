@@ -9,6 +9,7 @@ from . import omnichannel_close_reason
 from . import omnichannel_template
 from . import omnichannel_conversation
 from . import omnichannel_message
+from . import mail_message
 from . import discuss_channel
 from . import omnichannel_event
 from . import omnichannel_job

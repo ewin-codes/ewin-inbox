@@ -59,6 +59,15 @@ different things, and only one of them writes to the pipeline:
 Deleting a lead clears `lead_id` (`ondelete="set null"`) and leaves the
 conversation untouched.
 
+## Merging leads
+
+Odoo's merge moves every message of the merged-away leads onto the survivor and
+then deletes them, which clears `lead_id` in the database — behind the ORM, so
+core's write hook never sees it. `crm.lead._merge_dependences` is overridden to
+re-point the conversations at the survivor afterwards, which is what keeps the
+copies and the link on the same record: the conversation follows its texts, and
+detaching it later still removes exactly them.
+
 ## Out of scope
 
 - Starting a conversation from a lead ("message this customer on WhatsApp"):

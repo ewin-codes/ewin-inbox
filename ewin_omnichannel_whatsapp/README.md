@@ -121,10 +121,12 @@ To reach a customer outside the window, use an **approved template**
 (`omnichannel.whatsapp.template`, kept up to date via **Sync Templates**).
 The connector builds the correct Graph API `components` payload from an
 ordered list of variable values and sends it as a `template`-type message,
-which reopens the 24-hour window. Sending an HSM template is currently a
-backend capability of the connector (`send_template(account, conversation,
-template, variables)`); a dedicated "send template" button in the
-conversation composer is not implemented yet — see below.
+which reopens the 24-hour window. **Send WhatsApp Template** in the
+conversation header opens a wizard that lists the template's variables and
+previews the rendered text; it calls `send_template(account, conversation,
+template, variables)` on the connector. The send is recorded as an ordinary
+outbound message, so it reaches the mirrored Discuss channel and the linked
+customer's history like any other reply.
 
 ## Security
 
@@ -163,9 +165,6 @@ These are intentionally not implemented in this version:
   sync is one-way and pull-only. Admins can still edit the locally cached
   template records, but any such edits are overwritten (or the record is
   archived) on the next **Sync Templates** run.
-- **Template send UI** — sending an HSM template is available at the
-  connector/model level (`send_template`) but has no conversation-composer
-  button yet.
 - **Live window countdown** — the 24-hour window is enforced by Meta and
   surfaced as an error on send; there's no per-conversation countdown shown
   in the UI.

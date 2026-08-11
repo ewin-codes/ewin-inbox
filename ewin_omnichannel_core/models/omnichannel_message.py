@@ -102,6 +102,18 @@ class OmnichannelMessage(models.Model):
                 Markup('<div class="o_omni_atts">%s</div>') % Markup("").join(parts)
                 if parts else False)
 
+    def unlink(self):
+        """Take this message's chatter copies down with it.
+
+        The ledger is the only thing that knows where the copies are, and it
+        lives in a relation table keyed on this row — so deleting the message
+        first leaves the customer's card holding a text nothing points at any
+        more. Same invariant ``omnichannel.conversation.unlink`` protects, one
+        message at a time.
+        """
+        self.history_message_ids.sudo().unlink()
+        return super().unlink()
+
     def body_text(self):
         self.ensure_one()
         from odoo.tools import html2plaintext

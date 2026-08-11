@@ -40,3 +40,13 @@ class OmnichannelCrmCase(TransactionCase):
     def _notes(self, record):
         return record.message_ids.filtered(
             lambda m: m.subtype_id == self.note_subtype)
+
+    def _history_notes(self, record):
+        """Only the mirrored copies among a record's notes.
+
+        A lead collects notes of its own — a merge logs a summary one — so
+        anything counting copies has to tell them apart, and the wrapper the
+        history service puts around every body is what does it.
+        """
+        return self._notes(record).filtered(
+            lambda note: "o_omni_history_entry" in (note.body or ""))

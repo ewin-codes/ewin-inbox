@@ -262,6 +262,12 @@ class WhatsAppConnector(models.AbstractModel):
             "state": "sent", "external_message_id": msg_id, "sent_at": now})
         self.env["omnichannel.message.service"]._mirror_to_discuss(
             conversation, message)
+        # A template is the operator re-opening the 24-hour window, so it is
+        # part of what the customer was told and belongs in their history like
+        # any other reply. The message is built here rather than through
+        # omnichannel.message.service because the provider call already
+        # happened — create_outbound would queue a second, plain-text delivery.
+        self.env["omnichannel.history.service"].mirror(message)
         conversation.write({"last_message_at": now,
                             "last_operator_message_at": now})
         return message

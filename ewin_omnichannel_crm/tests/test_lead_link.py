@@ -44,6 +44,28 @@ class TestLeadLink(OmnichannelCrmCase):
         self.assertFalse(self._notes(self.lead))
         self.assertIn("Need 500 units", self._notes(self.partner).body)
 
+    def test_clearing_both_links_at_once_empties_both_chatters(self):
+        """Two targets purged in one write: the copies of the first must not
+        leave the second reading rows that no longer exist."""
+        conv = self._new_conv(
+            partner_id=self.partner.id, lead_id=self.lead.id)
+        message = self._new_message(conv, body="Need 500 units")
+        self.history.mirror(message)
+        conv.write({"partner_id": False, "lead_id": False})
+        self.assertFalse(self._notes(self.partner))
+        self.assertFalse(self._notes(self.lead))
+        self.assertFalse(message.history_message_ids)
+
+    def test_deleting_a_doubly_linked_conversation_empties_both_chatters(self):
+        """unlink purges every target in one call, so it hits the same
+        many-target path as clearing both fields."""
+        conv = self._new_conv(
+            partner_id=self.partner.id, lead_id=self.lead.id)
+        self.history.mirror(self._new_message(conv, body="Need 500 units"))
+        conv.unlink()
+        self.assertFalse(self._notes(self.partner))
+        self.assertFalse(self._notes(self.lead))
+
     def test_one_lead_carries_the_history_of_several_conversations(self):
         """The point of the feature: a customer who writes on two channels is
         one lead, and its chatter holds both exchanges."""
