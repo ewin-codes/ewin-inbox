@@ -95,9 +95,13 @@ class MessageService(models.AbstractModel):
 
         This is the one place that sequence lives: set the conversation clock,
         mirror to the customer-facing thread, record in history, notify
-        subscribers, and hand to the delivery pipeline. A change to this
-        sequence cannot be applied to one path (immediate send, scheduled
-        release, Discuss reply) and forgotten in another.
+        subscribers, and hand to the delivery pipeline. Both ``create_outbound``
+        (immediate reply) and ``release_scheduled`` call it; a change to this
+        sequence cannot be applied to one path and forgotten in the other.
+
+        The Discuss-reply path (``create_outbound_from_discuss``) finalizes
+        separately because its message is already in the channel and must not
+        be mirrored twice.
         """
         now = fields.Datetime.now()
         conv_vals = {
@@ -125,7 +129,6 @@ class MessageService(models.AbstractModel):
                     "there is nothing to schedule."))
             return self._create_scheduled(
                 conversation, body, attachments, scheduled_at)
-        now = fields.Datetime.now()
         # Replying to a customer takes an unassigned conversation automatically
         # (internal notes do not — writing a note is not answering the customer).
         if not is_internal:
@@ -206,6 +209,10 @@ class MessageService(models.AbstractModel):
         attempt synchronous, transient failure retried by ``omnichannel.job``.
         This method does not reimplement delivery; it releases the brake.
         """
+        # Access control at the door: both the cron (superuser) and the "send now"
+        # button (operator) go through here. Enforced at the database level, not
+        # by checking after an UPDATE that may have no effect.
+        message.check_access('write')
         # One statement decides who releases this message. A read followed by a
         # write cannot: the cron holds the row under FOR UPDATE SKIP LOCKED, so a
         # concurrent "send now" passes the state check, blocks on the write, and
@@ -221,7 +228,6 @@ class MessageService(models.AbstractModel):
             return message
         message.invalidate_recordset(["state"])
         conversation = message.conversation_id
-        now = fields.Datetime.now()
         if conversation.state == "closed":
             # "Always send": a reply the operator committed to is not swallowed
             # because the thread was closed in the meantime.

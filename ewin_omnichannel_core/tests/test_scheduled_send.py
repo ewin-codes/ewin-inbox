@@ -203,26 +203,34 @@ class TestScheduledSend(OmnichannelCase):
         self.assertGreaterEqual(self.conv.first_response_seconds, 7200)
 
     def test_release_is_guarded_at_database_level(self):
-        """The database, not the ORM cache, guards idempotency.
+        """The database guard reads the committed row, not the ORM cache.
 
-        After the first release, invalidate the record cache to simulate a
-        concurrent transaction that held the row under FOR UPDATE SKIP LOCKED
-        until after the first release committed. The second release should find
-        no row matching the WHERE condition and return immediately, never
-        reaching the delivery logic — proving it was the database that
-        protected us, not a cached state check.
+        A concurrent caller can pass an ORM-based check against a stale cache:
+        the row locked and updated by another transaction, while the local cache
+        still says the old value. The SQL WHERE clause re-evaluated after the
+        lock is granted catches this, refusing to update a row that no longer
+        matches the condition. This test proves the guard works at the database
+        level, not the cache level, by simulating the stale-cache scenario: the
+        row is moved out from under the cached state without invalidating the
+        cache, then a release is called and correctly refuses to send.
         """
         message = self._schedule()
+        # The Python cache now holds: state = "scheduled"
+        self.assertEqual(message.state, "scheduled")
+        # Move the row out from under that cache — raw SQL, do not touch ORM.
+        # This simulates what another transaction does while we hold the stale
+        # cache: it moves the row to sent.
+        self.env.cr.execute(
+            "UPDATE omnichannel_message SET state = %s WHERE id = %s",
+            ("sent", message.id))
+        # The Python cache still says "scheduled" — that is the whole point.
+        # If the guard were cache-based, release_scheduled would proceed.
+        # If the guard is database-based, it will refuse.
         connector = self._fake_connector()
         with self._with_connector(connector):
-            service = self.env["omnichannel.message.service"]
-            service.release_scheduled(message)
-            # Simulate the cache miss a concurrent transaction would see
-            message.invalidate_recordset(["state"])
-            service.release_scheduled(message)
-        # The connector was called exactly once: the second release found no row
-        # to update and bailed out before reaching delivery.
-        self.assertEqual(connector.send_message.call_count, 1)
-        # Exactly one post in the mirror channel: the second release never ran
-        # the finalize sequence, so no second mirror post.
-        self.assertEqual(len(self.conv.discuss_channel_id.message_ids), 1)
+            self.env["omnichannel.message.service"].release_scheduled(message)
+        # The connector was never called: the WHERE state = 'scheduled' matched
+        # no row, so release_scheduled bailed out without reaching delivery.
+        self.assertEqual(connector.send_message.call_count, 0)
+        # No post in the mirror channel: release never ran the finalize sequence.
+        self.assertEqual(len(self.conv.discuss_channel_id.message_ids), 0)
