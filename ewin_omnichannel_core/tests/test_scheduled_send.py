@@ -1,4 +1,5 @@
 from datetime import timedelta
+from unittest.mock import MagicMock, patch
 
 from odoo import fields
 from odoo.exceptions import UserError, ValidationError
@@ -35,6 +36,34 @@ class TestScheduledSend(OmnichannelCase):
             "scheduled_at": when or self._later(),
             "scheduled_by": self.env.uid,
         })
+
+    def _fake_connector(self):
+        """Stand in for a channel connector.
+
+        The core's test channel has no connector addon behind it, so a real
+        delivery attempt would raise — patching the lookup keeps this suite
+        independent of which connector modules happen to be installed.
+        ``send_message`` marks the message sent, exactly as every real
+        connector does.
+        """
+        connector = MagicMock()
+
+        def send_message(account, message):
+            message.write({
+                "state": "sent",
+                "external_message_id": "ext-1",
+                "sent_at": fields.Datetime.now(),
+            })
+            return True
+
+        connector.send_message.side_effect = send_message
+        return connector
+
+    def _with_connector(self, connector):
+        """Patch account._get_connector for the duration of a `with` block."""
+        return patch.object(
+            type(self.env["omnichannel.account"]), "_get_connector",
+            return_value=connector)
 
     def test_reschedule_while_waiting(self):
         message = self._scheduled_message()
@@ -82,3 +111,43 @@ class TestScheduledSend(OmnichannelCase):
                 "scheduled_at": fields.Datetime.now() - timedelta(minutes=1),
                 "scheduled_by": self.env.uid,
             })
+
+    def test_scheduling_delivers_nothing(self):
+        connector = self._fake_connector()
+        with self._with_connector(connector):
+            message = self.env["omnichannel.message.service"].create_outbound(
+                self.conv, "<p>see you tomorrow</p>",
+                scheduled_at=self._later())
+        connector.send_message.assert_not_called()
+        self.assertEqual(message.state, "scheduled")
+        self.assertEqual(message.scheduled_by, self.env.user)
+        self.assertFalse(self.env["omnichannel.job"].search(
+            [("method", "=", "send_outbound")]))
+
+    def test_scheduling_leaves_thread_and_metrics_untouched(self):
+        with self._with_connector(self._fake_connector()):
+            message = self.env["omnichannel.message.service"].create_outbound(
+                self.conv, "<p>see you tomorrow</p>",
+                scheduled_at=self._later())
+        # not in the customer-facing thread: it keeps showing what the customer
+        # has actually seen
+        self.assertFalse(message.mail_message_id)
+        self.assertFalse(self.conv.discuss_channel_id.message_ids)
+        # and not counted as an answer: response time must span up to the real
+        # delivery, not up to the moment it was planned
+        self.assertFalse(self.conv.first_operator_message_at)
+        self.assertFalse(self.conv.last_message_at)
+
+    def test_scheduling_takes_the_conversation(self):
+        self.assertFalse(self.conv.operator_id)
+        with self._with_connector(self._fake_connector()):
+            self.env["omnichannel.message.service"].create_outbound(
+                self.conv, "<p>see you tomorrow</p>",
+                scheduled_at=self._later())
+        self.assertEqual(self.conv.operator_id, self.env.user)
+
+    def test_internal_note_cannot_be_scheduled(self):
+        with self.assertRaises(UserError):
+            self.env["omnichannel.message.service"].create_outbound(
+                self.conv, "<p>remind me</p>", is_internal=True,
+                scheduled_at=self._later())

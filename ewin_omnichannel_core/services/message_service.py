@@ -1,6 +1,8 @@
 from markupsafe import Markup
 
-from odoo import api, fields, models
+from odoo import _, api, fields, models
+from odoo.exceptions import UserError
+from odoo.tools import format_datetime
 
 INTERNAL_BADGE = Markup(
     '<span class="o_omni_internal_marker">'
@@ -87,7 +89,15 @@ class MessageService(models.AbstractModel):
         return mail_message
 
     @api.model
-    def create_outbound(self, conversation, body, is_internal=False, attachments=None):
+    def create_outbound(self, conversation, body, is_internal=False,
+                        attachments=None, scheduled_at=None):
+        if scheduled_at:
+            if is_internal:
+                raise UserError(_(
+                    "An internal note is never delivered to the customer, so "
+                    "there is nothing to schedule."))
+            return self._create_scheduled(
+                conversation, body, attachments, scheduled_at)
         now = fields.Datetime.now()
         # Replying to a customer takes an unassigned conversation automatically
         # (internal notes do not — writing a note is not answering the customer).
@@ -119,6 +129,53 @@ class MessageService(models.AbstractModel):
             # through the ir.cron queue.
             self.env["omnichannel.routing.service"].deliver_outbound(message)
         return message
+
+    @api.model
+    def _create_scheduled(self, conversation, body, attachments, scheduled_at):
+        """Park an outbound reply until ``scheduled_at``.
+
+        Everything an immediate reply does beyond creating the row is
+        deliberately skipped and left to ``release_scheduled``:
+
+        * no Discuss mirror and no chatter copy — the thread and the customer's
+          card must keep showing what the customer has actually seen;
+        * no conversation timestamps, and above all no
+          ``first_operator_message_at`` — counting a reply from the moment it
+          was *planned* would report a two-minute response on a conversation
+          the customer waited a day for.
+
+        Scheduling does take the conversation, though: committing to a reply is
+        answering, the same as sending one.
+        """
+        conversation._ensure_operator()
+        message = self.env["omnichannel.message"].create({
+            "conversation_id": conversation.id,
+            "direction": "outbound",
+            "sender_type": "operator",
+            "is_internal": False,
+            "message_type": "text",
+            "body": body,
+            "author_partner_id": self.env.user.partner_id.id,
+            "state": "scheduled",
+            "scheduled_at": scheduled_at,
+            "scheduled_by": self.env.uid,
+            "attachment_ids": [
+                (6, 0, (attachments or self.env["ir.attachment"]).ids)],
+        })
+        conversation.message_post(body=_(
+            "Reply scheduled for %(when)s by %(user)s.",
+            when=self._format_scheduled(scheduled_at),
+            user=self.env.user.name))
+        # The realtime signal is what refreshes the clock badge in the
+        # conversation list; the panel itself is reloaded by the object button
+        # the operator just pressed. See the spec's "Realtime, honestly".
+        conversation._notify_omni_event("message_scheduled")
+        return message
+
+    @api.model
+    def _format_scheduled(self, when):
+        """A send time in the reader's own timezone, for a chatter line."""
+        return format_datetime(self.env, fields.Datetime.to_datetime(when))
 
     @api.model
     def create_outbound_from_discuss(self, conversation, mail_message):
