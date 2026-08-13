@@ -1,7 +1,12 @@
+import logging
+import threading
+
 from markupsafe import Markup, escape
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
+
+_logger = logging.getLogger(__name__)
 
 MESSAGE_TYPES = [
     ("text", "Text"), ("image", "Image"), ("document", "Document"),
@@ -195,3 +200,51 @@ class OmnichannelMessage(models.Model):
         """
         self.ensure_one()
         return self.received_at or self.sent_at or self.create_date
+
+    @api.model
+    def _cron_send_scheduled(self, limit=100):
+        """Release every scheduled message whose time has come.
+
+        ``FOR UPDATE SKIP LOCKED`` is load-bearing, not decoration. Without the
+        lock: this cron reads a row as scheduled; an operator concurrently
+        pushes it to tomorrow and commits first; the cron then writes over that
+        decision and the message goes out today. With it, the operator's UPDATE
+        waits for this transaction and their write then meets the guard in
+        ``write`` — a clear "no longer scheduled" error instead of a silently
+        ignored reschedule. ``SKIP LOCKED`` keeps two overlapping runs off each
+        other's rows.
+
+        Ordered by ``scheduled_at`` so that a backlog after downtime drains
+        oldest-first, and committed per message like the job queue: one failure
+        must not roll back its peers.
+        """
+        self.env.cr.execute("""
+            SELECT id FROM omnichannel_message
+             WHERE state = 'scheduled' AND scheduled_at <= %s
+             ORDER BY scheduled_at, id
+             LIMIT %s
+               FOR UPDATE SKIP LOCKED
+        """, (fields.Datetime.now(), limit))
+        due = self.browse([row[0] for row in self.env.cr.fetchall()])
+        service = self.env["omnichannel.message.service"]
+        testing = getattr(threading.current_thread(), "testing", False)
+        for message in due:
+            try:
+                # Use sudo() to bypass access checks: the scheduler acts as the
+                # system, not as the operator. Company record rules would reject
+                # a message belonging to another company with AccessError, which
+                # would silently fail the send. The operator's own access check
+                # happens when they compose the reply, not when the cron releases it.
+                service.release_scheduled(message.sudo())
+            except Exception:  # noqa: BLE001 - one bad message, not the batch
+                _logger.exception(
+                    "Could not release scheduled message %s", message.id)
+                if not testing:
+                    # Outside tests each message owns its transaction, so
+                    # rolling back drops only this one. Under the test runner
+                    # everything shares one transaction, and a rollback would
+                    # take the test's own fixtures with it.
+                    self.env.cr.rollback()
+                continue
+            if not testing:
+                self.env.cr.commit()

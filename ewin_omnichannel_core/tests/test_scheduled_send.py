@@ -234,3 +234,21 @@ class TestScheduledSend(OmnichannelCase):
         self.assertEqual(connector.send_message.call_count, 0)
         # No post in the mirror channel: release never ran the finalize sequence.
         self.assertEqual(len(self.conv.discuss_channel_id.message_ids), 0)
+
+    def test_cron_releases_a_due_message(self):
+        message = self._schedule(self._later(1))
+        connector = self._fake_connector()
+        due = fields.Datetime.now() + timedelta(hours=2)
+        with patch.object(fields.Datetime, "now", return_value=due), \
+             self._with_connector(connector):
+            self.env["omnichannel.message"]._cron_send_scheduled()
+        connector.send_message.assert_called_once()
+        self.assertEqual(message.state, "sent")
+
+    def test_cron_leaves_a_future_message_alone(self):
+        message = self._schedule(self._later(5))
+        connector = self._fake_connector()
+        with self._with_connector(connector):
+            self.env["omnichannel.message"]._cron_send_scheduled()
+        connector.send_message.assert_not_called()
+        self.assertEqual(message.state, "scheduled")
