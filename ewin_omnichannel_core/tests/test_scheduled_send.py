@@ -151,3 +151,53 @@ class TestScheduledSend(OmnichannelCase):
             self.env["omnichannel.message.service"].create_outbound(
                 self.conv, "<p>remind me</p>", is_internal=True,
                 scheduled_at=self._later())
+
+    def _schedule(self, when=None, body="<p>see you tomorrow</p>"):
+        """Schedule a reply the way the composer does."""
+        with self._with_connector(self._fake_connector()):
+            return self.env["omnichannel.message.service"].create_outbound(
+                self.conv, body, scheduled_at=when or self._later())
+
+    def test_release_delivers_and_mirrors(self):
+        message = self._schedule()
+        connector = self._fake_connector()
+        with self._with_connector(connector):
+            self.env["omnichannel.message.service"].release_scheduled(message)
+        connector.send_message.assert_called_once()
+        self.assertEqual(message.state, "sent")
+        # now it belongs in the thread and on the conversation's clock
+        self.assertTrue(message.mail_message_id)
+        self.assertTrue(self.conv.first_operator_message_at)
+        self.assertTrue(self.conv.last_message_at)
+
+    def test_release_is_idempotent(self):
+        message = self._schedule()
+        connector = self._fake_connector()
+        with self._with_connector(connector):
+            service = self.env["omnichannel.message.service"]
+            service.release_scheduled(message)
+            service.release_scheduled(message)
+        self.assertEqual(connector.send_message.call_count, 1)
+        # exactly one post in the mirror channel: a second release would post
+        # again and simply move mail_message_id, so counting the channel is
+        # what actually proves it, not looking the id up.
+        self.assertEqual(len(self.conv.discuss_channel_id.message_ids), 1)
+
+    def test_release_reopens_a_closed_conversation(self):
+        message = self._schedule()
+        self.conv._close()
+        self.assertEqual(self.conv.state, "closed")
+        with self._with_connector(self._fake_connector()):
+            self.env["omnichannel.message.service"].release_scheduled(message)
+        self.assertEqual(self.conv.state, "open")
+        self.assertEqual(message.state, "sent")
+
+    def test_response_time_is_measured_at_delivery(self):
+        self.conv.write({
+            "first_customer_message_at": fields.Datetime.now() - timedelta(hours=2)})
+        message = self._schedule()
+        # planning alone must not stop the clock
+        self.assertEqual(self.conv.first_response_seconds, 0)
+        with self._with_connector(self._fake_connector()):
+            self.env["omnichannel.message.service"].release_scheduled(message)
+        self.assertGreaterEqual(self.conv.first_response_seconds, 7200)

@@ -173,6 +173,41 @@ class MessageService(models.AbstractModel):
         return message
 
     @api.model
+    def release_scheduled(self, message):
+        """Let a scheduled message go — the single door out of ``scheduled``.
+
+        The cron calls it when the time arrives and the panel's "send now"
+        button calls it early, which is exactly why the state re-check on the
+        first line matters: both can genuinely fire in the same second, and the
+        second caller has to be a no-op rather than a second delivery.
+
+        Everything ``_create_scheduled`` deferred happens here, in the order a
+        reader would expect: the conversation is reopened if it was closed, its
+        clock is set, the message appears in the thread and on the customer's
+        card, and only then is it handed to the ordinary delivery path — first
+        attempt synchronous, transient failure retried by ``omnichannel.job``.
+        This method does not reimplement delivery; it releases the brake.
+        """
+        if message.state != "scheduled":
+            return message
+        conversation = message.conversation_id
+        now = fields.Datetime.now()
+        message.write({"state": "queued"})
+        if conversation.state == "closed":
+            # "Always send": a reply the operator committed to is not swallowed
+            # because the thread was closed in the meantime.
+            conversation.action_reopen()
+        conv_vals = {"last_message_at": now, "last_operator_message_at": now}
+        if not conversation.first_operator_message_at:
+            conv_vals["first_operator_message_at"] = now
+        conversation.write(conv_vals)
+        self._mirror_to_discuss(conversation, message)
+        self.env["omnichannel.history.service"].mirror(message)
+        conversation._notify_omni_event("message_sent")
+        self.env["omnichannel.routing.service"].deliver_outbound(message)
+        return message
+
+    @api.model
     def _format_scheduled(self, when):
         """A send time in the reader's own timezone, for a chatter line."""
         return format_datetime(self.env, fields.Datetime.to_datetime(when))
