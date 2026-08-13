@@ -118,6 +118,22 @@ class OmnichannelMessage(models.Model):
                 raise ValidationError(
                     _("A scheduled message must carry a send time."))
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        """Guard the send time at creation time, not just on reschedule.
+
+        A scheduled message created with a past time would fire on the very
+        next cron tick. A composer that feeds messages into this model needs
+        no future-time check of its own — this layer handles it. So an
+        operator who picks a send time, leaves the form open for twenty
+        minutes, then presses Schedule gets a validation error, not a silent
+        immediate send.
+        """
+        for vals in vals_list:
+            if vals.get("scheduled_at"):
+                self._check_send_time_is_future(vals["scheduled_at"])
+        return super().create(vals_list)
+
     def write(self, vals):
         """Guard the send time of a deferred reply.
 

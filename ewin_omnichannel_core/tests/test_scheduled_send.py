@@ -50,7 +50,13 @@ class TestScheduledSend(OmnichannelCase):
 
     def test_send_time_frozen_once_it_has_left(self):
         message = self._scheduled_message()
+        original_scheduled_at = message.scheduled_at
+        original_scheduled_by = message.scheduled_by
         message.write({"state": "sent"})
+        # Verify the scheduling metadata survives delivery
+        self.assertEqual(message.scheduled_at, original_scheduled_at)
+        self.assertEqual(message.scheduled_by, original_scheduled_by)
+        # Verify the send time cannot be changed once sent
         with self.assertRaises(UserError):
             message.write({"scheduled_at": self._later(2)})
 
@@ -62,4 +68,17 @@ class TestScheduledSend(OmnichannelCase):
                 "sender_type": "operator",
                 "message_type": "text",
                 "state": "scheduled",
+            })
+
+    def test_create_with_past_scheduled_at_refused(self):
+        with self.assertRaises(UserError):
+            self.env["omnichannel.message"].create({
+                "conversation_id": self.conv.id,
+                "direction": "outbound",
+                "sender_type": "operator",
+                "message_type": "text",
+                "body": "<p>later</p>",
+                "state": "scheduled",
+                "scheduled_at": fields.Datetime.now() - timedelta(minutes=1),
+                "scheduled_by": self.env.uid,
             })
