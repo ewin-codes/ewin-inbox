@@ -89,6 +89,33 @@ class MessageService(models.AbstractModel):
         return mail_message
 
     @api.model
+    def _finalize_send(self, conversation, message, is_internal=False):
+        """Turn a created outbound row into a message the customer, the thread
+        and the reports all agree happened.
+
+        This is the one place that sequence lives: set the conversation clock,
+        mirror to the customer-facing thread, record in history, notify
+        subscribers, and hand to the delivery pipeline. A change to this
+        sequence cannot be applied to one path (immediate send, scheduled
+        release, Discuss reply) and forgotten in another.
+        """
+        now = fields.Datetime.now()
+        conv_vals = {
+            "last_message_at": now,
+            "last_operator_message_at": now,
+        }
+        if not is_internal and not conversation.first_operator_message_at:
+            conv_vals["first_operator_message_at"] = now
+        conversation.write(conv_vals)
+        self._mirror_to_discuss(conversation, message)
+        self.env["omnichannel.history.service"].mirror(message)
+        conversation._notify_omni_event("message_sent")
+        if not is_internal:
+            # The first attempt is immediate (synchronous). Only retries go
+            # through the ir.cron queue.
+            self.env["omnichannel.routing.service"].deliver_outbound(message)
+
+    @api.model
     def create_outbound(self, conversation, body, is_internal=False,
                         attachments=None, scheduled_at=None):
         if scheduled_at:
@@ -114,20 +141,7 @@ class MessageService(models.AbstractModel):
             "state": "queued" if not is_internal else "sent",
             "attachment_ids": [(6, 0, (attachments or self.env["ir.attachment"]).ids)],
         })
-        conv_vals = {
-            "last_message_at": now,
-            "last_operator_message_at": now,
-        }
-        if not is_internal and not conversation.first_operator_message_at:
-            conv_vals["first_operator_message_at"] = now
-        conversation.write(conv_vals)
-        self._mirror_to_discuss(conversation, message)
-        self.env["omnichannel.history.service"].mirror(message)
-        conversation._notify_omni_event("message_sent")
-        if not is_internal:
-            # The first attempt is immediate (synchronous). Only retries go
-            # through the ir.cron queue.
-            self.env["omnichannel.routing.service"].deliver_outbound(message)
+        self._finalize_send(conversation, message, is_internal)
         return message
 
     @api.model
@@ -177,9 +191,13 @@ class MessageService(models.AbstractModel):
         """Let a scheduled message go — the single door out of ``scheduled``.
 
         The cron calls it when the time arrives and the panel's "send now"
-        button calls it early, which is exactly why the state re-check on the
-        first line matters: both can genuinely fire in the same second, and the
-        second caller has to be a no-op rather than a second delivery.
+        button calls it early, which is exactly why the database-level guard on
+        the first line matters: both can genuinely fire in the same second, and
+        the second caller has to be a no-op rather than a second delivery.
+
+        The state transition is atomic: a conditional UPDATE ensures that only
+        one transaction wins the race. The loser finds no rows to update and
+        returns immediately, never reaching the delivery logic.
 
         Everything ``_create_scheduled`` deferred happens here, in the order a
         reader would expect: the conversation is reopened if it was closed, its
@@ -188,23 +206,27 @@ class MessageService(models.AbstractModel):
         attempt synchronous, transient failure retried by ``omnichannel.job``.
         This method does not reimplement delivery; it releases the brake.
         """
-        if message.state != "scheduled":
+        # One statement decides who releases this message. A read followed by a
+        # write cannot: the cron holds the row under FOR UPDATE SKIP LOCKED, so a
+        # concurrent "send now" passes the state check, blocks on the write, and
+        # resumes once the cron has committed — with a cached state that still
+        # says scheduled. PostgreSQL re-evaluates this WHERE after the lock is
+        # granted, so the loser updates no row and leaves without sending.
+        self.env.cr.execute("""
+            UPDATE omnichannel_message SET state = 'queued'
+             WHERE id = %s AND state = 'scheduled'
+         RETURNING id
+        """, (message.id,))
+        if not self.env.cr.fetchone():
             return message
+        message.invalidate_recordset(["state"])
         conversation = message.conversation_id
         now = fields.Datetime.now()
-        message.write({"state": "queued"})
         if conversation.state == "closed":
             # "Always send": a reply the operator committed to is not swallowed
             # because the thread was closed in the meantime.
             conversation.action_reopen()
-        conv_vals = {"last_message_at": now, "last_operator_message_at": now}
-        if not conversation.first_operator_message_at:
-            conv_vals["first_operator_message_at"] = now
-        conversation.write(conv_vals)
-        self._mirror_to_discuss(conversation, message)
-        self.env["omnichannel.history.service"].mirror(message)
-        conversation._notify_omni_event("message_sent")
-        self.env["omnichannel.routing.service"].deliver_outbound(message)
+        self._finalize_send(conversation, message, is_internal=False)
         return message
 
     @api.model

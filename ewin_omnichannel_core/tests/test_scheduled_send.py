@@ -201,3 +201,28 @@ class TestScheduledSend(OmnichannelCase):
         with self._with_connector(self._fake_connector()):
             self.env["omnichannel.message.service"].release_scheduled(message)
         self.assertGreaterEqual(self.conv.first_response_seconds, 7200)
+
+    def test_release_is_guarded_at_database_level(self):
+        """The database, not the ORM cache, guards idempotency.
+
+        After the first release, invalidate the record cache to simulate a
+        concurrent transaction that held the row under FOR UPDATE SKIP LOCKED
+        until after the first release committed. The second release should find
+        no row matching the WHERE condition and return immediately, never
+        reaching the delivery logic — proving it was the database that
+        protected us, not a cached state check.
+        """
+        message = self._schedule()
+        connector = self._fake_connector()
+        with self._with_connector(connector):
+            service = self.env["omnichannel.message.service"]
+            service.release_scheduled(message)
+            # Simulate the cache miss a concurrent transaction would see
+            message.invalidate_recordset(["state"])
+            service.release_scheduled(message)
+        # The connector was called exactly once: the second release found no row
+        # to update and bailed out before reaching delivery.
+        self.assertEqual(connector.send_message.call_count, 1)
+        # Exactly one post in the mirror channel: the second release never ran
+        # the finalize sequence, so no second mirror post.
+        self.assertEqual(len(self.conv.discuss_channel_id.message_ids), 1)
