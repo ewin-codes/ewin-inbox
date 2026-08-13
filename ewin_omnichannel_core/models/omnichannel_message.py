@@ -1,6 +1,7 @@
 from markupsafe import Markup, escape
 
-from odoo import api, fields, models
+from odoo import _, api, fields, models
+from odoo.exceptions import UserError, ValidationError
 
 MESSAGE_TYPES = [
     ("text", "Text"), ("image", "Image"), ("document", "Document"),
@@ -10,7 +11,8 @@ MESSAGE_TYPES = [
 ]
 
 MESSAGE_STATES = [
-    ("received", "Received"), ("queued", "Queued"), ("processing", "Processing"),
+    ("received", "Received"), ("scheduled", "Scheduled"),
+    ("queued", "Queued"), ("processing", "Processing"),
     ("sent", "Sent"), ("delivered", "Delivered"), ("read", "Read"),
     ("failed", "Failed"), ("cancelled", "Cancelled"),
 ]
@@ -65,6 +67,13 @@ class OmnichannelMessage(models.Model):
     error_message = fields.Text()
     retry_count = fields.Integer(default=0)
     next_retry_at = fields.Datetime()
+    scheduled_at = fields.Datetime(
+        index=True, copy=False, string="Sends at",
+        help="When an outbound reply an operator deferred is due. Kept after "
+             "delivery: 'sent_at' says when it actually went out, this says "
+             "when it was meant to.")
+    scheduled_by = fields.Many2one(
+        "res.users", readonly=True, copy=False, string="Scheduled by")
     raw_payload = fields.Json(
         groups="ewin_omnichannel_core.group_omni_admin", default=dict)
 
@@ -101,6 +110,48 @@ class OmnichannelMessage(models.Model):
             message.attachment_preview = (
                 Markup('<div class="o_omni_atts">%s</div>') % Markup("").join(parts)
                 if parts else False)
+
+    @api.constrains("state", "scheduled_at")
+    def _check_scheduled_has_time(self):
+        for message in self:
+            if message.state == "scheduled" and not message.scheduled_at:
+                raise ValidationError(
+                    _("A scheduled message must carry a send time."))
+
+    def write(self, vals):
+        """Guard the send time of a deferred reply.
+
+        Both rules live here rather than in the composer or the panel. The
+        panel edits its rows inline and any client can write over RPC, so a
+        rule enforced in a view is not enforced at all.
+
+        Only a write that touches ``scheduled_at`` is inspected, which is what
+        leaves the release path free: it moves the state to ``queued`` without
+        touching the time.
+        """
+        if "scheduled_at" in vals:
+            self._check_reschedulable()
+            self._check_send_time_is_future(vals["scheduled_at"])
+        return super().write(vals)
+
+    def _check_reschedulable(self):
+        """Refuse to move the send time of a message that is no longer waiting."""
+        labels = dict(MESSAGE_STATES)
+        for message in self:
+            if message.state != "scheduled":
+                raise UserError(_(
+                    "This message is no longer scheduled (%(state)s) — its "
+                    "send time can no longer be changed.",
+                    state=labels.get(message.state, message.state)))
+
+    @api.model
+    def _check_send_time_is_future(self, when):
+        """A send time in the past would fire on the very next cron tick, which
+        is not scheduling — it is an immediate send with extra steps."""
+        if not when:
+            return
+        if fields.Datetime.to_datetime(when) <= fields.Datetime.now():
+            raise UserError(_("The scheduled send time must be in the future."))
 
     def unlink(self):
         """Take this message's chatter copies down with it.
