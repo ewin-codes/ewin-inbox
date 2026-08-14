@@ -147,11 +147,12 @@ class OmnichannelConversation(models.Model):
         for conv in self:
             count = counts.get(conv.id, 0)
             conv.scheduled_count = count
-            conv.scheduled_badge = Markup(
-                '<span class="badge text-bg-warning" '
-                'title="Replies waiting to be sent">'
-                '<i class="fa fa-clock-o me-1"></i>%s</span>') % count \
-                if count else False
+            conv.scheduled_badge = (
+                Markup(
+                    '<span class="badge text-bg-warning" '
+                    'title="Replies waiting to be sent">'
+                    '<i class="fa fa-clock-o me-1"></i>%s</span>') % count
+                if count else False)
 
     @api.depends("first_customer_message_at", "first_operator_message_at")
     def _compute_first_response_seconds(self):
@@ -534,7 +535,13 @@ class OmnichannelConversation(models.Model):
         self.env["bus.bus"]._sendone(partner, "omni.inbox", data)
         return True
 
-    def action_send_reply(self):
+    def _post_composer(self, scheduled_at=None):
+        """Post the composed reply, clearing the composer after.
+
+        Shared logic for immediate send and scheduling: read the composer,
+        validate it has content, call the service, mark read, and reset the
+        composer (except composer_is_internal which persists).
+        """
         self.ensure_one()
         body = (self.composer_body or "").strip()
         attachments = self.composer_attachment_ids
@@ -542,13 +549,14 @@ class OmnichannelConversation(models.Model):
             return
         self.env["omnichannel.message.service"].create_outbound(
             self, body, is_internal=self.composer_is_internal,
-            attachments=attachments)
+            attachments=attachments, scheduled_at=scheduled_at)
         self._mark_read()
         self.composer_body = False
-        # keep composer_is_internal as-is: an operator writing internal notes
-        # usually writes several in a row, so the toggle stays on until they
-        # turn it off themselves.
+        self.composer_scheduled_at = False
         self.composer_attachment_ids = [(5, 0, 0)]
+
+    def action_send_reply(self):
+        self._post_composer()
 
     def action_schedule_reply(self):
         """Park the composed reply until ``composer_scheduled_at``.
@@ -558,17 +566,7 @@ class OmnichannelConversation(models.Model):
         click and never something an operator does by reflex.
         """
         self.ensure_one()
-        body = (self.composer_body or "").strip()
-        attachments = self.composer_attachment_ids
-        if not body and not attachments:
-            return
         if not self.composer_scheduled_at:
             raise UserError(
                 _("Pick a date and time to send this reply later."))
-        self.env["omnichannel.message.service"].create_outbound(
-            self, body, is_internal=self.composer_is_internal,
-            attachments=attachments, scheduled_at=self.composer_scheduled_at)
-        self._mark_read()
-        self.composer_body = False
-        self.composer_scheduled_at = False
-        self.composer_attachment_ids = [(5, 0, 0)]
+        self._post_composer(scheduled_at=self.composer_scheduled_at)

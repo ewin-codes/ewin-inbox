@@ -440,15 +440,33 @@ class TestScheduledSend(OmnichannelCase):
     def test_panel_shows_only_waiting_replies(self):
         first = self._schedule(self._later(2))
         second = self._schedule(self._later(4))
-        self.conv.invalidate_recordset()
-        self.assertEqual(self.conv.scheduled_message_ids, first | second)
+        # Verify grouping is per-conversation: a second conversation should
+        # have its own count, not share the first's.
+        conv2 = self.env["omnichannel.conversation"].create({
+            "name": "Second conversation", "account_id": self.account.id,
+            "identity_id": self.identity.id})
+        third = self.env["omnichannel.message"].create({
+            "conversation_id": conv2.id,
+            "direction": "outbound",
+            "sender_type": "operator",
+            "message_type": "text",
+            "body": "<p>later</p>",
+            "state": "scheduled",
+            "scheduled_at": self._later(3),
+            "scheduled_by": self.env.uid,
+        })
         self.assertEqual(self.conv.scheduled_count, 2)
         self.assertIn("2", self.conv.scheduled_badge or "")
+        self.assertEqual(conv2.scheduled_count, 1)
+        self.assertIn("1", conv2.scheduled_badge or "")
+        # Release one from the first conversation
         with self._with_connector(self._fake_connector()):
             self.env["omnichannel.message.service"].release_scheduled(first)
-        self.conv.invalidate_recordset()
-        self.assertEqual(self.conv.scheduled_message_ids, second)
+        # Both conversations should update without manual invalidation
         self.assertEqual(self.conv.scheduled_count, 1)
+        self.assertIn("1", self.conv.scheduled_badge or "")
+        self.assertEqual(conv2.scheduled_count, 1)
+        self.assertIn("1", conv2.scheduled_badge or "")
 
     def test_badge_is_empty_without_scheduled_replies(self):
         self.assertFalse(self.conv.scheduled_badge)

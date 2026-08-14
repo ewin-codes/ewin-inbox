@@ -344,6 +344,9 @@ class OmnichannelMessage(models.Model):
                     "already %(state)s.",
                     state=MESSAGE_STATES_LABELS.get(actual_state, actual_state)))
             message.invalidate_recordset(["state"])
+            # The UPDATE goes behind the ORM's back, so the dependency graph must
+            # be notified by hand so dependent computed fields recompute.
+            message.modified(["state"])
             message.conversation_id.message_post(body=_(
                 "Scheduled reply for %(when)s cancelled by %(user)s.",
                 when=service._format_scheduled(message.scheduled_at),

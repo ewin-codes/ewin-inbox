@@ -231,6 +231,9 @@ class MessageService(models.AbstractModel):
         if not self.env.cr.fetchone():
             return False
         message.invalidate_recordset(["state"])
+        # The UPDATE goes behind the ORM's back, so the dependency graph must
+        # be notified by hand so dependent computed fields recompute.
+        message.modified(["state"])
         conversation = message.conversation_id
         if conversation.state == "closed":
             # "Always send": a reply the operator committed to is not swallowed
