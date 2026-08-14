@@ -193,6 +193,7 @@
 // read as one control group and invite a misclick).
 .o_omni_later {
     margin-left: 18px;
+    gap: 4px; // the clock, the time and its cross are one control, not three
 
     // An input with no width of its own is sized by its `size` attribute — 20
     // characters, some 30px wider than the stamp it holds. That slack sat
@@ -200,6 +201,17 @@
     // unrelated controls rather than one and its undo.
     input {
         width: 10em;
+        // Odoo underlines its inputs: a border on the bottom edge and none on
+        // the top. The box therefore has a pixel more below the text than
+        // above it, and centring the box leaves the text itself sitting high
+        // next to the icons either side. An invisible top border squares it.
+        border-top: 1px solid transparent;
+    }
+
+    // Bootstrap's button padding is sized for a button with a word in it, not
+    // for a cross that belongs against the value it clears.
+    .o_omni_later_clear {
+        padding: 2px 4px;
     }
 }
 
