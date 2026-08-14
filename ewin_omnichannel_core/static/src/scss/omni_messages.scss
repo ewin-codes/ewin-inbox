@@ -121,6 +121,28 @@
     }
 }
 
+// Replies waiting to be delivered, above the composer. Amber like an internal
+// note, and for the same reason: it is a state the operator has to notice
+// before starting to type.
+.o_omni_scheduled {
+    border: 1px solid #ffca28;
+    border-radius: 6px;
+    background: #fffdf5;
+    padding: 6px 8px;
+    margin-top: 8px;
+
+    .o_omni_scheduled_head {
+        font-size: 12px;
+        margin-bottom: 4px;
+    }
+
+    // the embedded list draws its own white card, which fights the amber
+    .o_list_renderer,
+    table.o_list_table {
+        background: transparent;
+    }
+}
+
 // Toggle + its label centred on one line (see omni-vrow: the boolean_toggle
 // field wrapper otherwise adds vertical margin that pushes them out of line).
 .o_omni_internal_switch {

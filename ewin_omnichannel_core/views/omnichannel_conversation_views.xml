@@ -8,6 +8,8 @@
                 <field name="unread_count" column_invisible="1"/>
                 <field name="partner_id" column_invisible="1"/>
                 <field name="customer_label" widget="html" string="Customer"/>
+                <field name="scheduled_badge" widget="html" string="⏰"
+                       optional="show"/>
                 <field name="subject" string="Subject" optional="show"/>
                 <field name="account_id"/>
                 <field name="last_message_at"/>
@@ -87,6 +89,36 @@
                            widget="omni_discuss_thread" nolabel="1" readonly="1"
                            class="o_omni_thread_field flex-grow-1"/>
 
+                    <!-- Replies waiting to be delivered. Hidden entirely when
+                         there are none, so it costs nothing on a normal
+                         conversation and cannot be missed on a deferred one. -->
+                    <div class="o_omni_scheduled"
+                         invisible="not scheduled_message_ids">
+                        <div class="o_omni_vrow o_omni_scheduled_head">
+                            <i class="fa fa-clock-o"/>
+                            <span class="fw-bold">Scheduled</span>
+                            <field name="scheduled_count" nolabel="1"
+                                   class="badge text-bg-warning"/>
+                        </div>
+                        <field name="scheduled_message_ids" nolabel="1">
+                            <list editable="bottom" create="0" delete="0"
+                                  default_order="scheduled_at">
+                                <field name="scheduled_at" string="Sends at"/>
+                                <field name="body" widget="html" string="Reply"
+                                       readonly="1"/>
+                                <field name="has_attachments" string="Files"
+                                       readonly="1" optional="show"/>
+                                <field name="scheduled_by" readonly="1"
+                                       optional="hide"/>
+                                <button name="action_send_now" type="object"
+                                        icon="fa-paper-plane" title="Send now"/>
+                                <button name="action_cancel_schedule"
+                                        type="object" icon="fa-times"
+                                        title="Cancel"/>
+                            </list>
+                        </field>
+                    </div>
+
                     <!-- Composer: pinned to the bottom of the screen, compact. -->
                     <div class="o_omni_composer">
                         <div class="d-flex align-items-center justify-content-between mb-1">
@@ -111,11 +143,25 @@
                         <field name="composer_body" nolabel="1"
                                widget="omni_composer"
                                placeholder="Type a reply to the customer..."/>
-                        <div class="d-flex align-items-center justify-content-between mt-1">
+                        <!-- o_omni_vrow, not d-flex align-items-center: this row
+                             mixes a datetime field widget with buttons and the
+                             attachment widget, and baseline alignment puts the
+                             field's text a few pixels below its neighbours. -->
+                        <div class="o_omni_vrow justify-content-between mt-1">
                             <button name="action_send_reply" type="object"
                                     string="Send" class="btn-primary"/>
-                            <field name="composer_attachment_ids" nolabel="1"
-                                   widget="many2many_binary"/>
+                            <div class="o_omni_vrow">
+                                <i class="fa fa-clock-o text-muted"
+                                   title="Send later"/>
+                                <field name="composer_scheduled_at" nolabel="1"
+                                       placeholder="Send later…"/>
+                                <button name="action_schedule_reply"
+                                        type="object" string="Schedule"
+                                        class="btn-secondary"
+                                        invisible="not composer_scheduled_at"/>
+                                <field name="composer_attachment_ids" nolabel="1"
+                                       widget="many2many_binary"/>
+                            </div>
                         </div>
                     </div>
                 </sheet>

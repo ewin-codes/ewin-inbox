@@ -67,6 +67,11 @@
                         domain="[('direction','=','inbound')]"/>
                 <filter name="outbound" string="Outbound"
                         domain="[('direction','=','outbound')]"/>
+                <separator/>
+                <filter name="scheduled" string="Scheduled"
+                        domain="[('state','=','scheduled')]"/>
+                <filter name="cancelled" string="Cancelled"
+                        domain="[('state','=','cancelled')]"/>
                 <group expand="0" string="Group By">
                     <filter name="g_channel" string="Channel"
                             context="{'group_by':'channel_id'}"/>
@@ -76,6 +81,8 @@
                             context="{'group_by':'account_id'}"/>
                     <filter name="g_type" string="Type"
                             context="{'group_by':'message_type'}"/>
+                    <filter name="g_state" string="Status"
+                            context="{'group_by':'state'}"/>
                 </group>
             </search>
         </field>
@@ -85,5 +92,8 @@
         <field name="name">Message Volume</field>
         <field name="res_model">omnichannel.message</field>
         <field name="view_mode">graph,pivot</field>
+        <!-- Volume means messages that actually moved. A scheduled one has not
+             gone out yet and a cancelled one never will. -->
+        <field name="domain">[('state', 'not in', ['scheduled', 'cancelled'])]</field>
     </record>
 </odoo>

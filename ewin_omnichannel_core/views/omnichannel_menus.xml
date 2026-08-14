@@ -13,6 +13,9 @@
     <menuitem id="menu_omni_unassigned" name="Unassigned"
               parent="menu_omnichannel_root"
               action="action_conversation_unassigned" sequence="30"/>
+    <menuitem id="menu_omni_scheduled" name="Scheduled"
+              parent="menu_omnichannel_root"
+              action="action_message_scheduled" sequence="35"/>
     <menuitem id="menu_omni_all" name="All Conversations"
               parent="menu_omnichannel_root"
               action="action_conversation_all" sequence="40"/>
