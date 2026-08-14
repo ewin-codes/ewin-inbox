@@ -107,7 +107,12 @@ echoing messages back to the customer in a loop.
 ## Scheduled replies
 
 An operator can defer a reply instead of sending it: pick a time in the
-composer, press **Schedule**, and the message is parked until then.
+composer and **Send** becomes **Schedule**, parking the message until then. A
+cross beside the time takes it back and the button returns to Send. One
+primary button with one meaning at a time — there is only ever one thing to do
+with what is in the composer, and offering two invites the wrong one. The
+keyboard shortcut follows the button, so Enter never means something the
+screen does not say.
 
 `scheduled` is a state on the message, one step ahead of `queued` — not a
 separate model and not a job-queue row — carrying `scheduled_at` (the send

@@ -65,14 +65,14 @@ export class OmniComposerField extends Component {
         if (!resId) {
             return;
         }
-        // While a scheduled reply is loaded, the shortcut does what the button
-        // under the textarea says it does: it applies the edit. Sending a
-        // reply that is already written and waiting is not what the operator
-        // reaches for Enter to do, and a hidden second meaning for the same
-        // key is how a deferred reply goes out three hours early.
-        const method = record.data.composer_editing_message_id
-            ? "action_schedule_reply"
-            : "action_send_reply";
+        // The shortcut does what the primary button says it does — Send,
+        // Schedule or Reschedule, whichever is on screen. A hidden second
+        // meaning for the same key is how a deferred reply goes out hours
+        // early.
+        const deferred =
+            record.data.composer_editing_message_id ||
+            record.data.composer_scheduled_at;
+        const method = deferred ? "action_schedule_reply" : "action_send_reply";
         await record.save();
         await this.orm.call("omnichannel.conversation", method, [[resId]]);
         await record.load();

@@ -170,9 +170,18 @@
                              own bottom margin, in one place. -->
                         <div class="o_omni_vrow justify-content-between">
                             <div class="o_omni_vrow">
+                                <!-- One primary button, three meanings. Picking
+                                     a moment changes what it does rather than
+                                     adding a second button beside it: there is
+                                     only ever one thing to do with what is in
+                                     the composer, and offering two invites the
+                                     wrong one. -->
                                 <button name="action_send_reply" type="object"
                                         string="Send" class="btn-primary"
-                                        invisible="composer_editing_message_id"/>
+                                        invisible="composer_scheduled_at or composer_editing_message_id"/>
+                                <button name="action_schedule_reply" type="object"
+                                        string="Schedule" class="btn-primary"
+                                        invisible="not composer_scheduled_at or composer_editing_message_id"/>
                                 <!-- Editing: the primary button applies the
                                      edit, and Send is not offered at all. The
                                      reply already exists, so "send it now"
@@ -196,9 +205,15 @@
                                        title="Send later"/>
                                     <field name="composer_scheduled_at" nolabel="1"
                                            placeholder="Send later…"/>
-                                    <button name="action_schedule_reply"
-                                            type="object" string="Schedule"
-                                            class="btn-secondary"
+                                    <!-- The way back to Send. Not offered while
+                                         editing: a reply that already exists
+                                         has to keep a send time, and the way
+                                         out of edit mode is the banner's own
+                                         Cancel. -->
+                                    <button name="action_clear_schedule_time"
+                                            type="object" icon="fa-times"
+                                            title="Clear the send time"
+                                            class="o_omni_later_clear"
                                             invisible="not composer_scheduled_at or composer_editing_message_id"/>
                                 </span>
                             </div>

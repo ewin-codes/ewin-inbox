@@ -623,6 +623,14 @@ class OmnichannelConversation(models.Model):
         })
         return True
 
+    def action_clear_schedule_time(self):
+        """Drop the moment picked for this reply, turning Schedule back into
+        Send. Nothing else in the composer is touched — changing one's mind
+        about *when* is not changing one's mind about *what*."""
+        self.ensure_one()
+        self.composer_scheduled_at = False
+        return True
+
     def action_cancel_edit(self):
         """Leave edit mode, dropping the loaded text with it.
 

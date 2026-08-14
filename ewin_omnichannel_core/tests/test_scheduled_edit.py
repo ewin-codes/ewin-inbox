@@ -109,6 +109,15 @@ class TestScheduledEdit(OmnichannelCase):
             self.env["omnichannel.message.service"].release_scheduled(message)
         self.assertFalse(self.conv.composer_editing_message_id)
 
+    def test_clearing_the_send_time_leaves_the_reply_alone(self):
+        """The cross beside the picker takes the moment back and nothing else:
+        the button returns to Send with the text still in the composer."""
+        self.conv.write({"composer_body": "half a thought",
+                         "composer_scheduled_at": self._later()})
+        self.conv.action_clear_schedule_time()
+        self.assertFalse(self.conv.composer_scheduled_at)
+        self.assertEqual(self.conv.composer_body, "half a thought")
+
     # -- writing the composer back onto the reply ----------------------------
 
     def test_reschedule_updates_the_same_row(self):
