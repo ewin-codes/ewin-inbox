@@ -345,3 +345,62 @@ class TestScheduledSend(OmnichannelCase):
         # The reschedule guard must lock the row, see the true state, and refuse.
         with self.assertRaises(UserError):
             message.write({"scheduled_at": self._later(5)})
+
+    def test_cancel_refuses_race_when_cron_releases_first(self):
+        """The cancel guard refuses to overwrite a message the cron sent.
+
+        A concurrent release can complete between the state check and the
+        UPDATE, leaving the cancel to stamp 'cancelled' on a message that has
+        already been sent. The raw SQL UPDATE here simulates exactly what the
+        cron does while we hold a stale cache: it moves the row to queued
+        (and the connector will move it to sent). Without an UPDATE predicate
+        the cancel would go through; with one the guard sees the truth and
+        raises. The chatter line must not be posted when the cancel is refused.
+        """
+        message = self._scheduled_message()
+        # The Python cache now holds: state = "scheduled"
+        self.assertEqual(message.state, "scheduled")
+        # Move the row out from under that cache — raw SQL, do not touch ORM.
+        # This simulates what the cron does while we hold the stale cache.
+        self.env.cr.execute(
+            "UPDATE omnichannel_message SET state = %s WHERE id = %s",
+            ("sent", message.id))
+        # The Python cache still says "scheduled" — that is the whole point.
+        # The cancel guard must lock the row, see the true state, and refuse.
+        with self.assertRaises(UserError):
+            message.action_cancel_schedule()
+        # Verify the state is still sent (not overwritten to cancelled)
+        self.env.cr.execute("SELECT state FROM omnichannel_message WHERE id = %s", (message.id,))
+        actual_state = self.env.cr.fetchone()[0]
+        self.assertEqual(actual_state, "sent")
+        # Verify no cancellation line was posted to the conversation
+        cancel_posts = message.conversation_id.message_ids.filtered(
+            lambda m: "cancelled" in (m.body or "").lower())
+        self.assertFalse(cancel_posts)
+
+    def test_send_now_tolerates_race_when_cron_releases_first(self):
+        """The send-now action tolerates losing a race to the cron.
+
+        Both can genuinely fire in the same second. The action must not raise,
+        and it must not post an audit line crediting the operator for work the
+        cron did. The operator sees the release happened (state changed) and
+        learns not to click again.
+        """
+        message = self._schedule(self._later(5))
+        connector = self._fake_connector()
+        # Release the message through the cron first, which posts a send event
+        with self._with_connector(connector):
+            self.env["omnichannel.message.service"].release_scheduled(message)
+        # Verify the connector was called once by the release
+        connector.send_message.assert_called_once()
+        # Reset the mock for the action call
+        connector.reset_mock()
+        # Now call send-now on the same message (already sent)
+        with self._with_connector(connector):
+            message.action_send_now()
+        # The connector should not be called again (already sent)
+        connector.send_message.assert_not_called()
+        # Verify no "sent now by" line was posted; only the release's finalize_send events
+        send_now_posts = message.conversation_id.message_ids.filtered(
+            lambda m: "sent now by" in (m.body or "").lower())
+        self.assertFalse(send_now_posts)

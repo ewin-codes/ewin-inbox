@@ -22,6 +22,8 @@ MESSAGE_STATES = [
     ("failed", "Failed"), ("cancelled", "Cancelled"),
 ]
 
+MESSAGE_STATES_LABELS = dict(MESSAGE_STATES)
+
 
 class OmnichannelMessage(models.Model):
     _name = "omnichannel.message"
@@ -162,20 +164,21 @@ class OmnichannelMessage(models.Model):
         release_scheduled. Without the lock, a concurrent release can complete
         between the ORM cache read and the UPDATE, leaving the reschedule to
         silently land on a message that already went out. The lock waits for the
-        release to finish, then the state re-check sees the truth.
+        release to finish, then the state re-check sees the truth. ORDER BY id
+        prevents deadlock when two concurrent bulk reschedules overlap.
         """
         if not self.ids:
             return
-        labels = dict(MESSAGE_STATES)
         self.env.cr.execute(
-            "SELECT id, state FROM omnichannel_message WHERE id IN %s FOR UPDATE",
+            "SELECT id, state FROM omnichannel_message "
+            "WHERE id IN %s ORDER BY id FOR UPDATE",
             (tuple(self.ids),))
         for row_id, state in self.env.cr.fetchall():
             if state != "scheduled":
                 raise UserError(_(
                     "This message is no longer scheduled (%(state)s) — its "
                     "send time can no longer be changed.",
-                    state=labels.get(state, state)))
+                    state=MESSAGE_STATES_LABELS.get(state, state)))
 
     @api.model
     def _check_send_time_is_future(self, when):
@@ -283,7 +286,14 @@ class OmnichannelMessage(models.Model):
                 self.env.cr.commit()
 
     def action_send_now(self):
-        """Deliver a scheduled reply ahead of its time (panel button)."""
+        """Deliver a scheduled reply ahead of its time (panel button).
+
+        The release may lose a race with the cron and find the message already
+        sent. The action tolerates this gracefully: it does not raise, and it
+        does not post an audit line crediting the operator for work the cron
+        did. The operator sees the release happened (state changed) and learns
+        not to click again.
+        """
         service = self.env["omnichannel.message.service"]
         for message in self:
             if message.state != "scheduled":
@@ -291,10 +301,14 @@ class OmnichannelMessage(models.Model):
                 # before the click landed.
                 continue
             when = service._format_scheduled(message.scheduled_at)
-            service.release_scheduled(message)
-            message.conversation_id.message_post(body=_(
-                "Scheduled reply sent now by %(user)s, ahead of %(when)s.",
-                user=self.env.user.name, when=when))
+            released = service.release_scheduled(message)
+            if released:
+                # Post the audit line only if this release actually sent the
+                # message; if the cron got there first, the post-send events
+                # are already logged.
+                message.conversation_id.message_post(body=_(
+                    "Scheduled reply sent now by %(user)s, ahead of %(when)s.",
+                    user=self.env.user.name, when=when))
         return True
 
     def action_cancel_schedule(self):
@@ -302,19 +316,36 @@ class OmnichannelMessage(models.Model):
 
         Cancelling writes a state instead of deleting the row: operators hold
         no unlink right on messages, and the record of a decision *not* to send
-        is worth as much as the record of a send.
+        is worth as much as the record of a send. The state transition is
+        guarded at the database level to prevent a race with the cron's
+        release_scheduled — cancelling a message that has already been sent
+        will raise rather than silently overwrite the sent state.
         """
         service = self.env["omnichannel.message.service"]
-        labels = dict(MESSAGE_STATES)
         for message in self:
-            if message.state != "scheduled":
+            # Attempt the transition atomically: lock the row, re-check the
+            # state at lock time (not cache time), then update.
+            self.env.cr.execute("""
+                UPDATE omnichannel_message SET state = 'cancelled'
+                 WHERE id = %s AND state = 'scheduled'
+                RETURNING id
+            """, (message.id,))
+            if not self.env.cr.fetchone():
+                # The row was not in scheduled state — read its actual state
+                # for the error message. Lock it to see the true state, not
+                # a stale cache.
+                self.env.cr.execute(
+                    "SELECT state FROM omnichannel_message WHERE id = %s FOR UPDATE",
+                    (message.id,))
+                row = self.env.cr.fetchone()
+                actual_state = row[0] if row else "unknown"
                 raise UserError(_(
                     "Only a scheduled reply can be cancelled — this one is "
                     "already %(state)s.",
-                    state=labels.get(message.state, message.state)))
+                    state=MESSAGE_STATES_LABELS.get(actual_state, actual_state)))
+            message.invalidate_recordset(["state"])
             message.conversation_id.message_post(body=_(
                 "Scheduled reply for %(when)s cancelled by %(user)s.",
                 when=service._format_scheduled(message.scheduled_at),
                 user=self.env.user.name))
-            message.write({"state": "cancelled"})
         return True

@@ -200,7 +200,7 @@ class MessageService(models.AbstractModel):
 
         The state transition is atomic: a conditional UPDATE ensures that only
         one transaction wins the race. The loser finds no rows to update and
-        returns immediately, never reaching the delivery logic.
+        returns False immediately, never reaching the delivery logic.
 
         Everything ``_create_scheduled`` deferred happens here, in the order a
         reader would expect: the conversation is reopened if it was closed, its
@@ -208,6 +208,10 @@ class MessageService(models.AbstractModel):
         card, and only then is it handed to the ordinary delivery path — first
         attempt synchronous, transient failure retried by ``omnichannel.job``.
         This method does not reimplement delivery; it releases the brake.
+
+        Returns True if this call performed the release, False if another caller
+        already won the race. Callers that post audit events (e.g. "sent by X")
+        should post them only on True.
         """
         # Access control at the door: both the cron (superuser) and the "send now"
         # button (operator) go through here. Enforced at the database level, not
@@ -225,7 +229,7 @@ class MessageService(models.AbstractModel):
          RETURNING id
         """, (message.id,))
         if not self.env.cr.fetchone():
-            return message
+            return False
         message.invalidate_recordset(["state"])
         conversation = message.conversation_id
         if conversation.state == "closed":
@@ -233,7 +237,7 @@ class MessageService(models.AbstractModel):
             # because the thread was closed in the meantime.
             conversation.action_reopen()
         self._finalize_send(conversation, message, is_internal=False)
-        return message
+        return True
 
     @api.model
     def _format_scheduled(self, when):
