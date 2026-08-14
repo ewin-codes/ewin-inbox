@@ -2,7 +2,7 @@ from datetime import timedelta
 from unittest.mock import MagicMock, patch
 
 from odoo import fields
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests import tagged
 
 from .common import OmnichannelCase
@@ -322,6 +322,46 @@ class TestScheduledSend(OmnichannelCase):
             self.env["omnichannel.message.service"].release_scheduled(message)
         with self.assertRaises(UserError):
             message.action_cancel_schedule()
+
+    def test_operator_cannot_read_another_operators_scheduled_message(self):
+        """The Scheduled menu is company-wide and ungrouped: the record rule,
+        not the menu, has to keep an operator's pending reply — body,
+        conversation and author — away from a colleague who is neither the
+        conversation's operator nor on its team."""
+        operator_a = self.env["res.users"].create({
+            "name": "Sched Op A", "login": "sched_op_a",
+            "groups_id": [(4, self.env.ref(
+                "ewin_omnichannel_core.group_omni_operator").id)]})
+        operator_b = self.env["res.users"].create({
+            "name": "Sched Op B", "login": "sched_op_b",
+            "groups_id": [(4, self.env.ref(
+                "ewin_omnichannel_core.group_omni_operator").id)]})
+        self.conv.operator_id = operator_a
+        message = self._scheduled_message()
+        self.assertEqual(
+            self.env["omnichannel.message"].with_user(operator_a).search(
+                [("id", "=", message.id)]),
+            message)
+        self.assertFalse(
+            self.env["omnichannel.message"].with_user(operator_b).search(
+                [("id", "=", message.id)]))
+        with self.assertRaises(AccessError):
+            message.with_user(operator_b).body
+
+    def test_cancel_refuses_a_caller_with_no_write_access(self):
+        """action_cancel_schedule's transition is a raw UPDATE, which no
+        record rule can constrain — the access check has to happen before
+        it runs, not be left to something downstream noticing by accident."""
+        message = self._scheduled_message()
+        outsider = self.env["res.users"].create({
+            "name": "No Omni Access", "login": "sched_outsider",
+            "groups_id": [(6, 0, [self.env.ref("base.group_user").id])]})
+        with self.assertRaises(AccessError):
+            message.with_user(outsider).action_cancel_schedule()
+        self.env.cr.execute(
+            "SELECT state FROM omnichannel_message WHERE id = %s",
+            (message.id,))
+        self.assertEqual(self.env.cr.fetchone()[0], "scheduled")
 
     def test_reschedule_guard_checks_actual_state_not_cache(self):
         """The reschedule guard locks rows before checking state.

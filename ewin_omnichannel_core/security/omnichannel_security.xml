@@ -86,4 +86,23 @@
         <field name="groups" eval="[(4, ref('group_omni_manager'))]"/>
         <field name="domain_force">[(1,'=',1)]</field>
     </record>
+
+    <!-- Message operator scoping mirrors the conversation rule above: a
+         message is visible to the same operators who can see the
+         conversation it belongs to. Without this the company rule alone
+         governs, and the Scheduled menu — company-wide, ungrouped — would
+         put every operator's pending replies in front of every other
+         operator, body and conversation included. -->
+    <record id="rule_message_operator_scope" model="ir.rule">
+        <field name="name">Message: operator scope</field>
+        <field name="model_id" ref="model_omnichannel_message"/>
+        <field name="groups" eval="[(4, ref('group_omni_operator'))]"/>
+        <field name="domain_force">['|','|',('conversation_id.operator_id','=',user.id),('conversation_id.operator_id','=',False),('conversation_id.team_id.user_ids','in',[user.id])]</field>
+    </record>
+    <record id="rule_message_manager_all" model="ir.rule">
+        <field name="name">Message: manager sees all in company</field>
+        <field name="model_id" ref="model_omnichannel_message"/>
+        <field name="groups" eval="[(4, ref('group_omni_manager'))]"/>
+        <field name="domain_force">[(1,'=',1)]</field>
+    </record>
 </odoo>

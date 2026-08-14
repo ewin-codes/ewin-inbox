@@ -341,6 +341,11 @@ class OmnichannelMessage(models.Model):
         """
         service = self.env["omnichannel.message.service"]
         for message in self:
+            # Access control at the door, same as release_scheduled: raw SQL
+            # runs behind the ORM's back and a record rule cannot constrain
+            # it, so the check has to happen here, before the UPDATE, not be
+            # left to something downstream noticing by accident.
+            message.check_access("write")
             # Attempt the transition atomically: lock the row, re-check the
             # state at lock time (not cache time), then update.
             self.env.cr.execute("""
