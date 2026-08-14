@@ -173,6 +173,29 @@ class TestScheduledSend(OmnichannelCase):
         self.assertTrue(self.conv.first_operator_message_at)
         self.assertTrue(self.conv.last_message_at)
 
+    def test_scheduled_attachment_reaches_the_mirror_and_the_connector(self):
+        """The spec puts attachments explicitly in scope: _create_scheduled
+        stores them and _mirror_to_discuss passes them on, but neither is
+        proof that one survives all the way to release — this is."""
+        attachment = self.env["ir.attachment"].create(
+            {"name": "brochure.pdf", "datas": b"JVBERi0="})
+        connector = self._fake_connector()
+        with self._with_connector(connector):
+            message = self.env["omnichannel.message.service"].create_outbound(
+                self.conv, "<p>see attached</p>",
+                attachments=attachment, scheduled_at=self._later())
+        self.assertEqual(message.attachment_ids, attachment)
+        # still parked: nothing reaches the thread while only scheduled
+        self.assertFalse(self.conv.discuss_channel_id.message_ids)
+        with self._with_connector(connector):
+            self.env["omnichannel.message.service"].release_scheduled(message)
+        mirrored = self.conv.discuss_channel_id.message_ids
+        self.assertEqual(len(mirrored), 1)
+        self.assertIn(attachment, mirrored.attachment_ids)
+        connector.send_message.assert_called_once()
+        sent_message = connector.send_message.call_args[0][1]
+        self.assertIn(attachment, sent_message.attachment_ids)
+
     def test_release_is_idempotent(self):
         message = self._schedule()
         connector = self._fake_connector()
