@@ -173,11 +173,20 @@ off each other's rows instead of one blocking on the other.
   because any client can write over RPC.
 - **Edited in the composer it was written in.** Clicking a waiting reply loads
   it back into the composer — same textarea, same quick replies, same
-  send-later control — and the Schedule button becomes **Reschedule**. Send
-  during an edit means "this wording, now": it delivers the same row rather
-  than leaving the original waiting behind a copy. `composer_editing_message_id`
-  is what holds the two together, and an amber strip above the composer says so
-  with a way back out.
+  send-later control. The primary button becomes **Reschedule** and Send is
+  not offered at all: the reply already exists, so "send it now" belongs on the
+  reply itself, in the pane. The keyboard shortcut applies the edit too, for
+  the same reason — a second, hidden meaning for the same key is how a
+  deferred reply goes out hours early. Called over RPC anyway, Send during an
+  edit still delivers *that* row rather than leaving a duplicate behind.
+  `composer_editing_message_id` is what holds reply and composer together, and
+  an amber strip above the composer says so with a way back out.
+- **Nothing outlives the reply.** A reply that leaves while it is open in a
+  composer — cancelled from the pane, released by the cron — takes the editor
+  down with it: `_release_composer_edit` clears the link from whichever
+  conversation holds it, so no banner is left announcing an edit of something
+  that no longer exists. Only the link goes; the operator's words stay in the
+  composer, ready to be scheduled again as a new reply.
 
   `_apply_scheduled_edit` takes the row lock through `_check_reschedulable`
   before writing. That guard is load-bearing on the **Send** path in

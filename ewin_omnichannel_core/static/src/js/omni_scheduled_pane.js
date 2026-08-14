@@ -218,6 +218,27 @@ export class OmniScheduledPaneField extends Component {
             await this.orm.call(model, method, [[message.id]]);
         } finally {
             await this._load();
+            await this._closeEditorFor(message);
+        }
+    }
+
+    /**
+     * Stop editing a reply that has just left.
+     *
+     * The server has already dropped the link — a reply that is gone cannot
+     * stay open in anyone's composer — but the form holds its own copy of that
+     * field, and until it hears otherwise it goes on showing an edit banner
+     * for a reply nobody can save. Only the link is cleared, not the text: the
+     * words are the operator's, and Reschedule will make a new reply of them.
+     */
+    async _closeEditorFor(message) {
+        const record = this.props.record;
+        const editing = record.data.composer_editing_message_id;
+        const editingId = Array.isArray(editing)
+            ? editing[0]
+            : (editing && editing.id) || false;
+        if (editingId === message.id) {
+            await record.update({ composer_editing_message_id: false });
         }
     }
 }

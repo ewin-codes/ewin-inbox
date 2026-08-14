@@ -89,6 +89,26 @@ class TestScheduledEdit(OmnichannelCase):
         # the reply itself is untouched: leaving the editor is not cancelling
         self.assertEqual(message.state, "scheduled")
 
+    def test_cancelling_a_reply_being_edited_closes_the_editor(self):
+        """A reply can be cancelled from the pane while it sits in the
+        composer. The editor has to let go of it — a banner announcing an edit
+        of something that no longer exists is worse than no banner."""
+        message = self._scheduled()
+        self.conv.action_edit_scheduled(message.id)
+        message.action_cancel_schedule()
+        self.assertFalse(self.conv.composer_editing_message_id)
+        # The operator's own words are not taken away with the reply: they are
+        # still there to be scheduled again.
+        self.assertEqual(self.conv.composer_body, "first draft")
+
+    def test_releasing_a_reply_being_edited_closes_the_editor(self):
+        """Same for the other way out of `scheduled`: the cron's release."""
+        message = self._scheduled()
+        self.conv.action_edit_scheduled(message.id)
+        with self._with_connector(self._fake_connector()):
+            self.env["omnichannel.message.service"].release_scheduled(message)
+        self.assertFalse(self.conv.composer_editing_message_id)
+
     # -- writing the composer back onto the reply ----------------------------
 
     def test_reschedule_updates_the_same_row(self):

@@ -32,6 +32,26 @@
         width: auto;
         line-height: 1.2;
     }
+    // Odoo's own `.o_field_widget { display: block }` outranks the `> *` reset
+    // above — same specificity, later in the bundle — so a field's value box
+    // goes on laying its contents out on a text baseline no matter what the
+    // row asks for. Naming the class says it again, loudly enough, and the
+    // value finally centres against the icons and labels beside it.
+    > .o_field_widget {
+        display: flex;
+        align-items: center;
+    }
+    // Bootstrap sizes .form-check for a stacked form: a bottom margin and a
+    // minimum height that together sit a toggle above the middle of a row.
+    .form-check {
+        margin-bottom: 0;
+        min-height: 0;
+    }
+    // The value itself, one level further in. Not flexed here on purpose:
+    // widgets that build their own furniture out of spans and divs — the
+    // attachment button, for one — come apart when every inner box is turned
+    // into a flex container. Rows whose value still sits low get the flex
+    // treatment by name (see .o_omni_info_summary, .o_omni_internal_switch).
     .o_field_widget :is(input, span, a, div) {
         line-height: 1.2;
         vertical-align: middle;
@@ -88,6 +108,15 @@
         @include omni-vrow(4px);
     }
 
+    // A readonly many2one puts its value in a span whose line box is taller
+    // than the text in it, which leaves the customer's name sitting a pixel
+    // under the channel icon beside it. Both values here are plain text, so
+    // flexing their span is safe and makes the box hug what it shows.
+    > summary .o_field_widget > span {
+        display: flex;
+        align-items: center;
+    }
+
     > summary::-webkit-details-marker {
         display: none;
     }
@@ -108,6 +137,15 @@
 }
 
 .o_omni_thread_panel {
+    // Author and timestamp sit tight against their own bubble in Discuss's
+    // default spacing, which reads as cramped once messages are stacked in a
+    // panel this dense. Bootstrap's .mb-1 utility on that header carries
+    // !important, so overriding it needs one too; scoped to this panel, so
+    // nothing outside the Inbox is touched.
+    .o-mail-Message-header {
+        margin-bottom: 8px !important;
+    }
+
     height: 60vh;
     min-height: 340px;
     max-height: 72vh;
@@ -262,6 +300,21 @@
 // field wrapper otherwise adds vertical margin that pushes them out of line).
 .o_omni_internal_switch {
     @include omni-vrow(8px);
+
+    // The toggle is three boxes deep — field wrapper, Bootstrap's form-check,
+    // the input — and each one re-introduces the stacked-form spacing the row
+    // is trying to undo. Centre them all; there is nothing else inside this
+    // widget for the rule to disturb.
+    .o_field_widget :is(input, span, a, div) {
+        display: flex;
+        align-items: center;
+    }
+
+    // The label's line box is taller than the words in it, so centring the box
+    // still leaves the text half a pixel off the toggle. Let it hug them.
+    label {
+        line-height: 1;
+    }
 }
 
 // Internal-note mode: tint the whole composer amber so the operator always

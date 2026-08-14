@@ -240,6 +240,8 @@ class MessageService(models.AbstractModel):
         # The UPDATE goes behind the ORM's back, so the dependency graph must
         # be notified by hand so dependent computed fields recompute.
         message.modified(["state"])
+        # It has left: no composer may still claim to be editing it.
+        message._release_composer_edit()
         conversation = message.conversation_id
         if conversation.state == "closed":
             # "Always send": a reply the operator committed to is not swallowed

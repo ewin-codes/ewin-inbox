@@ -413,8 +413,27 @@ class OmnichannelMessage(models.Model):
             # The UPDATE goes behind the ORM's back, so the dependency graph must
             # be notified by hand so dependent computed fields recompute.
             message.modified(["state"])
+            message._release_composer_edit()
             message.conversation_id.message_post(body=_(
                 "Scheduled reply for %(when)s cancelled by %(user)s.",
                 when=service._format_scheduled(message.scheduled_at),
                 user=self.env.user.name))
         return True
+
+    def _release_composer_edit(self):
+        """Take this reply out of any composer holding it open for editing.
+
+        A reply can leave — cancelled here, released by the cron — while an
+        operator has it loaded in their composer. Leaving the link behind
+        leaves the composer announcing that it is editing something that no
+        longer exists, and every later save failing on a reply nobody is
+        thinking about any more. Only the link is dropped: the text stays in
+        the composer, where Schedule will make a new reply out of it.
+
+        sudo, because the composer may be a colleague's and the cron is not a
+        user at all. Nothing of theirs is read or written but this one link.
+        """
+        editors = self.env["omnichannel.conversation"].sudo().search(
+            [("composer_editing_message_id", "in", self.ids)])
+        if editors:
+            editors.write({"composer_editing_message_id": False})

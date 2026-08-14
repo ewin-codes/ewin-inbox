@@ -157,7 +157,22 @@
                         <div class="o_omni_vrow justify-content-between mt-1">
                             <div class="o_omni_vrow">
                                 <button name="action_send_reply" type="object"
-                                        string="Send" class="btn-primary"/>
+                                        string="Send" class="btn-primary"
+                                        invisible="composer_editing_message_id"/>
+                                <!-- Editing: the primary button applies the
+                                     edit, and Send is not offered at all. The
+                                     reply already exists, so "send it now"
+                                     belongs on the reply itself, in the pane
+                                     above; offering it here as well would put
+                                     two buttons a keystroke apart, one of
+                                     which delivers hours early. Shown even
+                                     with no time picked, so the way out of
+                                     edit mode never disappears — the action
+                                     then asks for a time. -->
+                                <button name="action_schedule_reply"
+                                        type="object" string="Reschedule"
+                                        class="btn-primary"
+                                        invisible="not composer_editing_message_id"/>
                                 <!-- Send later belongs next to Send — it is the
                                      other way to send this reply, not a
                                      composer accessory. One clear gap apart so
@@ -171,10 +186,6 @@
                                             type="object" string="Schedule"
                                             class="btn-secondary"
                                             invisible="not composer_scheduled_at or composer_editing_message_id"/>
-                                    <button name="action_schedule_reply"
-                                            type="object" string="Reschedule"
-                                            class="btn-secondary"
-                                            invisible="not composer_scheduled_at or not composer_editing_message_id"/>
                                 </span>
                             </div>
                             <field name="composer_attachment_ids" nolabel="1"
