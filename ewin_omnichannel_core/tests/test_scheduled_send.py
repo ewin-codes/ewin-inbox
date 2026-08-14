@@ -421,26 +421,33 @@ class TestScheduledSend(OmnichannelCase):
     def test_send_now_tolerates_race_when_cron_releases_first(self):
         """The send-now action tolerates losing a race to the cron.
 
-        Both can genuinely fire in the same second. The action must not raise,
-        and it must not post an audit line crediting the operator for work the
-        cron did. The operator sees the release happened (state changed) and
-        learns not to click again.
+        Both can genuinely fire in the same second. Releasing through
+        release_scheduled first (as the previous version of this test did)
+        leaves the ORM cache holding state == "sent", so action_send_now's own
+        cached-state check short-circuits before ever calling
+        release_scheduled again — that proves only the cache guard, not the
+        boolean gate ("if released:") that exists for exactly this race.
+        Moving the row with raw SQL, the way the sibling database-level-guard
+        tests do, keeps the cache saying "scheduled" so the call reaches
+        release_scheduled, loses the race there, and the gate is what has to
+        stop the audit post.
         """
         message = self._schedule(self._later(5))
+        self.assertEqual(message.state, "scheduled")
+        # Move the row out from under the cache — raw SQL, do not touch ORM.
+        # This simulates another transaction (the cron) releasing and sending
+        # it while this cache still says "scheduled".
+        self.env.cr.execute(
+            "UPDATE omnichannel_message SET state = %s WHERE id = %s",
+            ("sent", message.id))
         connector = self._fake_connector()
-        # Release the message through the cron first, which posts a send event
-        with self._with_connector(connector):
-            self.env["omnichannel.message.service"].release_scheduled(message)
-        # Verify the connector was called once by the release
-        connector.send_message.assert_called_once()
-        # Reset the mock for the action call
-        connector.reset_mock()
-        # Now call send-now on the same message (already sent)
         with self._with_connector(connector):
             message.action_send_now()
-        # The connector should not be called again (already sent)
+        # The cached state passed action_send_now's own check, so it reached
+        # release_scheduled — whose UPDATE ... WHERE state = 'scheduled'
+        # matched no row and returned False, never reaching delivery.
         connector.send_message.assert_not_called()
-        # Verify no "sent now by" line was posted; only the release's finalize_send events
+        # No audit line credits the operator for a release that lost the race.
         send_now_posts = message.conversation_id.message_ids.filtered(
             lambda m: "sent now by" in (m.body or "").lower())
         self.assertFalse(send_now_posts)

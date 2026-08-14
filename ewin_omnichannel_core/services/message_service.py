@@ -217,6 +217,12 @@ class MessageService(models.AbstractModel):
         # button (operator) go through here. Enforced at the database level, not
         # by checking after an UPDATE that may have no effect.
         message.check_access('write')
+        # Flush first: invalidate_recordset below defaults to flush=True,
+        # which would otherwise flush a still-pending ORM write to state
+        # *after* this UPDATE has already run — overwriting the raw SQL's own
+        # result in the wrong direction. Flushing here first means there is
+        # nothing left dirty for that later call to flush.
+        self.env.flush_all()
         # One statement decides who releases this message. A read followed by a
         # write cannot: the cron holds the row under FOR UPDATE SKIP LOCKED, so a
         # concurrent "send now" passes the state check, blocks on the write, and

@@ -187,6 +187,11 @@ class OmnichannelMessage(models.Model):
         """
         if not self.ids:
             return
+        # Flush first: a buffered ORM write to state, not yet sent to the
+        # database, is invisible to this raw SELECT until it is. The odd order
+        # would let the lock read a state this very transaction already
+        # changed but has not yet told PostgreSQL about.
+        self.env.flush_all()
         self.env.cr.execute(
             "SELECT id, state FROM omnichannel_message "
             "WHERE id IN %s ORDER BY id FOR UPDATE",
@@ -346,6 +351,12 @@ class OmnichannelMessage(models.Model):
             # it, so the check has to happen here, before the UPDATE, not be
             # left to something downstream noticing by accident.
             message.check_access("write")
+            # Flush first: invalidate_recordset below defaults to flush=True,
+            # which would otherwise flush a still-pending ORM write to state
+            # *after* this UPDATE has already run — overwriting the raw SQL's
+            # own result in the wrong direction. Flushing here first means
+            # there is nothing left dirty for that later call to flush.
+            self.env.flush_all()
             # Attempt the transition atomically: lock the row, re-check the
             # state at lock time (not cache time), then update.
             self.env.cr.execute("""
