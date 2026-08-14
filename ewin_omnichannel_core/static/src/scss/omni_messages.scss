@@ -121,25 +121,54 @@
     }
 }
 
-// Replies waiting to be delivered, above the composer. Amber like an internal
-// note, and for the same reason: it is a state the operator has to notice
-// before starting to type.
+// "Send later" sits beside Send, one clear gap away (the row's own 6px would
+// read as one control group and invite a misclick).
+.o_omni_later {
+    margin-left: 18px;
+}
+
+// Tab strip above the chat, and the swap it drives.
+//
+// The strip only draws itself while replies are waiting (see
+// omni_scheduled_tabs.js), so these rules also cover the empty field wrapper
+// Odoo renders in that case: with no `.o-scheduled-on` anywhere, the waiting
+// list is the hidden pane and the chat is the visible one — which is exactly
+// right when there is nothing waiting.
+.o_omni_tabs:has(.o_omni_tabbar) {
+    margin-bottom: 6px;
+}
+
+.o_omni_tabs:has(.o-scheduled-on) ~ .o_omni_thread_field,
+.o_omni_tabs:not(:has(.o-scheduled-on)) ~ .o_omni_scheduled {
+    display: none;
+}
+
+// Replies waiting to be delivered — the second pane of the chat area. Sized to
+// its rows, not to the thread it replaces: a fixed pane height would leave a
+// wall of empty amber under the single waiting reply that is the normal case.
+// Capped where the thread is capped, and scrolls past that. Amber like an
+// internal note, and for the same reason: it is a state the operator has to
+// notice before starting to type.
 .o_omni_scheduled {
     border: 1px solid #ffca28;
     border-radius: 6px;
     background: #fffdf5;
     padding: 6px 8px;
-    margin-top: 8px;
-
-    .o_omni_scheduled_head {
-        font-size: 12px;
-        margin-bottom: 4px;
-    }
+    max-height: 72vh;
+    overflow: auto;
 
     // the embedded list draws its own white card, which fights the amber
     .o_list_renderer,
     table.o_list_table {
         background: transparent;
+    }
+
+    // The reply is what the operator reads here; the send time is fixed-width
+    // and the rest are icons. Without this the html cell keeps the narrow
+    // width the list computes for it and truncates mid-sentence.
+    th[data-name="body"],
+    td[name="body"] {
+        width: 55%;
     }
 }
 

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="ewin_omnichannel_core.OmniScheduledTabsField">
+        <!-- Nothing waiting: no strip at all, so an ordinary conversation
+             looks exactly as it did before the feature existed. -->
+        <div t-if="state.count" class="o_omni_tabbar btn-group btn-group-sm"
+             role="tablist">
+            <button type="button" class="btn btn-outline-secondary"
+                    t-att-class="{ active: !state.scheduledTab }"
+                    t-on-click="() => this.showScheduled(false)">
+                <i class="fa fa-comments-o me-1"/>Chat
+            </button>
+            <!-- o-scheduled-on is what the stylesheet reads to swap the panes
+                 below; keep the two in step. -->
+            <button type="button" class="btn btn-outline-warning"
+                    t-att-class="{ active: state.scheduledTab, 'o-scheduled-on': state.scheduledTab }"
+                    t-on-click="() => this.showScheduled(true)">
+                <i class="fa fa-clock-o me-1"/>Scheduled
+                <span class="badge text-bg-warning ms-1" t-esc="state.count"/>
+            </button>
+        </div>
+    </t>
+</templates>

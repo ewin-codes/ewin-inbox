@@ -149,9 +149,13 @@ would not, because a commit releases every lock a transaction holds at once,
 not one row at a time. `SKIP LOCKED` is what keeps two overlapping cron runs
 off each other's rows instead of one blocking on the other.
 
-- **Visible.** A panel above the composer lists the pending replies, the
-  conversation list carries a clock badge, and **EWIN Inbox → Scheduled** shows
-  every pending send across all conversations. The Message Volume report
+- **Visible, without taking the chat's room.** A **Scheduled *n*** tab appears
+  above the thread as soon as a reply is waiting and disappears when none is —
+  the chat itself is never shortened. Its count follows the same `omni.inbox`
+  bus signal the thread does, so a reply the cron has just released leaves the
+  tab on its own rather than at the next page reload. The conversation list
+  carries a clock badge, and **EWIN Inbox → Scheduled** shows every pending
+  send across all conversations. The Message Volume report
   excludes the `scheduled` and `cancelled` states by default — a removable
   "Real Volume" filter, not a hard domain, so a reply that has not gone out —
   or never will — does not inflate outbound volume, and the Scheduled and
@@ -159,7 +163,7 @@ off each other's rows instead of one blocking on the other.
   wants to see them.
 - **Editable until it leaves.** The send time can be changed, sent early or
   cancelled while the message is `scheduled`; afterwards `write` refuses. The
-  rule lives in the model, not in the view, because the panel edits rows inline
+  rule lives in the model, not in the view, because the tab edits rows inline
   and any client can write over RPC.
 - **Cancelling keeps the row** (`cancelled`): operators hold no unlink right on
   messages, and a decision not to send is worth recording.
