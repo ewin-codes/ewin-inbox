@@ -87,6 +87,48 @@
     max-width: 100%;
 }
 
+// The form fills Odoo's own scroller and never scrolls itself: the thread
+// scrolls inside its panel, and the composer stays where it is.
+//
+// Without this the sheet grew past the viewport, so the page scrolled — and a
+// sticky composer pinned to the bottom of a scrolling page leaves a gap
+// between itself and the thread that grows and shrinks with every scroll,
+// because the thread's bottom edge moves while the composer's does not.
+//
+// Note which element is which: the arch's own `d-flex flex-column` lands on
+// the sheet's *background* wrapper, while the rows are laid out by the
+// `.o_form_sheet` block inside it. Making the wrapper a flex column therefore
+// squeezes nothing at all — that was the missing half.
+.o_omni_conversation_form {
+    .o_form_renderer {
+        height: 100%;
+        min-height: 0;
+    }
+
+    .o_omni_chat_sheet {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    // auto, not hidden: on a window too short for even the floors below, the
+    // sheet has to scroll rather than clip — a Send button cut off by an inch
+    // of missing screen is unreachable, and no layout is worth that.
+    .o_form_sheet {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: auto;
+    }
+}
+
+// min-height: 0 all the way down, or a flex item refuses to shrink below the
+// size of what is inside it and the squeeze stops here.
+.o_omni_chatpane {
+    min-height: 0;
+}
+
 // Collapsible "customer & routing" block (native <details>).
 .o_omni_info {
     border: 1px solid var(--gray-300, #dee2e6);
@@ -132,7 +174,9 @@
 
 // The native Discuss thread field fills the width and grows.
 .o_omni_thread_field {
-    display: block;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
     width: 100%;
 }
 
@@ -146,9 +190,12 @@
         margin-bottom: 8px !important;
     }
 
-    height: 60vh;
-    min-height: 340px;
-    max-height: 72vh;
+    // Takes whatever the sheet has left after the summary and the composer,
+    // rather than a fixed slice of the viewport that could add up to more than
+    // the screen holds. The floor keeps it a chat rather than letting it be
+    // squeezed to nothing; past that the sheet scrolls instead.
+    flex: 1 1 auto;
+    min-height: 180px;
     overflow: hidden; // the inner mail Thread owns its own scroll
     // A quiet ground behind the bubbles rather than the form's own white, so
     // the thread reads as a conversation surface and each message keeps its
@@ -175,9 +222,9 @@
         margin-bottom: 12px;
     }
 
-    position: sticky;
-    bottom: 0;
-    z-index: 5;
+    // Not sticky: the sheet no longer scrolls, so the composer is already at
+    // the bottom of it — and sticky on a scrolling page was what opened a
+    // shifting gap above it.
     background: var(--o-view-background-color, #fff);
     border-top: 1px solid var(--gray-300, #dee2e6);
     padding: 8px 12px 6px;
@@ -222,6 +269,21 @@
     margin-bottom: 6px;
 }
 
+// With the pane open this wrapper holds both the strip and the pane, so it has
+// to be a column that can shrink — otherwise the pane keeps its full height
+// and pushes the composer out of the sheet.
+.o_omni_tabs:has(.o_omni_scheduled) {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+
+    // A flex column stretches its items across, which would pull the two tabs
+    // the width of the pane. They keep their own width; the pane takes the rest.
+    .o_omni_tabbar {
+        align-self: flex-start;
+    }
+}
+
 // Nothing waiting: the widget draws nothing, but the field wrapper Odoo puts
 // around it is still a box, and `.o_form_view .o_field_empty:empty` holds it
 // open at 1.3125rem. That is a strip of blank above every ordinary
@@ -260,7 +322,10 @@
     // two — the pane is drawn inside the same wrapper. Match the gap the chat
     // gets, so switching tabs does not shift the content under the strip.
     margin-top: 6px;
-    max-height: 72vh;
+    // Sized by its rows, but allowed to shrink and scroll rather than push the
+    // composer off the bottom of a sheet that no longer scrolls.
+    flex: 0 1 auto;
+    min-height: 0;
     overflow: auto;
 }
 
