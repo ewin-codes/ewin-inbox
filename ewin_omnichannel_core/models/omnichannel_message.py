@@ -156,14 +156,26 @@ class OmnichannelMessage(models.Model):
         return super().write(vals)
 
     def _check_reschedulable(self):
-        """Refuse to move the send time of a message that is no longer waiting."""
+        """Refuse to move the send time of a message that is no longer waiting.
+
+        Lock the rows before checking state to avoid a race with the cron's
+        release_scheduled. Without the lock, a concurrent release can complete
+        between the ORM cache read and the UPDATE, leaving the reschedule to
+        silently land on a message that already went out. The lock waits for the
+        release to finish, then the state re-check sees the truth.
+        """
+        if not self.ids:
+            return
         labels = dict(MESSAGE_STATES)
-        for message in self:
-            if message.state != "scheduled":
+        self.env.cr.execute(
+            "SELECT id, state FROM omnichannel_message WHERE id IN %s FOR UPDATE",
+            (tuple(self.ids),))
+        for row_id, state in self.env.cr.fetchall():
+            if state != "scheduled":
                 raise UserError(_(
                     "This message is no longer scheduled (%(state)s) — its "
                     "send time can no longer be changed.",
-                    state=labels.get(message.state, message.state)))
+                    state=labels.get(state, state)))
 
     @api.model
     def _check_send_time_is_future(self, when):
@@ -269,3 +281,40 @@ class OmnichannelMessage(models.Model):
                 continue
             if not testing:
                 self.env.cr.commit()
+
+    def action_send_now(self):
+        """Deliver a scheduled reply ahead of its time (panel button)."""
+        service = self.env["omnichannel.message.service"]
+        for message in self:
+            if message.state != "scheduled":
+                # Harmless by design: the cron may have released it a moment
+                # before the click landed.
+                continue
+            when = service._format_scheduled(message.scheduled_at)
+            service.release_scheduled(message)
+            message.conversation_id.message_post(body=_(
+                "Scheduled reply sent now by %(user)s, ahead of %(when)s.",
+                user=self.env.user.name, when=when))
+        return True
+
+    def action_cancel_schedule(self):
+        """Drop a scheduled reply before it is sent.
+
+        Cancelling writes a state instead of deleting the row: operators hold
+        no unlink right on messages, and the record of a decision *not* to send
+        is worth as much as the record of a send.
+        """
+        service = self.env["omnichannel.message.service"]
+        labels = dict(MESSAGE_STATES)
+        for message in self:
+            if message.state != "scheduled":
+                raise UserError(_(
+                    "Only a scheduled reply can be cancelled — this one is "
+                    "already %(state)s.",
+                    state=labels.get(message.state, message.state)))
+            message.conversation_id.message_post(body=_(
+                "Scheduled reply for %(when)s cancelled by %(user)s.",
+                when=service._format_scheduled(message.scheduled_at),
+                user=self.env.user.name))
+            message.write({"state": "cancelled"})
+        return True

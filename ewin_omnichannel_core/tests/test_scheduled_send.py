@@ -297,3 +297,51 @@ class TestScheduledSend(OmnichannelCase):
         self.assertTrue(cron.active)
         self.assertEqual(cron.interval_number, 1)
         self.assertEqual(cron.interval_type, "minutes")
+
+    def test_send_now_delivers_ahead_of_time(self):
+        message = self._schedule(self._later(5))
+        connector = self._fake_connector()
+        with self._with_connector(connector):
+            message.action_send_now()
+        connector.send_message.assert_called_once()
+        self.assertEqual(message.state, "sent")
+
+    def test_cancel_keeps_the_row_and_sends_nothing(self):
+        message = self._schedule()
+        connector = self._fake_connector()
+        with self._with_connector(connector):
+            message.action_cancel_schedule()
+            self.env["omnichannel.message"]._cron_send_scheduled()
+        connector.send_message.assert_not_called()
+        self.assertEqual(message.state, "cancelled")
+        self.assertTrue(message.exists())
+
+    def test_cancel_refused_once_it_has_left(self):
+        message = self._schedule()
+        with self._with_connector(self._fake_connector()):
+            self.env["omnichannel.message.service"].release_scheduled(message)
+        with self.assertRaises(UserError):
+            message.action_cancel_schedule()
+
+    def test_reschedule_guard_checks_actual_state_not_cache(self):
+        """The reschedule guard locks rows before checking state.
+
+        A concurrent release can complete between the ORM cache read and the
+        UPDATE, leaving a reschedule to silently land on a message that already
+        went out. The raw SQL UPDATE here simulates exactly what another
+        transaction does while we hold a stale cache: it moves the row to sent.
+        Without the FOR UPDATE lock the check would pass (wrong), with it the
+        check sees the truth and raises (correct).
+        """
+        message = self._scheduled_message()
+        # The Python cache now holds: state = "scheduled"
+        self.assertEqual(message.state, "scheduled")
+        # Move the row out from under that cache — raw SQL, do not touch ORM.
+        # This simulates what the cron does while we hold the stale cache.
+        self.env.cr.execute(
+            "UPDATE omnichannel_message SET state = %s WHERE id = %s",
+            ("sent", message.id))
+        # The Python cache still says "scheduled" — that is the whole point.
+        # The reschedule guard must lock the row, see the true state, and refuse.
+        with self.assertRaises(UserError):
+            message.write({"scheduled_at": self._later(5)})
