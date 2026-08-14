@@ -212,7 +212,7 @@
     flex: 1 1 auto;
 }
 
-// Composer pinned to the bottom of the scroll viewport, compact.
+// Composer sitting at the bottom of the sheet, compact.
 .o_omni_composer {
     // Air between what is being written and the buttons that act on it. Named
     // by widget so it lands on the textarea alone: the attachment field and
@@ -226,7 +226,6 @@
     // the bottom of it — and sticky on a scrolling page was what opened a
     // shifting gap above it.
     background: var(--o-view-background-color, #fff);
-    border-top: 1px solid var(--gray-300, #dee2e6);
     padding: 8px 12px 6px;
     margin-top: 8px;
 
