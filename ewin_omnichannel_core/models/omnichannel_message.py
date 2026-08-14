@@ -205,30 +205,51 @@ class OmnichannelMessage(models.Model):
     def _cron_send_scheduled(self, limit=100):
         """Release every scheduled message whose time has come.
 
-        ``FOR UPDATE SKIP LOCKED`` is load-bearing, not decoration. Without the
-        lock: this cron reads a row as scheduled; an operator concurrently
-        pushes it to tomorrow and commits first; the cron then writes over that
-        decision and the message goes out today. With it, the operator's UPDATE
-        waits for this transaction and their write then meets the guard in
-        ``write`` — a clear "no longer scheduled" error instead of a silently
-        ignored reschedule. ``SKIP LOCKED`` keeps two overlapping runs off each
-        other's rows.
+        The batch ``SELECT`` fetches the candidate list without locks. For each
+        message, a fresh lock is taken just before release:
+
+            SELECT id FROM omnichannel_message
+             WHERE id = %s AND state = 'scheduled' AND scheduled_at <= %s
+               FOR UPDATE SKIP LOCKED
+
+        The lock covers exactly the window in which one message is released. If
+        the lock finds no row, the message was rescheduled out of range, already
+        released, or is held by an overlapping run—skipped and tried next tick.
+        The ``scheduled_at <= now`` re-check catches an operator who moved the
+        time while the batch was draining. ``SKIP LOCKED`` keeps two overlapping
+        cron runs off each other's rows.
+
+        Task 3's compare-and-swap in ``release_scheduled`` owns double-send
+        prevention. This lock guards against the reschedule race: the operator's
+        write meets the guard in ``write`` and raises a clear "no longer
+        scheduled" error instead of silently updating a message the cron is
+        releasing.
 
         Ordered by ``scheduled_at`` so that a backlog after downtime drains
         oldest-first, and committed per message like the job queue: one failure
         must not roll back its peers.
         """
+        now = fields.Datetime.now()
         self.env.cr.execute("""
             SELECT id FROM omnichannel_message
              WHERE state = 'scheduled' AND scheduled_at <= %s
              ORDER BY scheduled_at, id
              LIMIT %s
-               FOR UPDATE SKIP LOCKED
-        """, (fields.Datetime.now(), limit))
-        due = self.browse([row[0] for row in self.env.cr.fetchall()])
+        """, (now, limit))
+        candidate_ids = [row[0] for row in self.env.cr.fetchall()]
         service = self.env["omnichannel.message.service"]
         testing = getattr(threading.current_thread(), "testing", False)
-        for message in due:
+        for message_id in candidate_ids:
+            # Re-lock the message before releasing. If it was rescheduled or
+            # released by another process, this returns no row and we skip it.
+            self.env.cr.execute("""
+                SELECT id FROM omnichannel_message
+                 WHERE id = %s AND state = 'scheduled' AND scheduled_at <= %s
+                   FOR UPDATE SKIP LOCKED
+            """, (message_id, now))
+            if not self.env.cr.fetchone():
+                continue
+            message = self.browse(message_id)
             try:
                 # Use sudo() to bypass access checks: the scheduler acts as the
                 # system, not as the operator. Company record rules would reject

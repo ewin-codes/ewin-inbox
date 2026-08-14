@@ -10,6 +10,9 @@ from .common import OmnichannelCase
 
 @tagged("post_install", "-at_install")
 class TestScheduledSend(OmnichannelCase):
+    # The cron's row lock and per-message commits are guarded by the testing
+    # flag, so these tests cannot exercise those windows. The re-check for
+    # scheduled_at re-evaluation is testable in a single transaction, as it is.
     def setUp(self):
         super().setUp()
         self.account = self.env["omnichannel.account"].create({
@@ -252,3 +255,45 @@ class TestScheduledSend(OmnichannelCase):
             self.env["omnichannel.message"]._cron_send_scheduled()
         connector.send_message.assert_not_called()
         self.assertEqual(message.state, "scheduled")
+
+    def test_cron_respects_reschedule_during_drain(self):
+        """The cron re-checks scheduled_at before releasing each message.
+
+        When the cron is draining a backlog, an operator can reschedule a
+        message that is already in the batch. The re-lock query re-evaluates
+        both state and scheduled_at, so a message moved out of the due range
+        is skipped and tried again next tick, not released today.
+        """
+        first = self._schedule(self._later(1))
+        second = self._schedule(self._later(2))
+        connector = self._fake_connector()
+        original_send = connector.send_message.side_effect
+
+        def send_with_reschedule(account, message):
+            if message.id == first.id:
+                # On sending the first message, reschedule the second one
+                # a day into the future using raw SQL (simulating a concurrent
+                # transaction that the ORM cache and write guard don't see).
+                self.env.cr.execute(
+                    "UPDATE omnichannel_message SET scheduled_at = %s "
+                    "WHERE id = %s",
+                    (fields.Datetime.now() + timedelta(days=1), second.id))
+            return original_send(account, message)
+
+        connector.send_message.side_effect = send_with_reschedule
+        due = fields.Datetime.now() + timedelta(hours=3)
+        with patch.object(fields.Datetime, "now", return_value=due), \
+             self._with_connector(connector):
+            self.env["omnichannel.message"]._cron_send_scheduled()
+        # The second message was rescheduled while the cron was draining.
+        # The re-check in _cron_send_scheduled should see the new scheduled_at
+        # and skip the message, leaving it in scheduled state.
+        self.assertEqual(first.state, "sent")
+        self.assertEqual(second.state, "scheduled")
+
+    def test_cron_record_exists(self):
+        """Verify the scheduled action is registered and active."""
+        cron = self.env.ref("ewin_omnichannel_core.cron_send_scheduled_messages")
+        self.assertTrue(cron.active)
+        self.assertEqual(cron.interval_number, 1)
+        self.assertEqual(cron.interval_type, "minutes")
