@@ -112,9 +112,20 @@ class HistoryService(models.AbstractModel):
         represents — a history stamped "now" reads as a single event rather
         than a conversation. The ledger row travels in the same create, so a
         thousand-message backfill stays two statements instead of a thousand.
+
+        ``scheduled`` and ``cancelled`` messages are excluded: the contact's
+        chatter is the same promise as the thread's, and a link must not turn
+        a reply the operator has only committed to — or one that will never
+        go out — into an accomplished fact on the customer's own record. A
+        scheduled message that later sends is picked up by the ordinary
+        ``mirror()`` call ``release_scheduled`` makes; skipping it here is
+        what leaves that copy free to carry the real ``sent_at`` instead of
+        being pre-empted by a backfill copy stamped with ``create_date``.
         """
         subtype = self.env.ref("mail.mt_note")
-        messages = conversation.omni_message_ids.sorted("id")
+        messages = conversation.omni_message_ids.filtered(
+            lambda message: message.state not in ("scheduled", "cancelled")
+        ).sorted("id")
         for target in targets:
             pending = messages.filtered(
                 lambda message: not self._existing_copy(message, target))

@@ -1,5 +1,7 @@
+from datetime import timedelta
 from unittest.mock import patch
 
+from odoo import fields
 from odoo.tests import tagged
 
 from odoo.addons.ewin_omnichannel_core.hooks import backfill_existing_history
@@ -209,6 +211,44 @@ class TestHistory(OmnichannelCase):
         self.assertEqual(len(bodies), 2)
         self.assertTrue(any("First" in body for body in bodies))
         self.assertTrue(any("Second" in body for body in bodies))
+
+    def test_linking_a_contact_skips_a_message_still_scheduled(self):
+        """The contact's chatter is the same promise as the thread's: a link
+        must not turn a reply the operator has only committed to into an
+        accomplished fact on the customer's own record. Once it actually
+        sends, the ordinary mirror() call release_scheduled makes must still
+        reach the chatter — a premature backfill copy must not have already
+        pre-empted it."""
+        conv = self._new_conv()
+        self._new_message(conv, body="Already answered")
+        with patch("odoo.addons.ewin_omnichannel_core.services."
+                   "routing_service.RoutingService.deliver_outbound"):
+            scheduled = self.env["omnichannel.message.service"].create_outbound(
+                conv, "Not sent yet",
+                scheduled_at=fields.Datetime.now() + timedelta(hours=1))
+            conv.partner_id = self.partner
+            bodies = self._notes(self.partner).mapped("body")
+            self.assertTrue(any("Already answered" in body for body in bodies))
+            self.assertFalse(any("Not sent yet" in body for body in bodies))
+            self.env["omnichannel.message.service"].release_scheduled(scheduled)
+        self.assertTrue(any(
+            "Not sent yet" in body
+            for body in self._notes(self.partner).mapped("body")))
+
+    def test_linking_a_contact_skips_a_cancelled_message(self):
+        """A cancelled reply will never be sent, so a link must not resurrect
+        it onto the customer's card either."""
+        conv = self._new_conv()
+        with patch("odoo.addons.ewin_omnichannel_core.services."
+                   "routing_service.RoutingService.deliver_outbound"):
+            scheduled = self.env["omnichannel.message.service"].create_outbound(
+                conv, "Never going out",
+                scheduled_at=fields.Datetime.now() + timedelta(hours=1))
+        scheduled.action_cancel_schedule()
+        conv.partner_id = self.partner
+        self.assertFalse(any(
+            "Never going out" in body
+            for body in self._notes(self.partner).mapped("body")))
 
     def test_backfill_keeps_the_original_timestamps(self):
         """A history dumped into the chatter all at "now" reads as one event;
