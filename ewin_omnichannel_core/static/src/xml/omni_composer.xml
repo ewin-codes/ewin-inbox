@@ -2,25 +2,6 @@
 <templates xml:space="preserve">
     <t t-name="ewin_omnichannel_core.OmniComposerField">
         <div class="o_omni_composer_wrap">
-            <div class="o_omni_composer_toolbar" t-if="state.templates.length">
-                <div class="o_omni_qr_dropdown">
-                    <button type="button"
-                            class="btn btn-sm btn-light o_omni_qr_toggle"
-                            t-on-click="toggleMenu">
-                        <i class="fa fa-bolt me-1"/>Quick replies
-                    </button>
-                    <div class="o_omni_qr_menu" t-if="state.open">
-                        <t t-foreach="state.templates" t-as="tpl" t-key="tpl.id">
-                            <button type="button" class="o_omni_qr_item"
-                                    t-on-click="() => this.insertTemplate(tpl)">
-                                <span class="fw-bold" t-esc="tpl.name"/>
-                                <span class="text-muted small" t-if="tpl.shortcut"
-                                      t-esc="' /' + tpl.shortcut"/>
-                            </button>
-                        </t>
-                    </div>
-                </div>
-            </div>
             <textarea class="o_omni_composer_input form-control"
                       t-ref="textarea"
                       rows="2"

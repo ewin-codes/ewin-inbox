@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="ewin_omnichannel_core.OmniQuickRepliesField">
+        <!-- No templates configured for this channel: no button, rather than a
+             button that opens an empty list. -->
+        <div class="o_omni_qr_dropdown" t-if="state.templates.length">
+            <button type="button"
+                    class="btn btn-sm btn-light o_omni_qr_toggle"
+                    t-on-click="toggleMenu">
+                <i class="fa fa-bolt"/>Quick replies
+            </button>
+            <div class="o_omni_qr_menu" t-if="state.open">
+                <t t-foreach="state.templates" t-as="tpl" t-key="tpl.id">
+                    <button type="button" class="o_omni_qr_item"
+                            t-on-click="() => this.insertTemplate(tpl)">
+                        <span class="fw-bold" t-esc="tpl.name"/>
+                        <span class="text-muted small" t-if="tpl.shortcut"
+                              t-esc="' /' + tpl.shortcut"/>
+                    </button>
+                </t>
+            </div>
+        </div>
+    </t>
+</templates>

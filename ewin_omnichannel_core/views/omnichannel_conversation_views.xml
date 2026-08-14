@@ -124,7 +124,10 @@
                             <button name="action_cancel_edit" type="object"
                                     string="Cancel" class="btn-link btn-sm"/>
                         </div>
-                        <div class="d-flex align-items-center justify-content-between mb-1">
+                        <!-- One line above the textarea: what this composer
+                             writes to on the left, the two controls that
+                             change what it writes on the right. -->
+                        <div class="o_omni_composer_head o_omni_vrow justify-content-between mb-1">
                             <span class="fw-bold o_omni_compose_hint"
                                   invisible="composer_is_internal">
                                 <field name="compose_hint" nolabel="1" readonly="1"
@@ -134,17 +137,26 @@
                                   invisible="not composer_is_internal">
                                 <i class="fa fa-lock me-1"></i>Internal note — not sent to the customer
                             </span>
-                            <!-- Hidden while editing: a scheduled reply cannot
-                                 become an internal note, so the toggle would
-                                 only offer a choice that has no effect. -->
-                            <div class="o_omni_internal_switch d-flex align-items-center gap-2"
-                                 invisible="composer_editing_message_id">
-                                <field name="composer_is_internal"
-                                       widget="boolean_toggle"
-                                       class="o_omni_internal_toggle"/>
-                                <label for="composer_is_internal"
-                                       string="Internal note" class="mb-0"
-                                       help="Kept in Odoo, not sent to the customer."/>
+                            <div class="o_omni_vrow gap-3">
+                                <!-- Hidden while editing: a scheduled reply
+                                     cannot become an internal note, so the
+                                     toggle would only offer a choice that has
+                                     no effect. -->
+                                <div class="o_omni_internal_switch d-flex align-items-center gap-2"
+                                     invisible="composer_editing_message_id">
+                                    <field name="composer_is_internal"
+                                           widget="boolean_toggle"
+                                           class="o_omni_internal_toggle"/>
+                                    <label for="composer_is_internal"
+                                           string="Internal note" class="mb-0"
+                                           help="Kept in Odoo, not sent to the customer."/>
+                                </div>
+                                <!-- The channel decides which templates apply,
+                                     which is why the button hangs off that
+                                     field; what it renders goes into the
+                                     composer below. -->
+                                <field name="channel_id" nolabel="1" readonly="1"
+                                       widget="omni_quick_replies"/>
                             </div>
                         </div>
                         <field name="composer_body" nolabel="1"

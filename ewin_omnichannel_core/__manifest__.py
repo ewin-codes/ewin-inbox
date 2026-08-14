@@ -1,7 +1,7 @@
 {
     "name": "EWIN Inbox",
     "summary": "Omnichannel customer inbox for Odoo",
-    "version": "18.0.1.3.3",
+    "version": "18.0.1.4.0",
     "category": "Productivity/Discuss",
     "author": "EWIN.codes",
     "maintainer": "EWIN.codes",
@@ -42,6 +42,8 @@
             "ewin_omnichannel_core/static/src/xml/omni_discuss_thread.xml",
             "ewin_omnichannel_core/static/src/js/omni_composer.js",
             "ewin_omnichannel_core/static/src/xml/omni_composer.xml",
+            "ewin_omnichannel_core/static/src/js/omni_quick_replies.js",
+            "ewin_omnichannel_core/static/src/xml/omni_quick_replies.xml",
             "ewin_omnichannel_core/static/src/js/omni_conversation_list.js",
             "ewin_omnichannel_core/static/src/js/omni_scheduled_pane.js",
             "ewin_omnichannel_core/static/src/xml/omni_scheduled_pane.xml",

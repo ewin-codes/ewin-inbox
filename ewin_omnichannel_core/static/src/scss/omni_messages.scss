@@ -91,7 +91,7 @@
 .o_omni_info {
     border: 1px solid var(--gray-300, #dee2e6);
     border-radius: 6px;
-    padding: 6px 10px;
+    padding: 12px 10px;
     margin-bottom: 8px;
 
     > summary {
@@ -391,8 +391,12 @@
     width: 100%;
 }
 
-.o_omni_composer_toolbar {
-    margin-bottom: 4px;
+// Quick replies sits in the composer's header, at the far right. btn-light
+// draws no edge of its own, which left it looking like floating text next to
+// the switch beside it.
+.o_omni_qr_toggle {
+    @include omni-vrow(4px);
+    border: 1px solid #e9ecef;
 }
 
 .o_omni_qr_dropdown {
@@ -403,7 +407,9 @@
 .o_omni_qr_menu {
     position: absolute;
     bottom: 100%;
-    left: 0;
+    // Hangs from the right edge of its button, which now sits at the right
+    // edge of the composer — anchored left it would run off the form.
+    right: 0;
     z-index: 10;
     min-width: 240px;
     max-height: 260px;
