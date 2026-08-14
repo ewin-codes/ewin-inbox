@@ -404,3 +404,51 @@ class TestScheduledSend(OmnichannelCase):
         send_now_posts = message.conversation_id.message_ids.filtered(
             lambda m: "sent now by" in (m.body or "").lower())
         self.assertFalse(send_now_posts)
+
+    def test_action_schedule_reply_reads_the_stored_composer(self):
+        self.conv.write({
+            "composer_body": "operator reply",
+            "composer_scheduled_at": self._later(3),
+        })
+        connector = self._fake_connector()
+        with self._with_connector(connector):
+            self.conv.action_schedule_reply()
+        connector.send_message.assert_not_called()
+        message = self.env["omnichannel.message"].search(
+            [("conversation_id", "=", self.conv.id),
+             ("state", "=", "scheduled")])
+        self.assertEqual(len(message), 1)
+        self.assertIn("operator reply", message.body or "")
+        # composer cleared, so the next reply starts empty
+        self.assertFalse(self.conv.composer_body)
+        self.assertFalse(self.conv.composer_scheduled_at)
+
+    def test_action_schedule_reply_needs_a_time(self):
+        self.conv.write({"composer_body": "operator reply"})
+        with self.assertRaises(UserError):
+            self.conv.action_schedule_reply()
+
+    def test_action_schedule_reply_refuses_an_internal_note(self):
+        self.conv.write({
+            "composer_body": "remind me",
+            "composer_is_internal": True,
+            "composer_scheduled_at": self._later(3),
+        })
+        with self.assertRaises(UserError):
+            self.conv.action_schedule_reply()
+
+    def test_panel_shows_only_waiting_replies(self):
+        first = self._schedule(self._later(2))
+        second = self._schedule(self._later(4))
+        self.conv.invalidate_recordset()
+        self.assertEqual(self.conv.scheduled_message_ids, first | second)
+        self.assertEqual(self.conv.scheduled_count, 2)
+        self.assertIn("2", self.conv.scheduled_badge or "")
+        with self._with_connector(self._fake_connector()):
+            self.env["omnichannel.message.service"].release_scheduled(first)
+        self.conv.invalidate_recordset()
+        self.assertEqual(self.conv.scheduled_message_ids, second)
+        self.assertEqual(self.conv.scheduled_count, 1)
+
+    def test_badge_is_empty_without_scheduled_replies(self):
+        self.assertFalse(self.conv.scheduled_badge)

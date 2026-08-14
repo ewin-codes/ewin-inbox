@@ -3,6 +3,7 @@ import base64
 from markupsafe import Markup, escape
 
 from odoo import _, api, fields, models
+from odoo.exceptions import UserError
 from odoo.tools import file_open
 
 # Channel code -> (fontawesome class, brand colour) for the list icon.
@@ -104,6 +105,19 @@ class OmnichannelConversation(models.Model):
     composer_attachment_ids = fields.Many2many(
         "ir.attachment", "omni_conv_composer_att_rel", "conv_id", "att_id",
         string="Attachments", copy=False)
+    composer_scheduled_at = fields.Datetime(
+        string="Send later", copy=False,
+        help="Pick a moment to deliver this reply instead of sending it now.")
+    scheduled_message_ids = fields.One2many(
+        "omnichannel.message", "conversation_id", string="Scheduled",
+        domain=[("state", "=", "scheduled")],
+        help="Replies waiting to be delivered. Editable until they leave.")
+    scheduled_count = fields.Integer(
+        compute="_compute_scheduled", string="Scheduled")
+    scheduled_badge = fields.Html(
+        compute="_compute_scheduled", sanitize=False, string="Scheduled",
+        help="Clock badge for the list — empty when nothing is waiting, so the "
+             "column stays quiet for the ordinary case.")
 
     @api.depends_context("uid")
     @api.depends("discuss_channel_id.channel_member_ids.message_unread_counter")
@@ -113,6 +127,31 @@ class OmnichannelConversation(models.Model):
             member = conv.discuss_channel_id.channel_member_ids.filtered(
                 lambda m: m.partner_id == partner)[:1]
             conv.unread_count = member.message_unread_counter if member else 0
+
+    @api.depends("omni_message_ids.state")
+    def _compute_scheduled(self):
+        """Count the replies still waiting, in one query for the whole list.
+
+        Grouping in SQL rather than filtering ``omni_message_ids`` keeps the
+        Inbox list from loading every message of every conversation on it.
+        """
+        counts = {}
+        if self.ids:
+            counts = {
+                conversation.id: count
+                for conversation, count in self.env["omnichannel.message"]._read_group(
+                    [("conversation_id", "in", self.ids),
+                     ("state", "=", "scheduled")],
+                    groupby=["conversation_id"], aggregates=["__count"])
+            }
+        for conv in self:
+            count = counts.get(conv.id, 0)
+            conv.scheduled_count = count
+            conv.scheduled_badge = Markup(
+                '<span class="badge text-bg-warning" '
+                'title="Replies waiting to be sent">'
+                '<i class="fa fa-clock-o me-1"></i>%s</span>') % count \
+                if count else False
 
     @api.depends("first_customer_message_at", "first_operator_message_at")
     def _compute_first_response_seconds(self):
@@ -509,4 +548,27 @@ class OmnichannelConversation(models.Model):
         # keep composer_is_internal as-is: an operator writing internal notes
         # usually writes several in a row, so the toggle stays on until they
         # turn it off themselves.
+        self.composer_attachment_ids = [(5, 0, 0)]
+
+    def action_schedule_reply(self):
+        """Park the composed reply until ``composer_scheduled_at``.
+
+        Deliberately a separate button rather than a mode on Send: the
+        composer's keyboard shortcut sends, so deferring is always an explicit
+        click and never something an operator does by reflex.
+        """
+        self.ensure_one()
+        body = (self.composer_body or "").strip()
+        attachments = self.composer_attachment_ids
+        if not body and not attachments:
+            return
+        if not self.composer_scheduled_at:
+            raise UserError(
+                _("Pick a date and time to send this reply later."))
+        self.env["omnichannel.message.service"].create_outbound(
+            self, body, is_internal=self.composer_is_internal,
+            attachments=attachments, scheduled_at=self.composer_scheduled_at)
+        self._mark_read()
+        self.composer_body = False
+        self.composer_scheduled_at = False
         self.composer_attachment_ids = [(5, 0, 0)]
