@@ -30,9 +30,16 @@ export class OmniDiscussThreadField extends Component {
         // messages appear without a manual reload (a freshly-assigned mirror
         // channel is not yet live on the client's bus until the next reload).
         this._onOmniEvent = (payload) => {
-            if (payload && payload.conversation_id === this.props.record.resId) {
-                this._refreshMessages();
+            if (!payload || payload.conversation_id !== this.props.record.resId) {
+                return;
             }
+            // A scheduled reply is deliberately NOT in the thread yet, so a
+            // refetch would find nothing and only jerk every open copy of this
+            // conversation down to the newest message.
+            if (payload.event === "message_scheduled") {
+                return;
+            }
+            this._refreshMessages();
         };
         this.busService.subscribe("omni.inbox", this._onOmniEvent);
         onWillUnmount(() =>
