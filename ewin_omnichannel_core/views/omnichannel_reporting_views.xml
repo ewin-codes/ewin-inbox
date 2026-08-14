@@ -72,6 +72,13 @@
                         domain="[('state','=','scheduled')]"/>
                 <filter name="cancelled" string="Cancelled"
                         domain="[('state','=','cancelled')]"/>
+                <!-- Volume means messages that actually moved: a scheduled
+                     one has not gone out yet and a cancelled one never will.
+                     A removable default rather than a hard domain on the
+                     action, so Message Volume excludes them out of the box
+                     while a reader can still lift the filter to see them. -->
+                <filter name="real_volume" string="Real Volume"
+                        domain="[('state', 'not in', ['scheduled', 'cancelled'])]"/>
                 <group expand="0" string="Group By">
                     <filter name="g_channel" string="Channel"
                             context="{'group_by':'channel_id'}"/>
@@ -92,8 +99,13 @@
         <field name="name">Message Volume</field>
         <field name="res_model">omnichannel.message</field>
         <field name="view_mode">graph,pivot</field>
-        <!-- Volume means messages that actually moved. A scheduled one has not
-             gone out yet and a cancelled one never will. -->
-        <field name="domain">[('state', 'not in', ['scheduled', 'cancelled'])]</field>
+        <!-- A removable default rather than a hard domain: see the
+             "Real Volume" filter on view_message_search above. domain is
+             cleared explicitly — an upgrade from an earlier version of this
+             feature, which set it, would otherwise keep the old value: Odoo
+             only writes fields a record still mentions, it does not reset
+             ones a later revision dropped. -->
+        <field name="domain" eval="False"/>
+        <field name="context">{'search_default_real_volume': 1}</field>
     </record>
 </odoo>

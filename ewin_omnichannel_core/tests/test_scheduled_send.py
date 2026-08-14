@@ -583,3 +583,15 @@ class TestScheduledSend(OmnichannelCase):
 
     def test_badge_is_empty_without_scheduled_replies(self):
         self.assertFalse(self.conv.scheduled_badge)
+
+    def test_message_volume_excludes_unsent_by_a_removable_default(self):
+        """A scheduled message has not gone out and a cancelled one never
+        will, so neither should inflate outbound volume — but a hard domain
+        on the action would make the Scheduled/Cancelled search filters that
+        already exist permanently unreachable. The correction has to be a
+        removable default filter, not a domain baked into the action."""
+        action = self.env.ref("ewin_omnichannel_core.action_report_messages")
+        self.assertFalse(action.domain)
+        self.assertIn("search_default_real_volume", action.context)
+        view = self.env.ref("ewin_omnichannel_core.view_message_search")
+        self.assertIn('name="real_volume"', view.arch)

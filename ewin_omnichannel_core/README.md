@@ -152,8 +152,11 @@ off each other's rows instead of one blocking on the other.
 - **Visible.** A panel above the composer lists the pending replies, the
   conversation list carries a clock badge, and **EWIN Inbox → Scheduled** shows
   every pending send across all conversations. The Message Volume report
-  excludes the `scheduled` and `cancelled` states, so a reply that has not
-  gone out — or never will — does not inflate outbound volume.
+  excludes the `scheduled` and `cancelled` states by default — a removable
+  "Real Volume" filter, not a hard domain, so a reply that has not gone out —
+  or never will — does not inflate outbound volume, and the Scheduled and
+  Cancelled filters on the same search view stay reachable for a reader who
+  wants to see them.
 - **Editable until it leaves.** The send time can be changed, sent early or
   cancelled while the message is `scheduled`; afterwards `write` refuses. The
   rule lives in the model, not in the view, because the panel edits rows inline
