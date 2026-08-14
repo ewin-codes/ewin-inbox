@@ -42,6 +42,19 @@
     i.fa {
         line-height: 1;
     }
+    // Bootstrap nudges a checkbox/switch down by .25em to sit on the text
+    // baseline of a stacked form. In a centred row that nudge is exactly the
+    // few pixels that make the toggle look misaligned with its label, and it
+    // survives the `> *` reset above because the input is nested deeper.
+    .form-check-input {
+        margin-top: 0;
+    }
+    // Bootstrap's badge is vertical-align: top, which does nothing in a flex
+    // row but does apply inside an inline child (a button, say) that carries
+    // its own line box.
+    .badge {
+        vertical-align: middle;
+    }
 }
 
 .o_omni_vrow {
@@ -67,6 +80,12 @@
         list-style: none;
         font-size: 13px;
         user-select: none;
+    }
+
+    // The subject is a second row nested inside the first (separator + value),
+    // so it needs the same treatment rather than inline defaults.
+    .o_omni_subject {
+        @include omni-vrow(4px);
     }
 
     > summary::-webkit-details-marker {
@@ -136,6 +155,14 @@
 // right when there is nothing waiting.
 .o_omni_tabs:has(.o_omni_tabbar) {
     margin-bottom: 6px;
+}
+
+// Each tab packs an icon, a word and (on one of them) a count badge. A button
+// is a block box laying its content out inline, so those three land on a
+// shared text baseline and the badge — smaller and vertically-aligned to the
+// top — rides above it. Centre them as a row instead.
+.o_omni_tabbar .btn {
+    @include omni-vrow(4px);
 }
 
 .o_omni_tabs:has(.o-scheduled-on) ~ .o_omni_thread_field,

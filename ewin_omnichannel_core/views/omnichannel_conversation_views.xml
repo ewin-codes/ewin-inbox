@@ -44,17 +44,21 @@
                     <!-- Customer &amp; routing: collapsed by default so the chat
                          gets the space. Native details/summary = no JS needed. -->
                     <details class="o_omni_info">
+                        <!-- No d-inline/d-inline-block here: the row is centred
+                             by the o_omni_vrow mixin, and an inline-block child
+                             opts back out of that centring — its contents then
+                             align on their own text baseline, which is what put
+                             the customer's name a few pixels under the channel
+                             icon. -->
                         <summary class="o_omni_info_summary">
-                            <field name="channel_icon" widget="html"
-                                   class="d-inline-block"/>
+                            <field name="channel_icon" widget="html"/>
                             <field name="partner_id" nolabel="1" readonly="1"
-                                   class="d-inline-block fw-bold"
+                                   class="fw-bold"
                                    options="{'no_open': True}"/>
                             <span class="o_omni_subject fw-bold"
                                   invisible="not subject">
-                                <span class="text-muted mx-1">·</span>
-                                <field name="subject" nolabel="1" readonly="1"
-                                       class="d-inline"/>
+                                <span class="text-muted">·</span>
+                                <field name="subject" nolabel="1" readonly="1"/>
                             </span>
                             <span class="o_omni_info_hint text-muted">
                                 | click to expand customer &amp; routing
