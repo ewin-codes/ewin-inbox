@@ -1,7 +1,7 @@
 {
     "name": "EWIN Inbox",
     "summary": "Omnichannel customer inbox for Odoo",
-    "version": "18.0.1.3.1",
+    "version": "18.0.1.3.2",
     "category": "Productivity/Discuss",
     "author": "EWIN.codes",
     "maintainer": "EWIN.codes",

@@ -154,7 +154,9 @@
                              mixes a datetime field widget with buttons and the
                              attachment widget, and baseline alignment puts the
                              field's text a few pixels below its neighbours. -->
-                        <div class="o_omni_vrow justify-content-between mt-1">
+                        <!-- No mt-1: the gap above this row is the textarea's
+                             own bottom margin, in one place. -->
+                        <div class="o_omni_vrow justify-content-between">
                             <div class="o_omni_vrow">
                                 <button name="action_send_reply" type="object"
                                         string="Send" class="btn-primary"

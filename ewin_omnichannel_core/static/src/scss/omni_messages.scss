@@ -164,6 +164,14 @@
 
 // Composer pinned to the bottom of the scroll viewport, compact.
 .o_omni_composer {
+    // Air between what is being written and the buttons that act on it. Named
+    // by widget so it lands on the textarea alone: the attachment field and
+    // the send-later picker are fields too, and they live inside the button
+    // row this margin is meant to keep clear of.
+    > .o_field_omni_composer {
+        margin-bottom: 12px;
+    }
+
     position: sticky;
     bottom: 0;
     z-index: 5;
@@ -221,15 +229,30 @@
     border-radius: 6px;
     background: #fffdf5;
     padding: 8px 10px;
+    // The strip's own bottom margin falls below this pane, not between the
+    // two — the pane is drawn inside the same wrapper. Match the gap the chat
+    // gets, so switching tabs does not shift the content under the strip.
+    margin-top: 6px;
     max-height: 72vh;
     overflow: auto;
 }
 
+// Day separator, ruled across the pane the way Discuss rules its own — the
+// two panes are read the same way, so they divide their days the same way.
 .o_omni_sched_day {
-    text-align: center;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     font-size: 12px;
     color: var(--gray-600, #6c757d);
     margin: 8px 0 6px;
+
+    &::before,
+    &::after {
+        content: "";
+        flex: 1 1 auto;
+        border-top: 1px solid var(--gray-300, #dee2e6);
+    }
 }
 
 .o_omni_sched_row {
@@ -252,7 +275,7 @@
 
 .o_omni_sched_head {
     font-size: 12px;
-    margin-bottom: 2px;
+    margin-bottom: 8px;
 }
 
 .o_omni_sched_bubble {
