@@ -22,8 +22,6 @@ MESSAGE_STATES = [
     ("failed", "Failed"), ("cancelled", "Cancelled"),
 ]
 
-MESSAGE_STATES_LABELS = dict(MESSAGE_STATES)
-
 
 class OmnichannelMessage(models.Model):
     _name = "omnichannel.message"
@@ -53,7 +51,12 @@ class OmnichannelMessage(models.Model):
     reply_to_id = fields.Many2one("omnichannel.message")
     message_type = fields.Selection(MESSAGE_TYPES, default="text", required=True)
     body = fields.Html(sanitize=True, sanitize_attributes=True)
-    state = fields.Selection(MESSAGE_STATES, default="received", required=True, index=True)
+    state = fields.Selection(
+        MESSAGE_STATES, default="received", required=True, index=True,
+        copy=False,
+        help="Not copied: a duplicated message starts life as 'received' "
+             "rather than reproducing a state like 'scheduled', which would "
+             "carry no scheduled_at and fail the constraint that pairs them.")
     mail_message_id = fields.Many2one("mail.message")
     attachment_ids = fields.Many2many("ir.attachment", string="Attachments")
     history_message_ids = fields.Many2many(
@@ -150,8 +153,10 @@ class OmnichannelMessage(models.Model):
 
         Only a write that touches ``scheduled_at`` is inspected, which is what
         leaves the release path free: it moves the state to ``queued`` without
-        touching the time. When the send time changes, post a chatter line
-        naming both the old and new times for accountability.
+        touching the time. When the send time actually changes, post a
+        chatter line naming both the old and new times for accountability —
+        a write that sets it to the value it already had is not a reschedule
+        and gets no line.
         """
         # Capture the old scheduled_at before the write, for the chatter post.
         # Iterate to handle multi-record writes (e.g. bulk reschedule).
@@ -159,20 +164,20 @@ class OmnichannelMessage(models.Model):
         if "scheduled_at" in vals:
             self._check_reschedulable()
             self._check_send_time_is_future(vals["scheduled_at"])
-            for message in self:
-                old_times[message.id] = message.scheduled_at
+            old_times = {message.id: message.scheduled_at for message in self}
         result = super().write(vals)
-        # Post a chatter line for each rescheduled message, after the write succeeds.
+        # Post a chatter line for each reply whose send time actually moved.
         if old_times:
             service = self.env["omnichannel.message.service"]
             for message in self:
-                if message.id in old_times:
-                    old_time_str = service._format_scheduled(old_times[message.id])
-                    new_time_str = service._format_scheduled(message.scheduled_at)
-                    message.conversation_id.message_post(body=_(
-                        "Reply rescheduled from %(old)s to %(new)s by %(user)s.",
-                        old=old_time_str, new=new_time_str,
-                        user=self.env.user.name))
+                old_time = old_times[message.id]
+                if old_time == message.scheduled_at:
+                    continue
+                message.conversation_id.message_post(body=_(
+                    "Reply rescheduled from %(old)s to %(new)s by %(user)s.",
+                    old=service._format_scheduled(old_time),
+                    new=service._format_scheduled(message.scheduled_at),
+                    user=self.env.user.name))
         return result
 
     def _check_reschedulable(self):
@@ -201,7 +206,20 @@ class OmnichannelMessage(models.Model):
                 raise UserError(_(
                     "This message is no longer scheduled (%(state)s) — its "
                     "send time can no longer be changed.",
-                    state=MESSAGE_STATES_LABELS.get(state, state)))
+                    state=self._state_label(state)))
+
+    def _state_label(self, state):
+        """The state's own translated label, for interpolation into a
+        user-facing message.
+
+        The field's ``Selection`` pairs are the English source strings; using
+        them straight would splice untranslated English words into an
+        otherwise translated sentence. ``_description_selection`` returns the
+        pairs already translated for the current language, the same source
+        the state widget itself reads from.
+        """
+        return dict(self._fields["state"]._description_selection(self.env)
+                    ).get(state, state)
 
     @api.model
     def _check_send_time_is_future(self, when):
@@ -378,17 +396,19 @@ class OmnichannelMessage(models.Model):
             """, (message.id,))
             if not self.env.cr.fetchone():
                 # The row was not in scheduled state — read its actual state
-                # for the error message. Lock it to see the true state, not
-                # a stale cache.
+                # for the error message. A plain SELECT is enough: this is
+                # only building an error string, not a decision that needs a
+                # row lock, and FOR UPDATE here would just block on whatever
+                # transaction is holding the row for no benefit.
                 self.env.cr.execute(
-                    "SELECT state FROM omnichannel_message WHERE id = %s FOR UPDATE",
+                    "SELECT state FROM omnichannel_message WHERE id = %s",
                     (message.id,))
                 row = self.env.cr.fetchone()
                 actual_state = row[0] if row else "unknown"
                 raise UserError(_(
                     "Only a scheduled reply can be cancelled — this one is "
                     "already %(state)s.",
-                    state=MESSAGE_STATES_LABELS.get(actual_state, actual_state)))
+                    state=self._state_label(actual_state)))
             message.invalidate_recordset(["state"])
             # The UPDATE goes behind the ORM's back, so the dependency graph must
             # be notified by hand so dependent computed fields recompute.

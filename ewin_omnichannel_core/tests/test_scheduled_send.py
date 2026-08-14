@@ -407,14 +407,16 @@ class TestScheduledSend(OmnichannelCase):
         self.assertEqual(self.env.cr.fetchone()[0], "scheduled")
 
     def test_reschedule_guard_checks_actual_state_not_cache(self):
-        """The reschedule guard locks rows before checking state.
+        """The reschedule guard reads the database row, not the ORM cache.
 
         A concurrent release can complete between the ORM cache read and the
         UPDATE, leaving a reschedule to silently land on a message that already
         went out. The raw SQL UPDATE here simulates exactly what another
         transaction does while we hold a stale cache: it moves the row to sent.
-        Without the FOR UPDATE lock the check would pass (wrong), with it the
-        check sees the truth and raises (correct).
+        This proves the guard is DB-based rather than cache-based — a plain
+        SELECT with no lock would pass this same test. Preventing the race
+        from landing in the first place, rather than merely detecting it here,
+        is the row lock's own job.
         """
         message = self._scheduled_message()
         # The Python cache now holds: state = "scheduled"

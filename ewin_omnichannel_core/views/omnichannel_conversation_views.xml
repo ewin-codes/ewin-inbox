@@ -8,7 +8,7 @@
                 <field name="unread_count" column_invisible="1"/>
                 <field name="partner_id" column_invisible="1"/>
                 <field name="customer_label" widget="html" string="Customer"/>
-                <field name="scheduled_badge" widget="html" string="⏰"
+                <field name="scheduled_badge" widget="html" string="⏰ Scheduled"
                        optional="show"/>
                 <field name="subject" string="Subject" optional="show"/>
                 <field name="account_id"/>

@@ -109,13 +109,13 @@ class OmnichannelConversation(models.Model):
         string="Send later", copy=False,
         help="Pick a moment to deliver this reply instead of sending it now.")
     scheduled_message_ids = fields.One2many(
-        "omnichannel.message", "conversation_id", string="Waiting Messages",
+        "omnichannel.message", "conversation_id", string="Scheduled Messages",
         domain=[("state", "=", "scheduled")],
         help="Replies waiting to be delivered. Editable until they leave.")
     scheduled_count = fields.Integer(
-        compute="_compute_scheduled", string="Waiting Count")
+        compute="_compute_scheduled", string="Scheduled Count")
     scheduled_badge = fields.Html(
-        compute="_compute_scheduled", sanitize=False, string="Waiting Badge",
+        compute="_compute_scheduled", sanitize=False, string="Scheduled Badge",
         help="Clock badge for the list — empty when nothing is waiting, so the "
              "column stays quiet for the ordinary case.")
 
@@ -144,14 +144,14 @@ class OmnichannelConversation(models.Model):
                      ("state", "=", "scheduled")],
                     groupby=["conversation_id"], aggregates=["__count"])
             }
+        title = escape(_("Replies waiting to be sent"))
         for conv in self:
             count = counts.get(conv.id, 0)
             conv.scheduled_count = count
             conv.scheduled_badge = (
                 Markup(
-                    '<span class="badge text-bg-warning" '
-                    'title="Replies waiting to be sent">'
-                    '<i class="fa fa-clock-o me-1"></i>%s</span>') % count
+                    '<span class="badge text-bg-warning" title="%s">'
+                    '<i class="fa fa-clock-o me-1"></i>%s</span>') % (title, count)
                 if count else False)
 
     @api.depends("first_customer_message_at", "first_operator_message_at")
