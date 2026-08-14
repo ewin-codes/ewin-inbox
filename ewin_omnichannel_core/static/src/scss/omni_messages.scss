@@ -150,7 +150,10 @@
     min-height: 340px;
     max-height: 72vh;
     overflow: hidden; // the inner mail Thread owns its own scroll
-    background: var(--o-view-background-color, #fff);
+    // A quiet ground behind the bubbles rather than the form's own white, so
+    // the thread reads as a conversation surface and each message keeps its
+    // own edge against it.
+    background: #f3f2f2;
 
     .o-mail-Thread {
         flex: 1 1 auto;
