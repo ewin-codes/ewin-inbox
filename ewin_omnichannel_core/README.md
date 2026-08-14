@@ -175,14 +175,15 @@ off each other's rows instead of one blocking on the other.
 - **A release that raises does not stop the batch, and is retried forever.**
   The message simply stays `scheduled` — there is deliberately no retry
   counter, since duplicating the job queue's own retry bookkeeping inside this
-  cron would blur the distinction the "Job queue" section below draws between
-  the two. Each failed attempt is recorded as an `omnichannel.error.log` entry
-  (category `internal`), which is the only way to notice a pending reply whose
-  time has passed but never went out — the panel row alone looks no different
-  from one still waiting its turn. Because the delivery attempt is synchronous
-  inside the cron's own transaction, a crash between a successful send and
-  that iteration's commit means the next tick resends it, the same trade-off
-  the ordinary synchronous first attempt in `deliver_outbound` already makes.
+  cron would blur the distinction "Job queue and scheduled actions" below
+  draws between the two. Each failed attempt is recorded as an
+  `omnichannel.error.log` entry (category `internal`), which is the only way
+  to notice a pending reply whose time has passed but never went out — the
+  panel row alone looks no different from one still waiting its turn. Because
+  the delivery attempt is synchronous inside the cron's own transaction, a
+  crash between a successful send and that iteration's commit means the next
+  tick resends it, the same trade-off the ordinary synchronous first attempt
+  in `deliver_outbound` already makes.
 
 ## Customer history
 
