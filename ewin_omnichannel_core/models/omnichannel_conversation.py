@@ -109,13 +109,13 @@ class OmnichannelConversation(models.Model):
         string="Send later", copy=False,
         help="Pick a moment to deliver this reply instead of sending it now.")
     scheduled_message_ids = fields.One2many(
-        "omnichannel.message", "conversation_id", string="Scheduled",
+        "omnichannel.message", "conversation_id", string="Waiting Messages",
         domain=[("state", "=", "scheduled")],
         help="Replies waiting to be delivered. Editable until they leave.")
     scheduled_count = fields.Integer(
-        compute="_compute_scheduled", string="Scheduled")
+        compute="_compute_scheduled", string="Waiting Count")
     scheduled_badge = fields.Html(
-        compute="_compute_scheduled", sanitize=False, string="Scheduled",
+        compute="_compute_scheduled", sanitize=False, string="Waiting Badge",
         help="Clock badge for the list — empty when nothing is waiting, so the "
              "column stays quiet for the ordinary case.")
 
