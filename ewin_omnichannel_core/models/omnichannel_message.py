@@ -150,12 +150,30 @@ class OmnichannelMessage(models.Model):
 
         Only a write that touches ``scheduled_at`` is inspected, which is what
         leaves the release path free: it moves the state to ``queued`` without
-        touching the time.
+        touching the time. When the send time changes, post a chatter line
+        naming both the old and new times for accountability.
         """
+        # Capture the old scheduled_at before the write, for the chatter post.
+        # Iterate to handle multi-record writes (e.g. bulk reschedule).
+        old_times = {}
         if "scheduled_at" in vals:
             self._check_reschedulable()
             self._check_send_time_is_future(vals["scheduled_at"])
-        return super().write(vals)
+            for message in self:
+                old_times[message.id] = message.scheduled_at
+        result = super().write(vals)
+        # Post a chatter line for each rescheduled message, after the write succeeds.
+        if old_times:
+            service = self.env["omnichannel.message.service"]
+            for message in self:
+                if message.id in old_times:
+                    old_time_str = service._format_scheduled(old_times[message.id])
+                    new_time_str = service._format_scheduled(message.scheduled_at)
+                    message.conversation_id.message_post(body=_(
+                        "Reply rescheduled from %(old)s to %(new)s by %(user)s.",
+                        old=old_time_str, new=new_time_str,
+                        user=self.env.user.name))
+        return result
 
     def _check_reschedulable(self):
         """Refuse to move the send time of a message that is no longer waiting.

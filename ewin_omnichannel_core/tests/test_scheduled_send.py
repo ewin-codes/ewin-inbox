@@ -405,6 +405,29 @@ class TestScheduledSend(OmnichannelCase):
             lambda m: "sent now by" in (m.body or "").lower())
         self.assertFalse(send_now_posts)
 
+    def test_reschedule_posts_chatter_with_both_times(self):
+        """A reschedule posts a chatter line naming the user and both times."""
+        message = self._scheduled_message(self._later(2))
+        old_time = message.scheduled_at
+        new_time = self._later(5)
+        # Clear any existing posts (from creation)
+        self.conv.message_ids.unlink()
+        # Reschedule the message
+        message.write({"scheduled_at": new_time})
+        # Verify exactly one reschedule post was added
+        reschedule_posts = self.conv.message_ids.filtered(
+            lambda m: "rescheduled" in (m.body or "").lower())
+        self.assertEqual(len(reschedule_posts), 1)
+        # Verify the post names both times and the user
+        post_body = reschedule_posts[0].body or ""
+        self.assertIn(self.env.user.name, post_body)
+        # The times should be formatted and both should appear in the post
+        service = self.env["omnichannel.message.service"]
+        old_formatted = service._format_scheduled(old_time)
+        new_formatted = service._format_scheduled(new_time)
+        self.assertIn(old_formatted, post_body)
+        self.assertIn(new_formatted, post_body)
+
     def test_action_schedule_reply_reads_the_stored_composer(self):
         self.conv.write({
             "composer_body": "operator reply",
