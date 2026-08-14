@@ -32,9 +32,9 @@ Depends on `base`, `mail`, `contacts`.
   either from the Inbox composer or straight from Discuss — both paths reach
   the customer.
 - **Delivery lifecycle.** Messages carry a real state machine
-  (`received` → `queued` → `processing` → `sent` → `delivered` → `read`, plus
-  `failed` / `cancelled`), so a reply that never arrived is visible instead of
-  silently lost.
+  (`received` → `scheduled` → `queued` → `processing` → `sent` → `delivered` →
+  `read`, plus `failed` / `cancelled`), so a reply that never arrived is
+  visible instead of silently lost.
 - **Retry queue.** The first send attempt is synchronous, inside the operator's
   own request. Only failures fall back to `omnichannel.job` with exponential
   retries, so a healthy send is instant and a flaky provider does not block
@@ -57,7 +57,7 @@ Depends on `base`, `mail`, `contacts`.
 | `omnichannel.account` | One configured provider account. Holds credentials, defaults, the per-account `webhook_uuid`, and a `draft`/`connected`/`error`/`disabled` state. |
 | `omnichannel.identity` | A customer as one provider knows them. Unique per `(account, external_id)`; links to `res.partner`. |
 | `omnichannel.conversation` | A thread with one customer on one account. States `new`/`open`/`pending`/`closed`, priority, team, operator, tags, close reason, and the linked `discuss.channel`. Inherits `mail.thread`. |
-| `omnichannel.message` | A single message, inbound or outbound, with type, body, attachments, provider ids and the delivery state machine. |
+| `omnichannel.message` | A single message, inbound or outbound, with type, body, attachments, provider ids and the delivery state machine — including `scheduled`, an operator-deferred reply waiting for its send time. |
 | `omnichannel.event` | Raw provider events, deduplicated per `(account, external event id)` — this is what makes redelivered webhooks harmless. |
 | `omnichannel.job` | The retry queue: `pending`/`running`/`done`/`failed`, `next_run_at`, `retry_count`, `max_retries`. |
 | `omnichannel.team` | An operator team, used for routing and for the "my team" scope. |
@@ -103,6 +103,72 @@ Replies typed directly in Discuss are caught by an override of
 `discuss.channel.message_post`. The core's own mirror posts carry an
 `omni_mirror` context flag and are skipped, which is what keeps the mirror from
 echoing messages back to the customer in a loop.
+
+## Scheduled replies
+
+An operator can defer a reply instead of sending it: pick a time in the
+composer, press **Schedule**, and the message is parked until then.
+
+`scheduled` is a state on the message, one step ahead of `queued` — not a
+separate model and not a job-queue row — carrying `scheduled_at` (the send
+time) and `scheduled_by` on the row itself. Rescheduling is therefore an
+ordinary write, which is what makes "editable until it is sent" cheap to
+guarantee.
+
+```
+message_service.create_outbound(scheduled_at=…)   # parks the row, sends nothing
+  └ Omnichannel: Send scheduled messages (cron, 1 min)
+      → message_service.release_scheduled()
+          → Discuss mirror + chatter copy + conversation timestamps
+          → routing_service.deliver_outbound()    # the ordinary send path
+```
+
+Nothing is mirrored to the thread or the customer's card while the reply
+waits: both must keep showing what the customer has actually seen. For the
+same reason `first_operator_message_at` — and so `first_response_seconds` — is
+set when the message really goes out, not when it was planned. `sent_at` and
+`scheduled_at` both survive delivery, so the row still carries what was
+planned alongside what actually happened.
+
+`release_scheduled` is the single door out of `scheduled`, whether the cron
+calls it or an operator presses **Send now**. A conditional
+`UPDATE … SET state = 'queued' WHERE id = %s AND state = 'scheduled'
+RETURNING id` decides who releases a given row, so a caller that loses the
+race gets `False` back and stops — never a second delivery. The same method
+opens with an access check, so the operator-facing action is governed by the
+ordinary record rules while the cron, running as the system, is not blocked
+by them.
+
+The cron, **`Omnichannel: Send scheduled messages`**, does not lock its whole
+batch at once. It first collects the due rows with a plain, lock-free
+`SELECT`, then — immediately before releasing each one — re-takes that single
+row with `SELECT … FOR UPDATE SKIP LOCKED` and re-checks `scheduled_at <= now`
+at that moment. The per-row re-check is what catches an operator who moved the
+send time while a backlog was draining; a lock held across the whole batch
+would not, because a commit releases every lock a transaction holds at once,
+not one row at a time. `SKIP LOCKED` is what keeps two overlapping cron runs
+off each other's rows instead of one blocking on the other.
+
+- **Visible.** A panel above the composer lists the pending replies, the
+  conversation list carries a clock badge, and **EWIN Inbox → Scheduled** shows
+  every pending send across all conversations. The Message Volume report
+  excludes the `scheduled` and `cancelled` states, so a reply that has not
+  gone out — or never will — does not inflate outbound volume.
+- **Editable until it leaves.** The send time can be changed, sent early or
+  cancelled while the message is `scheduled`; afterwards `write` refuses. The
+  rule lives in the model, not in the view, because the panel edits rows inline
+  and any client can write over RPC.
+- **Cancelling keeps the row** (`cancelled`): operators hold no unlink right on
+  messages, and a decision not to send is worth recording.
+- **Anyone who can see the conversation** may reschedule or cancel, author or
+  not — otherwise a colleague's pending replies are stuck when they are away.
+  Every action is posted to the conversation's chatter by name.
+- **Accuracy is one minute**, bounded by the cron interval. The only rule on
+  the time is that it must be strictly in the future, enforced on both create
+  and reschedule.
+- **A closed conversation is reopened** and the reply still goes out. Deferring
+  is a commitment, and a silently swallowed reply is worse than a reopened
+  thread.
 
 ## Customer history
 
@@ -219,6 +285,11 @@ to register, and a provider without media has nothing to download.
   dealing with messages.
 - **`Omnichannel: Cleanup old events and logs`** — daily. Trims processed
   events and stale log entries so the idempotency table does not grow forever.
+- **`Omnichannel: Send scheduled messages`** — every minute. Collects the due
+  rows with a lock-free `SELECT`, then re-takes and releases them one at a
+  time with `FOR UPDATE SKIP LOCKED`, re-checking the send time at that
+  moment — so a reschedule that lands mid-run is honoured and two overlapping
+  runs never fight over the same row. See "Scheduled replies" above.
 
 ## Security
 
