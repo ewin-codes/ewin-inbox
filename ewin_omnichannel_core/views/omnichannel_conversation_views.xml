@@ -84,39 +84,45 @@
 
                     <field name="send_shortcut" invisible="1"/>
 
-                    <!-- Chat thread: full width, grows to fill the sheet. -->
-                    <field name="discuss_channel_id"
-                           widget="omni_discuss_thread" nolabel="1" readonly="1"
-                           class="o_omni_thread_field flex-grow-1"/>
+                    <!-- Chat pane. The tab strip and the two panels it swaps
+                         are siblings on purpose: the strip shows one and hides
+                         the other in CSS (see omni_scheduled_tabs.js), which
+                         an `invisible` modifier cannot do — it reads fields of
+                         the record, and the active tab belongs to one
+                         operator's screen, not to the shared conversation. -->
+                    <div class="o_omni_chatpane d-flex flex-column flex-grow-1">
+                        <field name="scheduled_count" nolabel="1"
+                               widget="omni_scheduled_tabs" class="o_omni_tabs"/>
 
-                    <!-- Replies waiting to be delivered. Hidden entirely when
-                         there are none, so it costs nothing on a normal
-                         conversation and cannot be missed on a deferred one. -->
-                    <div class="o_omni_scheduled"
-                         invisible="not scheduled_message_ids">
-                        <div class="o_omni_vrow o_omni_scheduled_head">
-                            <i class="fa fa-clock-o"/>
-                            <span class="fw-bold">Scheduled</span>
-                            <field name="scheduled_count" nolabel="1"
-                                   class="badge text-bg-warning"/>
+                        <!-- Chat thread: full width, grows to fill the pane. -->
+                        <field name="discuss_channel_id"
+                               widget="omni_discuss_thread" nolabel="1" readonly="1"
+                               class="o_omni_thread_field flex-grow-1"/>
+
+                        <!-- Replies waiting to be delivered. Not rendered at
+                             all when there are none, so it costs nothing on a
+                             normal conversation; when there are, the strip
+                             above decides whether it is the pane on screen. -->
+                        <div class="o_omni_scheduled"
+                             invisible="not scheduled_message_ids">
+                            <field name="scheduled_message_ids" nolabel="1">
+                                <list editable="bottom" create="0" delete="0"
+                                      default_order="scheduled_at">
+                                    <field name="scheduled_at" string="Sends at"/>
+                                    <field name="body" widget="html" string="Reply"
+                                           readonly="1"/>
+                                    <field name="has_attachments" string="Files"
+                                           readonly="1" optional="show"/>
+                                    <field name="scheduled_by" readonly="1"
+                                           optional="hide"/>
+                                    <button name="action_send_now" type="object"
+                                            icon="fa-paper-plane" title="Send now"/>
+                                    <button name="action_cancel_schedule"
+                                            type="object" icon="fa-times"
+                                            title="Cancel"/>
+                                </list>
+                            </field>
                         </div>
-                        <field name="scheduled_message_ids" nolabel="1">
-                            <list editable="bottom" create="0" delete="0"
-                                  default_order="scheduled_at">
-                                <field name="scheduled_at" string="Sends at"/>
-                                <field name="body" widget="html" string="Reply"
-                                       readonly="1"/>
-                                <field name="has_attachments" string="Files"
-                                       readonly="1" optional="show"/>
-                                <field name="scheduled_by" readonly="1"
-                                       optional="hide"/>
-                                <button name="action_send_now" type="object"
-                                        icon="fa-paper-plane" title="Send now"/>
-                                <button name="action_cancel_schedule"
-                                        type="object" icon="fa-times"
-                                        title="Cancel"/>
-                            </list>
-                        </field>
                     </div>
 
                     <!-- Composer: pinned to the bottom of the screen, compact. -->
@@ -148,20 +154,26 @@
                              attachment widget, and baseline alignment puts the
                              field's text a few pixels below its neighbours. -->
                         <div class="o_omni_vrow justify-content-between mt-1">
-                            <button name="action_send_reply" type="object"
-                                    string="Send" class="btn-primary"/>
                             <div class="o_omni_vrow">
-                                <i class="fa fa-clock-o text-muted"
-                                   title="Send later"/>
-                                <field name="composer_scheduled_at" nolabel="1"
-                                       placeholder="Send later…"/>
-                                <button name="action_schedule_reply"
-                                        type="object" string="Schedule"
-                                        class="btn-secondary"
-                                        invisible="not composer_scheduled_at"/>
-                                <field name="composer_attachment_ids" nolabel="1"
-                                       widget="many2many_binary"/>
+                                <button name="action_send_reply" type="object"
+                                        string="Send" class="btn-primary"/>
+                                <!-- Send later belongs next to Send — it is the
+                                     other way to send this reply, not a
+                                     composer accessory. One clear gap apart so
+                                     neither is clicked for the other. -->
+                                <span class="o_omni_later o_omni_vrow">
+                                    <i class="fa fa-clock-o text-muted"
+                                       title="Send later"/>
+                                    <field name="composer_scheduled_at" nolabel="1"
+                                           placeholder="Send later…"/>
+                                    <button name="action_schedule_reply"
+                                            type="object" string="Schedule"
+                                            class="btn-secondary"
+                                            invisible="not composer_scheduled_at"/>
+                                </span>
                             </div>
+                            <field name="composer_attachment_ids" nolabel="1"
+                                   widget="many2many_binary"/>
                         </div>
                     </div>
                 </sheet>
