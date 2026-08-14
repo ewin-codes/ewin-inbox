@@ -15,3 +15,4 @@ from . import test_reporting
 from . import test_close_reason
 from . import test_history
 from . import test_scheduled_send
+from . import test_scheduled_edit

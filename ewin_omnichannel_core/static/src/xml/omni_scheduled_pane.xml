@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="ewin_omnichannel_core.OmniScheduledPaneField">
+        <!-- Nothing waiting: no strip and no pane, so an ordinary conversation
+             looks exactly as it did before the feature existed. -->
+        <t t-if="state.count">
+            <div class="o_omni_tabbar btn-group btn-group-sm" role="tablist">
+                <button type="button" class="btn btn-outline-secondary"
+                        t-att-class="{ active: !state.scheduledTab }"
+                        t-on-click="() => this.showScheduled(false)">
+                    <i class="fa fa-comments-o"/>Chat
+                </button>
+                <!-- o-scheduled-on is what the stylesheet reads to hide the
+                     thread below; keep the two in step. -->
+                <button type="button" class="btn btn-outline-warning"
+                        t-att-class="{ active: state.scheduledTab, 'o-scheduled-on': state.scheduledTab }"
+                        t-on-click="() => this.showScheduled(true)">
+                    <i class="fa fa-clock-o"/>Scheduled
+                    <span class="badge text-bg-warning" t-esc="state.count"/>
+                </button>
+            </div>
+
+            <div t-if="state.scheduledTab" class="o_omni_scheduled">
+                <t t-foreach="days" t-as="day" t-key="day.day">
+                    <div class="o_omni_sched_day">
+                        <span t-esc="day.day"/>
+                    </div>
+                    <div t-foreach="day.messages" t-as="message"
+                         t-key="message.id" class="o_omni_sched_row">
+                        <img class="o_omni_sched_avatar" alt=""
+                             t-att-src="avatarUrl(message)"/>
+                        <div class="o_omni_sched_body">
+                            <div class="o_omni_sched_head o_omni_vrow">
+                                <span class="fw-bold" t-esc="message.author"/>
+                                <span class="text-muted">sends at <t t-esc="message.time"/></span>
+                            </div>
+                            <div class="o_omni_vrow">
+                                <div class="o_omni_sched_bubble"
+                                     title="Click to edit this reply"
+                                     t-on-click="() => this.editReply(message)">
+                                    <span t-esc="message.body"/>
+                                    <div t-if="message.attachment_count"
+                                         class="o_omni_sched_files text-muted">
+                                        <i class="fa fa-paperclip"/>
+                                        <t t-esc="message.attachment_count"/> attached
+                                    </div>
+                                </div>
+                                <div class="o_omni_sched_actions o_omni_vrow">
+                                    <button type="button" class="btn btn-link btn-sm"
+                                            title="Edit"
+                                            t-on-click="() => this.editReply(message)">
+                                        <i class="fa fa-pencil"/>
+                                    </button>
+                                    <button type="button" class="btn btn-link btn-sm"
+                                            title="Send now"
+                                            t-on-click="() => this.sendNow(message)">
+                                        <i class="fa fa-paper-plane"/>
+                                    </button>
+                                    <button type="button" class="btn btn-link btn-sm text-danger"
+                                            title="Cancel this reply"
+                                            t-on-click="() => this.cancelReply(message)">
+                                        <i class="fa fa-times"/>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </div>
+        </t>
+    </t>
+</templates>
