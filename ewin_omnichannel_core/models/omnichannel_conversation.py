@@ -108,10 +108,11 @@ class OmnichannelConversation(models.Model):
     composer_scheduled_at = fields.Datetime(
         string="Send later", copy=False,
         help="Pick a moment to deliver this reply instead of sending it now.")
-    scheduled_message_ids = fields.One2many(
-        "omnichannel.message", "conversation_id", string="Scheduled Messages",
-        domain=[("state", "=", "scheduled")],
-        help="Replies waiting to be delivered. Editable until they leave.")
+    composer_editing_message_id = fields.Many2one(
+        "omnichannel.message", string="Editing Scheduled Reply", copy=False,
+        help="The waiting reply currently loaded into the composer, if any. "
+             "Set while an operator edits one; cleared when they save or "
+             "leave.")
     scheduled_count = fields.Integer(
         compute="_compute_scheduled", string="Scheduled Count")
     scheduled_badge = fields.Html(
@@ -541,19 +542,123 @@ class OmnichannelConversation(models.Model):
         Shared logic for immediate send and scheduling: read the composer,
         validate it has content, call the service, mark read, and reset the
         composer (except composer_is_internal which persists).
+
+        When the composer holds a reply that is being edited, both buttons act
+        on that row instead of writing a new one — see ``_apply_scheduled_edit``.
         """
         self.ensure_one()
         body = (self.composer_body or "").strip()
         attachments = self.composer_attachment_ids
         if not body and not attachments:
             return
-        self.env["omnichannel.message.service"].create_outbound(
-            self, body, is_internal=self.composer_is_internal,
-            attachments=attachments, scheduled_at=scheduled_at)
+        editing = self.composer_editing_message_id
+        if editing:
+            self._apply_scheduled_edit(editing, body, attachments, scheduled_at)
+        else:
+            self.env["omnichannel.message.service"].create_outbound(
+                self, body, is_internal=self.composer_is_internal,
+                attachments=attachments, scheduled_at=scheduled_at)
         self._mark_read()
         self.composer_body = False
         self.composer_scheduled_at = False
+        self.composer_editing_message_id = False
         self.composer_attachment_ids = [(5, 0, 0)]
+
+    def _apply_scheduled_edit(self, message, body, attachments, scheduled_at):
+        """Write the composer back onto the reply it was loaded from.
+
+        Send and Schedule keep their ordinary meanings: Schedule moves the
+        send time, Send delivers the edited wording immediately. Either way it
+        is the same row — editing a deferred reply must never leave a second
+        copy of it behind.
+
+        ``_check_reschedulable`` is what makes this safe. It takes the row lock
+        and refuses a reply that has already left, so the cron cannot deliver
+        the old wording in the window between the click that loaded the reply
+        and this write. The operator's text stays in the composer when that
+        happens: it is theirs to schedule again, not ours to discard.
+        """
+        self.ensure_one()
+        message._check_reschedulable()
+        vals = {"body": body}
+        if attachments:
+            # Append. The reply's own files were never in the composer, and
+            # dropping them because they are absent from it would delete work
+            # the operator never touched.
+            vals["attachment_ids"] = [(4, attachment.id)
+                                      for attachment in attachments]
+        if scheduled_at:
+            vals["scheduled_at"] = scheduled_at
+        message.write(vals)
+        if not scheduled_at:
+            message.action_send_now()
+
+    def action_edit_scheduled(self, message_id):
+        """Load a waiting reply back into the composer for editing.
+
+        Editing reuses the composer rather than an editor of its own: the
+        operator changes a deferred reply with the same textarea, the same
+        quick replies and the same send-later control they wrote it with.
+        """
+        self.ensure_one()
+        message = self.env["omnichannel.message"].browse(int(message_id)).exists()
+        if not message or message.conversation_id != self:
+            raise UserError(
+                _("That reply does not belong to this conversation."))
+        # The same right rescheduling needs: whoever may change the send time
+        # may change the words.
+        message.check_access("write")
+        if message.state != "scheduled":
+            raise UserError(_(
+                "This reply is no longer waiting (%(state)s) and can no "
+                "longer be edited.",
+                state=message._state_label(message.state)))
+        self.write({
+            "composer_body": message.body_text().strip(),
+            "composer_scheduled_at": message.scheduled_at,
+            # A scheduled reply is never an internal note (the service refuses
+            # the combination), so loading one always leaves note mode.
+            "composer_is_internal": False,
+            "composer_editing_message_id": message.id,
+        })
+        return True
+
+    def action_cancel_edit(self):
+        """Leave edit mode, dropping the loaded text with it.
+
+        The reply itself is untouched — walking away from the editor is not
+        cancelling the send.
+        """
+        self.ensure_one()
+        self.write({
+            "composer_body": False,
+            "composer_scheduled_at": False,
+            "composer_editing_message_id": False,
+        })
+        return True
+
+    def scheduled_replies(self):
+        """The replies still waiting on this conversation, shaped for the pane.
+
+        Read over RPC by the pane widget rather than through the form's
+        one2many, because the pane has to refresh itself the moment the cron
+        releases a reply — and a one2many can only be refreshed by reloading
+        the whole record, which would throw away whatever is half-typed in the
+        composer. Going through ``search`` also keeps the record rules in
+        force: an operator sees here exactly what they may see anywhere else.
+        """
+        self.ensure_one()
+        messages = self.env["omnichannel.message"].search(
+            [("conversation_id", "=", self.id), ("state", "=", "scheduled")],
+            order="scheduled_at, id")
+        return [{
+            "id": message.id,
+            "body": message.body_text().strip(),
+            "scheduled_at": fields.Datetime.to_string(message.scheduled_at),
+            "author": message.scheduled_by.name or "",
+            "author_id": message.scheduled_by.id,
+            "attachment_count": len(message.attachment_ids),
+        } for message in messages]
 
     def action_send_reply(self):
         self._post_composer()

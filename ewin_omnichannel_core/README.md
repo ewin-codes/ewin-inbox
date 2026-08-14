@@ -151,20 +151,43 @@ off each other's rows instead of one blocking on the other.
 
 - **Visible, without taking the chat's room.** A **Scheduled *n*** tab appears
   above the thread as soon as a reply is waiting and disappears when none is —
-  the chat itself is never shortened. Its count follows the same `omni.inbox`
-  bus signal the thread does, so a reply the cron has just released leaves the
-  tab on its own rather than at the next page reload. The conversation list
-  carries a clock badge, and **EWIN Inbox → Scheduled** shows every pending
-  send across all conversations. The Message Volume report
+  the chat itself is never shortened. Opening it swaps the thread for the
+  waiting replies drawn the same way: a bubble each, with the avatar and name
+  of whoever scheduled it, grouped under the day it is due. Its count follows
+  the same `omni.inbox` bus signal the thread does, so a reply the cron has
+  just released leaves the tab on its own rather than at the next page reload.
+  The pane reads its rows straight from the server rather than through a
+  one2many of the conversation, because a one2many can only be refreshed by
+  reloading the whole record — which would throw away whatever is half-typed in
+  the composer. The conversation list carries a clock badge, and
+  **EWIN Inbox → Scheduled** shows every pending send across all conversations.
+  The Message Volume report
   excludes the `scheduled` and `cancelled` states by default — a removable
   "Real Volume" filter, not a hard domain, so a reply that has not gone out —
   or never will — does not inflate outbound volume, and the Scheduled and
   Cancelled filters on the same search view stay reachable for a reader who
   wants to see them.
-- **Editable until it leaves.** The send time can be changed, sent early or
-  cancelled while the message is `scheduled`; afterwards `write` refuses. The
-  rule lives in the model, not in the view, because the tab edits rows inline
-  and any client can write over RPC.
+- **Editable until it leaves.** Wording and send time can both be changed, and
+  the reply can be sent early or cancelled, while the message is `scheduled`;
+  afterwards `write` refuses. The rule lives in the model, not in the view,
+  because any client can write over RPC.
+- **Edited in the composer it was written in.** Clicking a waiting reply loads
+  it back into the composer — same textarea, same quick replies, same
+  send-later control — and the Schedule button becomes **Reschedule**. Send
+  during an edit means "this wording, now": it delivers the same row rather
+  than leaving the original waiting behind a copy. `composer_editing_message_id`
+  is what holds the two together, and an amber strip above the composer says so
+  with a way back out.
+
+  `_apply_scheduled_edit` takes the row lock through `_check_reschedulable`
+  before writing. That guard is load-bearing on the **Send** path in
+  particular: Send changes the wording without touching the send time, so the
+  model's own reschedule check never runs, and without the explicit lock an
+  edit could land on a reply the cron delivered a moment earlier. The
+  operator's text stays in the composer when that happens — it is theirs to
+  schedule again, not ours to discard. Files already attached to the reply are
+  kept and anything added while editing is appended: the composer never held
+  them, so their absence from it is not a request to delete them.
 - **Cancelling keeps the row** (`cancelled`): operators hold no unlink right on
   messages, and a decision not to send is worth recording.
 - **Anyone who can see the conversation** may reschedule or cancel, author or

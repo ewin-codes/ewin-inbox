@@ -165,38 +165,97 @@
     @include omni-vrow(4px);
 }
 
-.o_omni_tabs:has(.o-scheduled-on) ~ .o_omni_thread_field,
-.o_omni_tabs:not(:has(.o-scheduled-on)) ~ .o_omni_scheduled {
+// The pane is drawn inside the strip's own field wrapper, so hiding the thread
+// is the only swap left for CSS to make.
+.o_omni_tabs:has(.o-scheduled-on) ~ .o_omni_thread_field {
     display: none;
 }
 
-// Replies waiting to be delivered — the second pane of the chat area. Sized to
-// its rows, not to the thread it replaces: a fixed pane height would leave a
-// wall of empty amber under the single waiting reply that is the normal case.
-// Capped where the thread is capped, and scrolls past that. Amber like an
+// Replies waiting to be delivered, drawn as the chat they are about to become:
+// same shape as the thread they replace, so switching tabs does not mean
+// learning a second way to read a conversation. Sized to its rows — a fixed
+// height would leave a wall of empty amber under the single waiting reply that
+// is the normal case — and capped where the thread is capped. Amber like an
 // internal note, and for the same reason: it is a state the operator has to
 // notice before starting to type.
 .o_omni_scheduled {
     border: 1px solid #ffca28;
     border-radius: 6px;
     background: #fffdf5;
-    padding: 6px 8px;
+    padding: 8px 10px;
     max-height: 72vh;
     overflow: auto;
+}
 
-    // the embedded list draws its own white card, which fights the amber
-    .o_list_renderer,
-    table.o_list_table {
-        background: transparent;
-    }
+.o_omni_sched_day {
+    text-align: center;
+    font-size: 12px;
+    color: var(--gray-600, #6c757d);
+    margin: 8px 0 6px;
+}
 
-    // The reply is what the operator reads here; the send time is fixed-width
-    // and the rest are icons. Without this the html cell keeps the narrow
-    // width the list computes for it and truncates mid-sentence.
-    th[data-name="body"],
-    td[name="body"] {
-        width: 55%;
+.o_omni_sched_row {
+    display: flex;
+    gap: 8px;
+    padding: 3px 0;
+}
+
+.o_omni_sched_avatar {
+    flex: 0 0 auto;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.o_omni_sched_body {
+    min-width: 0; // let a long reply wrap instead of stretching the row
+}
+
+.o_omni_sched_head {
+    font-size: 12px;
+    margin-bottom: 2px;
+}
+
+.o_omni_sched_bubble {
+    max-width: 640px;
+    padding: 6px 10px;
+    border: 1px solid #ffca28;
+    border-radius: 8px;
+    background: #fff;
+    white-space: pre-wrap; // the reply is plain text; keep the operator's breaks
+    cursor: pointer;
+
+    &:hover {
+        border-color: #f5a623;
     }
+}
+
+.o_omni_sched_files {
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+// All three actions are always there — hunting through a menu to cancel a
+// reply that goes out in ten minutes is not a thing to make someone do — but
+// they stay quiet until the pointer is on the reply they belong to.
+.o_omni_sched_actions .btn {
+    color: var(--gray-600, #6c757d);
+    opacity: 0.45;
+}
+
+.o_omni_sched_row:hover .o_omni_sched_actions .btn {
+    opacity: 1;
+}
+
+// Edit mode: the composer is holding a reply that already exists, and saying
+// so is the only thing that keeps the next Send from being a surprise.
+.o_omni_editing {
+    padding: 2px 8px;
+    border: 1px solid #ffca28;
+    border-radius: 6px;
+    background: #fff8e1;
+    font-size: 12px;
 }
 
 // Toggle + its label centred on one line (see omni-vrow: the boolean_toggle

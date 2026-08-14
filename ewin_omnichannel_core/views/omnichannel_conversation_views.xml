@@ -95,42 +95,35 @@
                          the record, and the active tab belongs to one
                          operator's screen, not to the shared conversation. -->
                     <div class="o_omni_chatpane d-flex flex-column flex-grow-1">
+                        <!-- Tab strip and the waiting replies it opens are both
+                             drawn by the widget, which reads them itself rather
+                             than through a one2many of this record. The chat
+                             thread below is its sibling: the strip hides it in
+                             CSS when the scheduled pane is the one on screen. -->
                         <field name="scheduled_count" nolabel="1"
-                               widget="omni_scheduled_tabs" class="o_omni_tabs"/>
+                               widget="omni_scheduled_pane" class="o_omni_tabs"/>
 
                         <!-- Chat thread: full width, grows to fill the pane. -->
                         <field name="discuss_channel_id"
                                widget="omni_discuss_thread" nolabel="1" readonly="1"
                                class="o_omni_thread_field flex-grow-1"/>
-
-                        <!-- Replies waiting to be delivered. Not rendered at
-                             all when there are none, so it costs nothing on a
-                             normal conversation; when there are, the strip
-                             above decides whether it is the pane on screen. -->
-                        <div class="o_omni_scheduled"
-                             invisible="not scheduled_message_ids">
-                            <field name="scheduled_message_ids" nolabel="1">
-                                <list editable="bottom" create="0" delete="0"
-                                      default_order="scheduled_at">
-                                    <field name="scheduled_at" string="Sends at"/>
-                                    <field name="body" widget="html" string="Reply"
-                                           readonly="1"/>
-                                    <field name="has_attachments" string="Files"
-                                           readonly="1" optional="show"/>
-                                    <field name="scheduled_by" readonly="1"
-                                           optional="hide"/>
-                                    <button name="action_send_now" type="object"
-                                            icon="fa-paper-plane" title="Send now"/>
-                                    <button name="action_cancel_schedule"
-                                            type="object" icon="fa-times"
-                                            title="Cancel"/>
-                                </list>
-                            </field>
-                        </div>
                     </div>
 
                     <!-- Composer: pinned to the bottom of the screen, compact. -->
                     <div class="o_omni_composer">
+                        <field name="composer_editing_message_id" invisible="1"/>
+                        <!-- Edit mode has to be visible and has to have a way
+                             out: without it the next Send would silently
+                             overwrite a reply the operator has stopped
+                             thinking about. -->
+                        <div class="o_omni_editing o_omni_vrow justify-content-between mb-1"
+                             invisible="not composer_editing_message_id">
+                            <span class="fw-bold">
+                                <i class="fa fa-pencil me-1"/>Editing a scheduled reply
+                            </span>
+                            <button name="action_cancel_edit" type="object"
+                                    string="Cancel" class="btn-link btn-sm"/>
+                        </div>
                         <div class="d-flex align-items-center justify-content-between mb-1">
                             <span class="fw-bold o_omni_compose_hint"
                                   invisible="composer_is_internal">
@@ -141,7 +134,11 @@
                                   invisible="not composer_is_internal">
                                 <i class="fa fa-lock me-1"></i>Internal note — not sent to the customer
                             </span>
-                            <div class="o_omni_internal_switch d-flex align-items-center gap-2">
+                            <!-- Hidden while editing: a scheduled reply cannot
+                                 become an internal note, so the toggle would
+                                 only offer a choice that has no effect. -->
+                            <div class="o_omni_internal_switch d-flex align-items-center gap-2"
+                                 invisible="composer_editing_message_id">
                                 <field name="composer_is_internal"
                                        widget="boolean_toggle"
                                        class="o_omni_internal_toggle"/>
@@ -173,7 +170,11 @@
                                     <button name="action_schedule_reply"
                                             type="object" string="Schedule"
                                             class="btn-secondary"
-                                            invisible="not composer_scheduled_at"/>
+                                            invisible="not composer_scheduled_at or composer_editing_message_id"/>
+                                    <button name="action_schedule_reply"
+                                            type="object" string="Reschedule"
+                                            class="btn-secondary"
+                                            invisible="not composer_scheduled_at or not composer_editing_message_id"/>
                                 </span>
                             </div>
                             <field name="composer_attachment_ids" nolabel="1"

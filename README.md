@@ -25,8 +25,9 @@ Developed and maintained by [EWIN.codes](https://ewin.codes).
 - Delivery and read statuses where supported
 - Canned replies
 - Scheduled replies — defer an answer to a chosen date and time; a counted tab
-  above the chat holds the waiting replies, and each can be rescheduled, sent
-  early or cancelled until it leaves
+  above the chat holds the waiting replies as their own thread, and each can be
+  rewritten in the composer, rescheduled, sent early or cancelled until it
+  leaves
 - Close reasons — optional or mandatory, from a configurable list
 - Retry queue
 - Reporting
