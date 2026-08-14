@@ -295,15 +295,27 @@ class OmnichannelMessage(models.Model):
                 # would silently fail the send. The operator's own access check
                 # happens when they compose the reply, not when the cron releases it.
                 service.release_scheduled(message.sudo())
-            except Exception:  # noqa: BLE001 - one bad message, not the batch
+            except Exception as err:  # noqa: BLE001 - one bad message, not the batch
                 _logger.exception(
                     "Could not release scheduled message %s", message.id)
                 if not testing:
                     # Outside tests each message owns its transaction, so
-                    # rolling back drops only this one. Under the test runner
-                    # everything shares one transaction, and a rollback would
-                    # take the test's own fixtures with it.
+                    # rolling back drops only this one — including whatever
+                    # partial state the failed release left behind. Under the
+                    # test runner everything shares one transaction, and a
+                    # rollback would take the test's own fixtures with it.
                     self.env.cr.rollback()
+                # The message stays scheduled and is retried every tick with
+                # no bound; this log entry is the only trace of the failure
+                # an operator can see between tries — the panel just shows a
+                # row whose time has passed.
+                self.env["omnichannel.error.log"].sudo().log(
+                    "internal", _("Failed to release a scheduled message"),
+                    account=message.account_id,
+                    conversation_id=message.conversation_id.id,
+                    message_id=message.id, technical=str(err))
+                if not testing:
+                    self.env.cr.commit()
                 continue
             if not testing:
                 self.env.cr.commit()

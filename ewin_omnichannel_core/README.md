@@ -169,6 +169,17 @@ off each other's rows instead of one blocking on the other.
 - **A closed conversation is reopened** and the reply still goes out. Deferring
   is a commitment, and a silently swallowed reply is worse than a reopened
   thread.
+- **A release that raises does not stop the batch, and is retried forever.**
+  The message simply stays `scheduled` — there is deliberately no retry
+  counter, since duplicating the job queue's own retry bookkeeping inside this
+  cron would blur the distinction the "Job queue" section below draws between
+  the two. Each failed attempt is recorded as an `omnichannel.error.log` entry
+  (category `internal`), which is the only way to notice a pending reply whose
+  time has passed but never went out — the panel row alone looks no different
+  from one still waiting its turn. Because the delivery attempt is synchronous
+  inside the cron's own transaction, a crash between a successful send and
+  that iteration's commit means the next tick resends it, the same trade-off
+  the ordinary synchronous first attempt in `deliver_outbound` already makes.
 
 ## Customer history
 
@@ -303,8 +314,10 @@ Three groups, under the **EWIN Inbox** application category:
 Provider secrets live on fields restricted to the admin group; connectors expose
 a masked companion field so an operator can confirm *a* token is set without
 reading it. Record rules scope accounts, identities, conversations, messages,
-events, teams, close reasons and error logs by company, and conversations
-additionally by operator/team for the operator role.
+events, teams, close reasons and error logs by company, and conversations and
+messages additionally by operator/team for the operator role — a message
+inherits its scope from the conversation it belongs to, the same operator,
+unassigned, or team-member test.
 
 Menus that read `omnichannel.*` are invisible to users outside these groups —
 after installing, grant yourself **EWIN Inbox / Administrator**.

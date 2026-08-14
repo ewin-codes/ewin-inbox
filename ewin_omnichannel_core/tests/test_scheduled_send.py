@@ -291,6 +291,26 @@ class TestScheduledSend(OmnichannelCase):
         self.assertEqual(first.state, "sent")
         self.assertEqual(second.state, "scheduled")
 
+    def test_cron_failure_logs_and_keeps_the_message_scheduled(self):
+        """A release that raises must not vanish silently and must not stop
+        the batch. No retry counter: the message just stays scheduled for
+        the next tick, and the only trace an operator can see between tries
+        is this log entry — the panel row just looks like its time passed."""
+        message = self._schedule(self._later(1))
+        due = fields.Datetime.now() + timedelta(hours=2)
+        with patch.object(fields.Datetime, "now", return_value=due), \
+             patch.object(
+                 type(self.env["omnichannel.message.service"]),
+                 "release_scheduled", side_effect=RuntimeError("boom")):
+            self.env["omnichannel.message"]._cron_send_scheduled()
+        self.assertEqual(message.state, "scheduled")
+        log = self.env["omnichannel.error.log"].search(
+            [("message_id", "=", message.id)])
+        self.assertEqual(len(log), 1)
+        self.assertEqual(log.category, "internal")
+        self.assertEqual(log.conversation_id, self.conv)
+        self.assertIn("boom", log.technical)
+
     def test_cron_record_exists(self):
         """Verify the scheduled action is registered and active."""
         cron = self.env.ref("ewin_omnichannel_core.cron_send_scheduled_messages")
