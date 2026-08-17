@@ -204,7 +204,7 @@
                                     <i class="fa fa-clock-o text-muted"
                                        title="Send later"/>
                                     <field name="composer_scheduled_at" nolabel="1"
-                                           placeholder="Send later…"/>
+                                           placeholder="Send later"/>
                                     <!-- The way back to Send. Not offered while
                                          editing: a reply that already exists
                                          has to keep a send time, and the way

@@ -251,6 +251,15 @@
         // above it, and centring the box leaves the text itself sitting high
         // next to the icons either side. An invisible top border squares it.
         border-top: 1px solid transparent;
+
+        // "Send later" is the name of the control, not a hint about what to
+        // type into it, so it is read at full strength like the buttons it
+        // sits beside. `opacity: 1` because Firefox dims a placeholder to 54%
+        // on its own, and the colour alone would not survive that.
+        &::placeholder {
+            color: #000;
+            opacity: 1;
+        }
     }
 
     // Bootstrap's button padding is sized for a button with a word in it, not
