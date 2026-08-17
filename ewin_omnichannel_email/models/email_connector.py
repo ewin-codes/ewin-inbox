@@ -124,7 +124,12 @@ class EmailConnector(models.AbstractModel):
                     conv.name or account.name, subject[:120])
         partner = conv.partner_id
         addr = normalized["external_user"]["id"]
-        if partner and not partner.email and addr:
+        # Only the correspondent this conversation belongs to may fill in the
+        # customer's address: a threaded reply can come from any sender, and
+        # writing theirs onto the customer's contact would redirect everything
+        # else Odoo sends to that contact.
+        if (partner and not partner.email and addr
+                and message.author_partner_id == partner):
             partner.email = addr
 
     # ---- attachments ----

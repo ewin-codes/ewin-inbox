@@ -46,6 +46,44 @@ class TestEmailInbound(TransactionCase):
                       in_reply_to="<a@x.com>", references="<a@x.com>"))
         self.assertEqual(reply.conversation_id, first.conversation_id)
 
+    def test_reply_from_another_sender_is_credited_to_that_sender(self):
+        """A quoted Message-ID routes a mail into a thread; it does not prove
+        who wrote it. Anyone who has ever seen one message of a thread — a
+        forward, a CC, a list archive — can quote it, so the message is
+        credited to the address that actually sent it. Otherwise a stranger's
+        "please wire the refund to this IBAN" is filed as the customer's own
+        words, in the inbox, in Discuss and in their contact chatter."""
+        first = self.connector._process_raw(self.account, self._raw(mid="<a@x.com>"))
+        conv = first.conversation_id
+        stranger = self.connector._process_raw(
+            self.account,
+            self._raw(frm="Mallory <mallory@evil.com>", mid="<c@x.com>",
+                      subject="Re: Hi", in_reply_to="<a@x.com>",
+                      references="<a@x.com>"))
+        self.assertEqual(stranger.conversation_id, conv)
+        self.assertNotEqual(stranger.author_partner_id, conv.partner_id)
+        self.assertEqual(
+            stranger.author_partner_id.omni_external_id, "mallory@evil.com")
+
+    def test_reply_from_another_sender_does_not_take_the_customer_address(self):
+        first = self.connector._process_raw(self.account, self._raw(mid="<a@x.com>"))
+        conv = first.conversation_id
+        conv.partner_id.email = False
+        self.connector._process_raw(
+            self.account,
+            self._raw(frm="Mallory <mallory@evil.com>", mid="<d@x.com>",
+                      in_reply_to="<a@x.com>"))
+        self.assertFalse(conv.partner_id.email)
+
+    def test_reply_from_the_customer_is_credited_to_the_customer(self):
+        first = self.connector._process_raw(self.account, self._raw(mid="<a@x.com>"))
+        conv = first.conversation_id
+        reply = self.connector._process_raw(
+            self.account,
+            self._raw(mid="<e@x.com>", subject="Re: Hi",
+                      in_reply_to="<a@x.com>"))
+        self.assertEqual(reply.author_partner_id, conv.partner_id)
+
     def test_reply_reopens_closed_conversation(self):
         first = self.connector._process_raw(self.account, self._raw(mid="<a@x.com>"))
         first.conversation_id.action_close()

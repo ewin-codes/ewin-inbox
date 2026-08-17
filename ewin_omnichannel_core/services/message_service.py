@@ -14,7 +14,18 @@ class MessageService(models.AbstractModel):
     _description = "Omnichannel Message Service"
 
     @api.model
-    def create_inbound(self, conversation, normalized_message, attachments=None):
+    def create_inbound(self, conversation, normalized_message, attachments=None,
+                       identity=None):
+        """Record what a correspondent sent into ``conversation``.
+
+        ``identity`` is who sent *this* message, which is not always the
+        conversation's customer: an email is threaded by the Message-ID it
+        quotes, and any sender who has seen one message of a thread can quote
+        it. Callers that resolved a sender pass it; the message is credited to
+        that sender's contact so a stranger's words are never filed as the
+        customer's own — in the inbox, in the Discuss mirror, or permanently in
+        the customer's contact and lead chatter.
+        """
         ext_id = normalized_message.get("external_message_id")
         if ext_id:
             existing = self.env["omnichannel.message"].search([
@@ -43,7 +54,9 @@ class MessageService(models.AbstractModel):
             "external_reply_to_id": normalized_message.get("reply_to_external_message_id"),
             "state": "received",
             "received_at": now,
-            "author_partner_id": conversation.partner_id.id or False,
+            "author_partner_id": (
+                identity.partner_id.id if identity is not None
+                else conversation.partner_id.id) or False,
             "attachment_ids": [(6, 0, (attachments or self.env["ir.attachment"]).ids)],
             "raw_payload": normalized_message.get("raw", {}),
         })

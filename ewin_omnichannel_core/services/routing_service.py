@@ -28,7 +28,7 @@ class RoutingService(models.AbstractModel):
             "external_message_id")
         attachments = self._download_attachments(account, normalized_message)
         message = self.env["omnichannel.message.service"].create_inbound(
-            conversation, normalized_message, attachments)
+            conversation, normalized_message, attachments, identity=identity)
         return message
 
     @api.model
