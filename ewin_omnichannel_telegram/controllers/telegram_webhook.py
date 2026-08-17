@@ -10,21 +10,29 @@ _logger = logging.getLogger(__name__)
 
 class TelegramWebhookController(http.Controller):
 
+    # The channel is part of the path, not a parameter: a converter here would
+    # also claim every other channel's .../webhook/<code>/<uuid>, and a payload
+    # arriving that way would be handled by this connector — with this
+    # connector's secret, which such an account does not have. One route, one
+    # channel, the same shape as the other connectors.
     @http.route(
-        "/omnichannel/webhook/<string:channel_code>/<string:account_uuid>",
+        "/omnichannel/webhook/telegram/<string:account_uuid>",
         type="http", auth="public", csrf=False, methods=["POST"],
         save_session=False)
-    def telegram_webhook(self, channel_code, account_uuid, **kwargs):
+    def telegram_webhook(self, account_uuid, **kwargs):
         account = request.env["omnichannel.account"].sudo().search([
             ("webhook_uuid", "=", account_uuid),
-            ("channel_code", "=", channel_code),
+            ("channel_code", "=", "telegram"),
         ], limit=1)
         if not account or not account.active or account.state == "disabled":
             return request.make_json_response({})  # do not leak existence
         secret = request.httprequest.headers.get(
             "X-Telegram-Bot-Api-Secret-Token") or ""
         stored = account.tg_webhook_secret or ""
-        if stored and not hmac.compare_digest(secret, stored):
+        # No stored secret means reject, never "skip the check": the URL is not
+        # a credential, and an account whose webhook was registered outside the
+        # Register Webhook button would otherwise accept anything.
+        if not stored or not hmac.compare_digest(secret, stored):
             _logger.warning("Rejected Telegram webhook: bad secret (acct %s)",
                             account.id)
             return request.make_json_response({})

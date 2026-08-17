@@ -28,13 +28,14 @@ class ViberWebhookController(http.Controller):
         # HMAC-SHA256 of the raw request body keyed by the account auth token.
         signature = request.httprequest.headers.get(
             "X-Viber-Content-Signature") or ""
-        if token:
-            expected = hmac.new(
-                token.encode(), raw_body, hashlib.sha256).hexdigest()
-            if not hmac.compare_digest(signature, expected):
-                _logger.warning(
-                    "Rejected Viber webhook: bad signature (acct %s)", account.id)
-                return request.make_json_response({})
+        # No token means no key to verify against, which is a reason to refuse
+        # rather than to accept the callback unsigned.
+        expected = hmac.new(
+            token.encode(), raw_body, hashlib.sha256).hexdigest() if token else ""
+        if not token or not hmac.compare_digest(signature, expected):
+            _logger.warning(
+                "Rejected Viber webhook: bad signature (acct %s)", account.id)
+            return request.make_json_response({})
         try:
             payload = json.loads(raw_body)
         except (ValueError, TypeError):

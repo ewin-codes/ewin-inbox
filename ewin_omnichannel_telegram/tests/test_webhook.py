@@ -71,6 +71,48 @@ class TestWebhook(HttpCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(self._job_count(), before)
 
+    def test_account_of_another_channel_is_not_reachable_here(self):
+        """The route used to carry a <channel_code> segment and dispatch to the
+        Telegram connector whatever it matched. Channels whose own controller
+        sits elsewhere (Viber) or does not exist at all (email, livechat) were
+        therefore reachable at .../webhook/<their code>/<uuid>, and the guard
+        left standing there — tg_webhook_secret, empty on such an account —
+        checked nothing."""
+        other = self.env["omnichannel.channel"].create(
+            {"name": "SMS", "code": "sms"})
+        account = self.env["omnichannel.account"].create(
+            {"name": "Gateway", "channel_id": other.id})
+        payload = {"update_id": 903, "message": {
+            "message_id": 4, "date": 1700000003,
+            "from": {"id": 80, "first_name": "Mallory"},
+            "chat": {"id": 80, "type": "private"}, "text": "forged"}}
+        resp = self.url_open(
+            f"/omnichannel/webhook/sms/{account.webhook_uuid}",
+            data=json.dumps(payload),
+            headers={"Content-Type": "application/json"})
+        self.assertEqual(resp.status_code, 404)
+        self.assertFalse(self.env["omnichannel.message"].search(
+            [("account_id", "=", account.id)]))
+
+    def test_unset_secret_rejects_the_request(self):
+        """An empty stored secret must mean "reject", not "skip the check" —
+        the three Meta connectors already fail closed."""
+        self.account.tg_webhook_secret = False
+        payload = {"update_id": 904, "message": {
+            "message_id": 5, "date": 1700000004,
+            "from": {"id": 81, "first_name": "Mallory"},
+            "chat": {"id": 81, "type": "private"}, "text": "forged"}}
+        before = self._job_count()
+        resp = self.url_open(
+            self._url(),
+            data=json.dumps(payload),
+            headers={"Content-Type": "application/json"})
+        self.assertEqual(resp.status_code, 200)  # still no existence oracle
+        self.assertEqual(self._job_count(), before)
+        self.assertFalse(self.env["omnichannel.message"].search(
+            [("account_id", "=", self.account.id),
+             ("direction", "=", "inbound")]))
+
     def test_malformed_body_returns_200(self):
         before = self._job_count()
         resp = self.url_open(

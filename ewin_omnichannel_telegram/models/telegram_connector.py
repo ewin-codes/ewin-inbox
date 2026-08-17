@@ -91,9 +91,11 @@ class TelegramConnector(models.AbstractModel):
 
     @api.model
     def parse_webhook(self, account, payload, headers):
-        secret = account.sudo().tg_webhook_secret
+        secret = account.sudo().tg_webhook_secret or ""
         got = headers.get("X-Telegram-Bot-Api-Secret-Token") or ""
-        if secret and not hmac.compare_digest(got, secret):
+        # Fail closed, like the controller and like the Meta connectors: an
+        # unconfigured secret is a reason to refuse, not to wave the update through.
+        if not secret or not hmac.compare_digest(got, secret):
             _logger.warning("Telegram webhook secret mismatch for account %s",
                             account.id)
             return False

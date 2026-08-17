@@ -50,3 +50,15 @@ class TestViberWebhook(HttpCase):
         self.assertEqual(resp.status_code, 200)  # never leak, but not processed
         self.assertFalse(self.env["omnichannel.message"].search(
             [("account_id", "=", self.account.id)]))
+
+    def test_missing_auth_token_rejects_the_request(self):
+        """The auth token is the signing key, so without one there is nothing
+        to verify against — that has to mean reject, not accept unsigned."""
+        self.account.viber_auth_token = False
+        body = json.dumps(self._payload(token=902)).encode()
+        resp = self.url_open(
+            self._url(), data=body,
+            headers={"Content-Type": "application/json"})
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(self.env["omnichannel.message"].search(
+            [("account_id", "=", self.account.id)]))
