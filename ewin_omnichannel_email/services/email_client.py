@@ -44,11 +44,18 @@ class EmailClient:
         password = acc.sudo().email_password or ""
         conn = None
         try:
+            # Explicit context on both paths: handed none, imaplib falls back
+            # to ssl._create_stdlib_context(), which is _create_unverified_
+            # context — CERT_NONE and no hostname check. The mailbox password
+            # goes out on the next line, so the peer has to be authenticated,
+            # not merely encrypted to.
+            context = ssl.create_default_context()
             if acc.email_imap_ssl:
-                conn = imaplib.IMAP4_SSL(host, port, timeout=self.timeout)
+                conn = imaplib.IMAP4_SSL(
+                    host, port, ssl_context=context, timeout=self.timeout)
             else:
                 conn = imaplib.IMAP4(host, port, timeout=self.timeout)
-                conn.starttls(ssl.create_default_context())
+                conn.starttls(context)
             conn.login(login, password)
             typ, data = conn.select(acc.email_folder or "INBOX")
             if typ != "OK":
