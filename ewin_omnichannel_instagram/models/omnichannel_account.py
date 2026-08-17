@@ -123,11 +123,10 @@ class OmnichannelAccount(models.Model):
         return res
 
     def action_ig_check_connection(self):
-        return self._get_connector().connect(self)
+        return self._run_connector_action("connect")
 
     def action_ig_refresh_token(self):
-        self.ensure_one()
-        self._get_connector().refresh_token(self, raise_on_error=True)
+        self._run_connector_action("refresh_token", raise_on_error=True)
         return self.env["omnichannel.connector.instagram"]._notify_ui(
             _("Access token refreshed."))
 

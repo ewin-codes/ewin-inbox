@@ -52,16 +52,16 @@ class OmnichannelAccount(models.Model):
         return res
 
     def action_tg_check_connection(self):
-        return self._get_connector().connect(self)
+        return self._run_connector_action("connect")
 
     def action_tg_register_webhook(self):
-        return self._get_connector().register_webhook(self)
+        return self._run_connector_action("register_webhook")
 
     def action_tg_remove_webhook(self):
-        return self._get_connector().remove_webhook(self)
+        return self._run_connector_action("remove_webhook")
 
     def action_tg_webhook_info(self):
-        return self._get_connector().tg_webhook_info(self)
+        return self._run_connector_action("tg_webhook_info")
 
     def action_tg_send_test(self):
-        return self._get_connector().tg_send_test(self)
+        return self._run_connector_action("tg_send_test")

@@ -13,8 +13,7 @@ class OmnichannelAccount(models.Model):
              "the real routing; this user does no human work.")
 
     def action_livechat_check_connection(self):
-        self.ensure_one()
-        return self._get_connector().connect(self)
+        return self._run_connector_action("connect")
 
     @api.model
     def _livechat_find_for_channel(self, livechat_channel):

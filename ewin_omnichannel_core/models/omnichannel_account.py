@@ -49,6 +49,22 @@ class OmnichannelAccount(models.Model):
             )
         return self.env[model_name]
 
+    def _run_connector_action(self, method, **kwargs):
+        """Run a connector maintenance action on this account.
+
+        These are the form's buttons: connect, register or remove a webhook,
+        refresh a token, sync templates. Every one of them administers the
+        account, and every one is implemented inside the connector with
+        ``sudo()`` because the credentials it touches are admin-only fields.
+        The buttons living behind an admin-only menu is presentation, not a
+        control — ``call_button`` reaches any public method on a model the
+        caller can read, and operators hold read here. So the right to do it
+        is asked once, in the single doorway they all pass through.
+        """
+        self.ensure_one()
+        self.check_access("write")
+        return getattr(self._get_connector(), method)(self, **kwargs)
+
     def action_disable(self):
         self.write({"state": "disabled", "active": False})
 

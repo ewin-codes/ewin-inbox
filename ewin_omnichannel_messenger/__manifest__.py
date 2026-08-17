@@ -1,7 +1,7 @@
 {
     "name": "EWIN Inbox: Messenger",
     "summary": "Facebook Messenger (Pages) connector for EWIN Inbox",
-    "version": "18.0.1.0.0",
+    "version": "18.0.1.0.1",
     "category": "Productivity/Discuss",
     "author": "EWIN.codes",
     "maintainer": "EWIN.codes",

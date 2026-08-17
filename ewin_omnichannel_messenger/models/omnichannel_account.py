@@ -92,4 +92,4 @@ class OmnichannelAccount(models.Model):
         return res
 
     def action_mg_check_connection(self):
-        return self._get_connector().connect(self)
+        return self._run_connector_action("connect")

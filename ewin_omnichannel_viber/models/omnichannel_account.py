@@ -54,13 +54,13 @@ class OmnichannelAccount(models.Model):
         return res
 
     def action_viber_check_connection(self):
-        return self._get_connector().connect(self)
+        return self._run_connector_action("connect")
 
     def action_viber_register_webhook(self):
-        return self._get_connector().register_webhook(self)
+        return self._run_connector_action("register_webhook")
 
     def action_viber_remove_webhook(self):
-        return self._get_connector().remove_webhook(self)
+        return self._run_connector_action("remove_webhook")
 
     def action_viber_webhook_info(self):
-        return self._get_connector().viber_webhook_info(self)
+        return self._run_connector_action("viber_webhook_info")

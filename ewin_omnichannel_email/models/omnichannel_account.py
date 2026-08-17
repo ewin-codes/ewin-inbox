@@ -73,10 +73,10 @@ class OmnichannelAccount(models.Model):
                     "mailbox login and the From address).")
 
     def action_email_check_connection(self):
-        return self._get_connector().connect(self)
+        return self._run_connector_action("connect")
 
     def action_email_fetch_now(self):
-        self._get_connector().poll_account(self)
+        self._run_connector_action("poll_account")
         return {
             "type": "ir.actions.client", "tag": "display_notification",
             "params": {"message": "Mailbox polled.", "type": "success",

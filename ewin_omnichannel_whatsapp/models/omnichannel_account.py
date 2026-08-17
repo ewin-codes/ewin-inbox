@@ -62,7 +62,7 @@ class OmnichannelAccount(models.Model):
         return res
 
     def action_wa_check_connection(self):
-        return self._get_connector().connect(self)
+        return self._run_connector_action("connect")
 
     def action_wa_sync_templates(self):
-        return self._get_connector().sync_templates(self)
+        return self._run_connector_action("sync_templates")
