@@ -336,6 +336,16 @@ class OmnichannelConversation(models.Model):
         vals = {
             "name": self.name or _("Conversation"),
             "channel_type": "channel",
+            # Without it Odoo computes base.group_user (mail's
+            # _compute_group_public_id), and its read rule admits anyone
+            # holding that group — every employee, and through the same rule
+            # portal and public users. The mirror carries the full customer
+            # history and the internal notes, so it is restricted to the group
+            # that is allowed to work in the inbox at all. Which conversations
+            # an operator may *find* is still decided by
+            # rule_conversation_operator_scope on this model.
+            "group_public_id": self.env.ref(
+                "ewin_omnichannel_core.group_omni_operator").id,
         }
         avatar = self._channel_avatar_b64(self.channel_id.code)
         if avatar:

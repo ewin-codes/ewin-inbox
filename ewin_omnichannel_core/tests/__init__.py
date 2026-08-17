@@ -8,6 +8,7 @@ from . import test_inbound_flow
 from . import test_event_idempotency
 from . import test_job_queue
 from . import test_multicompany
+from . import test_mirror_access
 from . import test_outbound_queue
 from . import test_auto_assign
 from . import test_template

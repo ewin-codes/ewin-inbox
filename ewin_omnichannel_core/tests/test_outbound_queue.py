@@ -94,13 +94,14 @@ class TestOutboundQueue(OmnichannelCase):
         channel = self.conv._ensure_discuss_channel()
         operator = self.env["res.users"].create({
             "name": "Op", "login": "op_fwd_test",
-            "groups_id": [(6, 0, [self.env.ref("base.group_user").id])]})
+            "email": "op_fwd@example.com",
+            "groups_id": [(4, self.env.ref(
+                "ewin_omnichannel_core.group_omni_operator").id)]})
         with patch("odoo.addons.ewin_omnichannel_telegram.services."
                    "telegram_api_client.TelegramApiClient.send_message",
                    return_value={"message_id": 42}) as mock_send:
-            mail_msg = channel.message_post(
+            mail_msg = channel.with_user(operator).message_post(
                 body="Hi from operator", message_type="comment",
-                author_id=operator.partner_id.id,
                 subtype_xmlid="mail.mt_comment")
         self.assertTrue(mock_send.called)
         omni = self.env["omnichannel.message"].search(

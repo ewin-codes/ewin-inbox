@@ -1,4 +1,8 @@
+import logging
+
 from odoo import fields, models
+
+_logger = logging.getLogger(__name__)
 
 
 class DiscussChannel(models.Model):
@@ -31,6 +35,17 @@ class DiscussChannel(models.Model):
         if root and author == root:
             return
         if not (message.body or message.attachment_ids):
+            return
+        # Being in the channel is not authority over the customer. Sending on
+        # the company's behalf is a write on the conversation, so that is what
+        # is asked — of the user actually posting, in an environment stripped
+        # of any sudo the caller may hold (mail sudoes the channel to serve
+        # guests). A colleague who wandered into the mirror keeps their message
+        # in Discuss; it simply does not leave for the customer.
+        if not conversation.with_env(self.env(su=False)).has_access("write"):
+            _logger.info(
+                "Discuss reply on conversation %s not forwarded: %s may not "
+                "write it", conversation.id, self.env.user.login)
             return
         self.env["omnichannel.message.service"].sudo().create_outbound_from_discuss(
             conversation, message)
