@@ -5,6 +5,10 @@ class RoutingService(models.AbstractModel):
     _name = "omnichannel.routing.service"
     _description = "Omnichannel Routing Service"
 
+    # Published to the job queue: retrying a send is the only thing the cron
+    # may ask this service to do. See omnichannel.job._resolve_target.
+    _job_methods = frozenset({"send_outbound"})
+
     @api.model
     def process_event(self, account, normalized_event):
         """Run the inbound flow from a universal normalized event."""
@@ -46,8 +50,13 @@ class RoutingService(models.AbstractModel):
 
     @api.model
     def enqueue_outbound(self, message):
-        """Enqueue outbound send via the job queue (used for retries)."""
-        self.env["omnichannel.job"].enqueue(
+        """Enqueue outbound send via the job queue (used for retries).
+
+        sudo, like every other producer: the queue is machinery no group holds
+        write on, and this runs in the request of the operator whose send just
+        failed transiently.
+        """
+        self.env["omnichannel.job"].sudo().enqueue(
             model="omnichannel.routing.service",
             method="send_outbound",
             args={"message_id": message.id},

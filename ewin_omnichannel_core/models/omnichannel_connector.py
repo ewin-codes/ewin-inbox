@@ -5,6 +5,13 @@ class OmnichannelConnector(models.AbstractModel):
     _name = "omnichannel.connector"
     _description = "Omnichannel Connector Contract"
 
+    # The one method the job queue may call on a connector. A webhook that
+    # cannot be processed in its own request is retried through the queue,
+    # which runs as superuser — so the entry point is published here by name
+    # rather than every connector method being reachable by default.
+    # See omnichannel.job._resolve_target.
+    _job_methods = frozenset({"parse_webhook_job"})
+
     def validate_configuration(self, account):
         raise NotImplementedError
 

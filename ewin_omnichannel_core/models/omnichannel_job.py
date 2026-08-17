@@ -46,13 +46,35 @@ class OmnichannelJob(models.Model):
         self.ensure_one()
         self.state = "running"
         try:
-            target = self.env[self.model]
+            target = self._resolve_target()
             getattr(target, self.method)(**(self.args or {}))
             self.state = "done"
         except NonRetriableError as err:
             self.write({"state": "failed", "last_error": str(err)})
         except Exception as err:  # noqa: BLE001
             self._schedule_retry(str(err))
+
+    def _resolve_target(self):
+        """Return the recordset this job may call — or refuse the job.
+
+        ``_cron_process_jobs`` drains the queue as superuser, where neither
+        access rights nor record rules apply, so a row is an instruction to
+        the database owner. What a row may name is therefore not "any model"
+        but a method its own model published in ``_job_methods``: the queue
+        stays channel-agnostic (it never learns what a connector is) while the
+        set of things it can be talked into doing stays enumerable by reading
+        those declarations.
+
+        A row naming anything else is a mistake or an attack, and either way
+        will read the same on the next attempt — hence terminal, not retried.
+        """
+        target = self.env.get(self.model)
+        if target is None:
+            raise NonRetriableError(f"Unknown job target model {self.model!r}")
+        if self.method not in getattr(target, "_job_methods", ()):
+            raise NonRetriableError(
+                f"{self.model}.{self.method} is not published to the job queue")
+        return target
 
     def _schedule_retry(self, error):
         self.retry_count += 1
