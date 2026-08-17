@@ -41,7 +41,9 @@ on a host with no public HTTPS endpoint at all.
   `In-Reply-To` / `References`. A quoted `Message-ID` decides which
   conversation the mail joins, and nothing more: the message is credited to the
   address that actually sent it, so a third party quoting a reference appears
-  as themselves rather than as the customer.
+  as themselves rather than as the customer. The sender's address is reported
+  as the identity's `email`, which is what the conversation header shows next
+  to the contact name.
 - `EmailAttachmentService` — extracts MIME parts into `ir.attachment`.
 - Scheduled action **`EWIN Email Poll`** runs `poll_all()` every 2 minutes.
 

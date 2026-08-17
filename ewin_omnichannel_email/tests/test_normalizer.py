@@ -41,6 +41,10 @@ class TestEmailNormalizer(TransactionCase):
         self.assertEqual(ev["message"]["subject"], "Hi")
         self.assertIn("Hello", ev["message"]["text"])
 
+    def test_sender_address_reported_as_the_identity_email(self):
+        ev = self.norm.normalize_message(self.account, self._msg())
+        self.assertEqual(ev["external_user"]["email"], "a@x.com")
+
     def test_html_preferred(self):
         ev = self.norm.normalize_message(
             self.account, self._msg(html="<b>Rich</b>"))

@@ -17,7 +17,9 @@ Depends on `base`, `mail`, `contacts`.
 - **Contact matching.** An inbound message is resolved to an
   `omnichannel.identity` (the customer as the provider knows them) and, from
   there, to a `res.partner`. The same person writing again reuses the existing
-  identity, contact and open conversation — no duplicates.
+  identity, contact and open conversation — no duplicates. The conversation
+  header shows the identity's channel address beside the contact name, so a
+  display name shared by two people is never ambiguous.
 - **Replying takes the conversation.** Answering an unassigned conversation
   assigns it to you — there is no separate Take click on the normal path. An
   internal note does not take it (writing a note is not answering the
@@ -57,7 +59,7 @@ Depends on `base`, `mail`, `contacts`.
 |---|---|
 | `omnichannel.channel` | A channel *type* (Telegram, Email, …). Created by the connector addons as data. |
 | `omnichannel.account` | One configured provider account. Holds credentials, defaults, the per-account `webhook_uuid`, and a `draft`/`connected`/`error`/`disabled` state. |
-| `omnichannel.identity` | A customer as one provider knows them. Unique per `(account, external_id)`; links to `res.partner`. |
+| `omnichannel.identity` | A customer as one provider knows them. Unique per `(account, external_id)`; links to `res.partner`. Its computed `handle` is the channel address to show an operator — `email`, `@username`, `phone` or the raw `external_id`, in that order. |
 | `omnichannel.conversation` | A thread with one customer on one account. States `new`/`open`/`pending`/`closed`, priority, team, operator, tags, close reason, and the linked `discuss.channel`. Inherits `mail.thread`. |
 | `omnichannel.message` | A single message, inbound or outbound, with type, body, attachments, provider ids and the delivery state machine — including `scheduled`, an operator-deferred reply waiting for its send time. |
 | `omnichannel.event` | Raw provider events, deduplicated per `(account, external event id)` — this is what makes redelivered webhooks harmless. |

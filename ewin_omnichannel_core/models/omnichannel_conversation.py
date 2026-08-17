@@ -58,6 +58,10 @@ class OmnichannelConversation(models.Model):
         help="Channel icon + customer name + unread badge for the list.")
     identity_id = fields.Many2one(
         "omnichannel.identity", required=True, ondelete="restrict", index=True)
+    identity_handle = fields.Char(
+        related="identity_id.handle", string="Handle",
+        help="Channel address of the customer (email, @username or phone), "
+             "shown in the conversation header.")
     partner_id = fields.Many2one("res.partner", index=True)
     company_id = fields.Many2one(
         related="account_id.company_id", store=True, index=True)

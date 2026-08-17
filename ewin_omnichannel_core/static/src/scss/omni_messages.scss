@@ -144,8 +144,10 @@
         user-select: none;
     }
 
-    // The subject is a second row nested inside the first (separator + value),
-    // so it needs the same treatment rather than inline defaults.
+    // The handle and the subject are second rows nested inside the first
+    // (separator + value), so they need the same treatment rather than inline
+    // defaults.
+    .o_omni_handle,
     .o_omni_subject {
         @include omni-vrow(4px);
     }

@@ -33,6 +33,7 @@ class EmailNormalizer(models.AbstractModel):
             "external_user": {
                 "id": from_addr,
                 "name": from_name or None,
+                "email": from_addr or None,
                 "username": None, "phone": None, "language_code": None,
                 "raw": {"from": from_addr, "subject": subject},
             },

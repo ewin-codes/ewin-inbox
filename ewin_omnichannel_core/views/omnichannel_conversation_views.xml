@@ -55,6 +55,16 @@
                             <field name="partner_id" nolabel="1" readonly="1"
                                    class="fw-bold"
                                    options="{'no_open': True}"/>
+                            <!-- The channel address sits in the summary, not in
+                                 the group below: the <details> is closed by
+                                 default, and "who is this, exactly" is the one
+                                 thing an operator must see without a click. -->
+                            <span class="o_omni_handle text-muted"
+                                  invisible="not identity_handle">
+                                <span>·</span>
+                                <field name="identity_handle" nolabel="1"
+                                       readonly="1"/>
+                            </span>
                             <span class="o_omni_subject fw-bold"
                                   invisible="not subject">
                                 <span class="text-muted">·</span>

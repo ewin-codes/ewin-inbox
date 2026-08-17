@@ -17,6 +17,7 @@ class IdentityService(models.AbstractModel):
             "display_name": external_user.get("name"),
             "username": external_user.get("username"),
             "phone": external_user.get("phone"),
+            "email": external_user.get("email"),
             "language_code": external_user.get("language_code"),
         }
         if ident:
