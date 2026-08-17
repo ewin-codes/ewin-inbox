@@ -72,6 +72,23 @@
         <field name="domain_force">['|',('company_id','=',False),('company_id','in',company_ids)]</field>
         <field name="global" eval="True"/>
     </record>
+    <!-- Templates and tags are master data an operator picks from while
+         answering, so like close reasons they may be left company-less to
+         offer them everywhere. What they must not be is company-blind: a
+         canned reply carries prices and internal wording, and a manager holds
+         write on both models. -->
+    <record id="rule_template_company" model="ir.rule">
+        <field name="name">Template: company</field>
+        <field name="model_id" ref="model_omnichannel_template"/>
+        <field name="domain_force">['|',('company_id','=',False),('company_id','in',company_ids)]</field>
+        <field name="global" eval="True"/>
+    </record>
+    <record id="rule_tag_company" model="ir.rule">
+        <field name="name">Tag: company</field>
+        <field name="model_id" ref="model_omnichannel_tag"/>
+        <field name="domain_force">['|',('company_id','=',False),('company_id','in',company_ids)]</field>
+        <field name="global" eval="True"/>
+    </record>
 
     <!-- Operator conversation scoping (non-global, operator group only) -->
     <record id="rule_conversation_operator_scope" model="ir.rule">

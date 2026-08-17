@@ -32,3 +32,26 @@ class TestMultiCompany(OmnichannelCase):
         teams = self.env["omnichannel.team"].with_user(
             self.operator).search([])
         self.assertNotIn(self.team_b, teams)
+
+    def test_operator_cannot_see_other_company_template(self):
+        """Canned replies carry a company_id, and the quick-replies dropdown
+        searches them filtered by channel alone."""
+        template_b = self.env["omnichannel.template"].create({
+            "name": "B pricing", "body": "internal discount code XYZ",
+            "company_id": self.company_b.id})
+        templates = self.env["omnichannel.template"].with_user(
+            self.operator).search([])
+        self.assertNotIn(template_b, templates)
+
+    def test_operator_sees_a_template_shared_by_every_company(self):
+        shared = self.env["omnichannel.template"].create({
+            "name": "Greeting", "body": "Hello {{name}}", "company_id": False})
+        templates = self.env["omnichannel.template"].with_user(
+            self.operator).search([])
+        self.assertIn(shared, templates)
+
+    def test_operator_cannot_see_other_company_tag(self):
+        tag_b = self.env["omnichannel.tag"].create(
+            {"name": "B only", "company_id": self.company_b.id})
+        tags = self.env["omnichannel.tag"].with_user(self.operator).search([])
+        self.assertNotIn(tag_b, tags)
