@@ -77,7 +77,14 @@ fields are the at-a-glance health check.
 - **Webhook authentication**: `setWebhook` registers a random secret, and every
   inbound request must present it in the `X-Telegram-Bot-Api-Secret-Token`
   header. The comparison is constant-time; a mismatch is logged and the update
-  is dropped without being processed.
+  is dropped without being processed. An account with no secret stored rejects
+  every request rather than accepting unsigned ones — register the webhook from
+  the account form and the secret is always there.
+- **One route, one channel**: the controller answers only
+  `/omnichannel/webhook/telegram/<account_uuid>`. The channel is a literal path
+  segment, not a parameter, so this connector can never be handed a payload
+  addressed to an account of some other channel — whose secret it does not hold
+  and whose own signature check would then never run.
 - Unknown or disabled accounts get the same empty response as a bad secret, so
   the endpoint does not reveal which webhook UUIDs are valid.
 - **Bot Token** and **Webhook Secret** are restricted to the omnichannel admin

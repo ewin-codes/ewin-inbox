@@ -38,7 +38,10 @@ on a host with no public HTTPS endpoint at all.
 - `omnichannel.email.normalizer` — parses an `email.message` into Inbox's
   normalized shape, deriving the event id from the `Message-ID` (synthesised
   from a content hash when the sender omits one) and the thread reference from
-  `In-Reply-To` / `References`.
+  `In-Reply-To` / `References`. A quoted `Message-ID` decides which
+  conversation the mail joins, and nothing more: the message is credited to the
+  address that actually sent it, so a third party quoting a reference appears
+  as themselves rather than as the customer.
 - `EmailAttachmentService` — extracts MIME parts into `ir.attachment`.
 - Scheduled action **`EWIN Email Poll`** runs `poll_all()` every 2 minutes.
 
@@ -69,6 +72,12 @@ caught at setup, not the first time an operator's reply silently disappears.
 - **TLS is mandatory.** Setting SMTP security to `none` is rejected at
   connection time; the client refuses to authenticate over plaintext rather
   than leaking the mailbox password onto the wire.
+- **The server's certificate is verified**, on IMAP as well as SMTP and on both
+  the implicit-TLS and the STARTTLS path: every connection is opened with an
+  explicit `ssl.create_default_context()`. Handed no context, `imaplib` builds
+  an *unverified* one — encrypted, but accepting any certificate for any
+  hostname, which is exactly what a MITM needs to collect the mailbox password
+  on the next poll.
 - When the SMTP connection is made to a resolved IPv4 address (a workaround for
   hosts publishing an unroutable AAAA record), the real hostname is restored on
   the connection before STARTTLS, so SNI and certificate validation still run

@@ -177,7 +177,15 @@ ewin_omnichannel_crm/         # CRM bridge: conversations ↔ leads (optional)
 - Provider secrets (tokens, app secrets) are stored under an admin-only security
   group and never logged.
 - Webhooks are authenticated per provider (e.g. WhatsApp and Instagram validate the
-  `X-Hub-Signature-256` HMAC over the raw body with the Meta App Secret, constant-time).
+  `X-Hub-Signature-256` HMAC over the raw body with the Meta App Secret, constant-time),
+  and every connector fails closed: no secret configured means the request is rejected,
+  not waved through.
+- Mail transports verify the server's certificate — IMAP and SMTP, implicit TLS and
+  STARTTLS alike — before the mailbox password is sent.
+- The retry queue calls only methods a model has published for it, and the cron that
+  drains it runs as superuser, so that list is the whole of what it can be asked to do.
+- The Discuss mirror of a conversation is authorized to the inbox operator group, and a
+  reply typed there reaches the customer only if its author may write the conversation.
 - Real secrets never live in the repo: provider credentials are entered in Odoo, and
   any local runtime config (`odoo.conf`, `.env`, certificates) is git-ignored.
 

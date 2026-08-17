@@ -30,7 +30,9 @@ Depends on `base`, `mail`, `contacts`.
 - **Discuss mirror.** Every conversation is mirrored into a `discuss.channel`,
   so operators get native Odoo unread badges and notifications, and can reply
   either from the Inbox composer or straight from Discuss — both paths reach
-  the customer.
+  the customer. The channel is authorized to the operator group, and a reply
+  typed there is only forwarded to the customer if its author may write the
+  conversation.
 - **Delivery lifecycle.** Messages carry a real state machine
   (`received` → `scheduled` → `queued` → `processing` → `sent` → `delivered` →
   `read`, plus `failed` / `cancelled`), so a reply that never arrived is
@@ -339,6 +341,13 @@ to register, and a provider without media has nothing to download.
   `_on_job_permanent_failure` hook once retries are exhausted. The queue itself
   stays channel-agnostic: it knows it may call that hook, not that it is
   dealing with messages.
+
+  A job row names a model and a method, and this cron runs as superuser — so a
+  model has to **publish** a method before the queue will call it, by listing
+  the name in a `_job_methods` frozenset. The connector contract publishes
+  `parse_webhook_job`, the routing service publishes `send_outbound`, and a row
+  naming anything else fails terminally instead of being retried. Producers
+  enqueue through `sudo()`; no group holds write on `omnichannel.job`.
 - **`Omnichannel: Cleanup old events and logs`** — daily. Trims processed
   events and stale log entries so the idempotency table does not grow forever.
 - **`Omnichannel: Send scheduled messages`** — every minute. Collects the due
@@ -359,13 +368,36 @@ Three groups, under the **EWIN Inbox** application category:
 Provider secrets live on fields restricted to the admin group; connectors expose
 a masked companion field so an operator can confirm *a* token is set without
 reading it. Record rules scope accounts, identities, conversations, messages,
-events, teams, close reasons and error logs by company, and conversations and
-messages additionally by operator/team for the operator role — a message
-inherits its scope from the conversation it belongs to, the same operator,
-unassigned, or team-member test.
+events, teams, templates, tags, close reasons and error logs by company, and
+conversations and messages additionally by operator/team for the operator role —
+a message inherits its scope from the conversation it belongs to, the same
+operator, unassigned, or team-member test.
 
 Menus that read `omnichannel.*` are invisible to users outside these groups —
 after installing, grant yourself **EWIN Inbox / Administrator**.
+
+Three boundaries are worth naming, because each of them is somewhere a
+reasonable reading would put the control elsewhere:
+
+- **The mirror channel is authorized to the operator group, not to the
+  conversation's scope.** `discuss.channel` expresses access as one group or as
+  membership, and neither can express "the assigned operator, their team, and
+  anyone the conversation is unassigned to". Restricting it to the group is
+  what keeps the customer history and the internal notes away from the rest of
+  the company; inside the inbox group the mirror is readable more widely than
+  the conversation list is. Which conversations an operator *works* is still
+  `rule_conversation_operator_scope`, and sending to the customer from the
+  mirror is checked against the conversation, not against channel membership.
+- **The account form's buttons ask for write on the account.** They connect,
+  register webhooks and rotate credentials, all through `sudo()` inside the
+  connector, and `call_button` reaches any public method on a model the caller
+  can read — so the check lives in `_run_connector_action`, the one doorway
+  they share, rather than in the menu that hides them.
+- **An inbound message is credited to the correspondent who sent it**, not to
+  the conversation's customer. Email threads on a quoted `Message-ID`, which
+  anyone who has seen one message of a thread can quote; crediting the customer
+  would file a stranger's words as theirs in the inbox, in Discuss, and in
+  their contact and lead chatter.
 
 ## Writing a new connector
 

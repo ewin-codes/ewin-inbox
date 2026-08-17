@@ -92,7 +92,9 @@ fields are the at-a-glance health check.
   `X-Viber-Content-Signature`, an HMAC-SHA256 of the raw request body keyed
   with the account's auth token. The connector recomputes it over the raw bytes
   and compares in constant time; a mismatch is logged and the callback is
-  dropped without being processed.
+  dropped without being processed. An account with no auth token has no key to
+  verify against, and that is a reason to reject the callback rather than to
+  accept it unsigned.
 - Unknown or disabled accounts get the same empty response as a bad signature,
   so the endpoint does not reveal which webhook UUIDs are valid.
 - **Auth Token** is restricted to the omnichannel admin group; other roles see
