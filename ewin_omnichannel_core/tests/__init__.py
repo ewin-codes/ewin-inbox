@@ -18,3 +18,4 @@ from . import test_history
 from . import test_scheduled_send
 from . import test_scheduled_edit
 from . import test_settings_view
+from . import test_inbound_attachments

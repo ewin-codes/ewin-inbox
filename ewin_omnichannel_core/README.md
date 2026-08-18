@@ -91,6 +91,19 @@ provider → connector.parse_webhook()
              → message_service.create_inbound()       # + Discuss mirror
 ```
 
+**Inbound attachments.** What a connector downloads is stored as an
+`ir.attachment` and then anchored on the conversation (`res_model` / `res_id`),
+and the Discuss mirror is posted as the system user whenever no real user is
+behind the request. Both halves are load-bearing. `message_post` keeps only the
+attachments the *calling user* drafted on a composer, and a webhook runs as the
+public user — the customer's file would be dropped from the very message that
+announces it. And an attachment that hangs off no record is readable by its
+creator alone (`ir.attachment.check`), which leaves the operator with a broken
+thumbnail while a settings admin — exempt from that rule — sees the file and
+cannot reproduce the complaint. Anchored on the conversation, access to a file
+is access to the conversation it arrived in: the same answer in the inbox, in
+the mirror and in the customer's chatter, all pointing at one binary.
+
 **Outbound.** An operator reply — from the Inbox composer *or* from the mirrored
 Discuss channel — becomes an `omnichannel.message` and is sent through the same
 door:

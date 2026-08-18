@@ -1,6 +1,6 @@
 from markupsafe import Markup
 
-from odoo import _, api, fields, models
+from odoo import SUPERUSER_ID, _, api, fields, models
 from odoo.exceptions import UserError
 from odoo.tools import format_datetime
 
@@ -69,6 +69,7 @@ class MessageService(models.AbstractModel):
         if not conversation.first_customer_message_at:
             conv_vals["first_customer_message_at"] = now
         conversation.write(conv_vals)
+        self._anchor_attachments(conversation, message.attachment_ids)
         self._mirror_to_discuss(conversation, message)
         self.env["omnichannel.history.service"].mirror(message)
         # keep the assigned operator subscribed to the mirror channel so the
@@ -79,8 +80,44 @@ class MessageService(models.AbstractModel):
         return message
 
     @api.model
+    def _anchor_attachments(self, conversation, attachments):
+        """Give the files a record to belong to before they are mirrored.
+
+        A connector stores what it downloads as a bare ``ir.attachment``:
+        there is no message yet at that point, so there is nothing to attach
+        it to. Left that way the file is readable by the user who created it
+        and by no one else (``ir.attachment.check`` refuses an attachment that
+        hangs off no record) — and that creator is the public user of a
+        webhook request. The operator would get a broken thumbnail while a
+        settings admin, who is exempt from that rule, sees the file and cannot
+        reproduce the complaint.
+
+        Anchored on the conversation, access to a file is access to the
+        conversation it arrived in: the same answer in the inbox, in the
+        Discuss mirror and in the customer's chatter, all pointing at one
+        binary.
+        """
+        if attachments:
+            attachments.sudo().write({
+                "res_model": "omnichannel.conversation",
+                "res_id": conversation.id,
+            })
+
+    @api.model
     def _mirror_to_discuss(self, conversation, message):
         channel = conversation._ensure_discuss_channel()
+        # An inbound arrives in a webhook request, which runs as the public
+        # user, and ``message_post`` hands a non-internal poster only the
+        # attachments that user drafted on a composer
+        # (``mail.thread._process_attachments_for_post``) — sudo raises
+        # privileges without changing who is calling, so the customer's file
+        # would be dropped from the very message that announces it. The mirror
+        # has no real user behind it, so post it as the system user: the file
+        # then travels with the message that goes over the bus, instead of
+        # appearing only after the operator reloads. An operator's own reply
+        # keeps posting as the operator — they are the real author of that one.
+        if not self.env.user._is_internal():
+            channel = channel.with_user(SUPERUSER_ID).sudo()
         author = message.author_partner_id or conversation.partner_id \
             or self.env.ref("base.partner_root")
         # Internal notes stay in Odoo; prefix a visible badge so they are
