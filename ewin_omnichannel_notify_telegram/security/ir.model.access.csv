@@ -1,3 +1,4 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_notifier_operator,notifier.operator,model_omnichannel_telegram_notifier,ewin_omnichannel_core.group_omni_operator,1,0,0,0
 access_notifier_admin,notifier.admin,model_omnichannel_telegram_notifier,ewin_omnichannel_core.group_omni_admin,1,1,1,1
+access_tg_link_wizard,telegram.link.wizard,model_omnichannel_telegram_link,ewin_omnichannel_core.group_omni_operator,1,1,1,1

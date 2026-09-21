@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_telegram_link_form" model="ir.ui.view">
+        <field name="name">omnichannel.telegram.link.form</field>
+        <field name="model">omnichannel.telegram.link</field>
+        <field name="arch" type="xml">
+            <form string="Connect Telegram">
+                <div class="alert alert-info" role="status">
+                    Open this link in Telegram and press <b>Start</b>. It works
+                    once and expires in 24 hours.
+                </div>
+                <group>
+                    <field name="user_id" invisible="1"/>
+                    <field name="bot_username" invisible="1"/>
+                    <field name="url" widget="CopyClipboardChar" nolabel="1"/>
+                </group>
+                <footer>
+                    <button string="Close" class="btn-primary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

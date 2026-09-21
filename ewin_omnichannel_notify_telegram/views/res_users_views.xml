@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Preferences: the self-service place to connect one's own Telegram. -->
+    <record id="view_users_form_simple_modif_notify" model="ir.ui.view">
+        <field name="name">res.users.preferences.telegram.notify</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form_simple_modif"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='preferences']" position="after">
+                <group string="EWIN Inbox Notifications"
+                       groups="ewin_omnichannel_core.group_omni_operator">
+                    <field name="omni_tg_username" readonly="1"
+                           invisible="not omni_tg_username"/>
+                    <field name="omni_tg_chat_id" invisible="1"/>
+                    <button name="action_omni_tg_link" type="object"
+                            string="Connect Telegram" class="btn-link"
+                            invisible="omni_tg_chat_id"/>
+                    <button name="action_omni_tg_unlink" type="object"
+                            string="Disconnect Telegram" class="btn-link"
+                            invisible="not omni_tg_chat_id"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Users form: an administrator onboarding somebody else. -->
+    <record id="view_users_form_notify" model="ir.ui.view">
+        <field name="name">res.users.form.telegram.notify</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Inbox Notifications"
+                      groups="ewin_omnichannel_core.group_omni_admin">
+                    <group>
+                        <field name="omni_tg_username" readonly="1"/>
+                        <field name="omni_tg_chat_id" readonly="1"/>
+                    </group>
+                    <button name="action_omni_tg_link" type="object"
+                            string="Connect Telegram" class="btn-secondary"/>
+                    <button name="action_omni_tg_unlink" type="object"
+                            string="Disconnect Telegram" class="btn-link"
+                            invisible="not omni_tg_chat_id"/>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>
