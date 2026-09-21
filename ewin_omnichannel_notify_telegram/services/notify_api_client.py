@@ -59,7 +59,12 @@ class TelegramNotifyClient:
             response = requests.post(
                 f"{self.base}/{method}", data=payload or {}, timeout=self.timeout)
         except requests.RequestException as err:
-            raise TelegramNotifyError(0, f"Network error: {redact_token(err)}")
+            # `from None` breaks the implicit __context__ chain: ``err``'s own
+            # message usually embeds the full, unredacted request URL, and a
+            # traceback logger would print it under "During handling of the
+            # above exception" even though redact_token() scrubbed this one.
+            raise TelegramNotifyError(
+                0, f"Network error: {redact_token(err)}") from None
         data = response.json() if response.content else {}
         if not data.get("ok"):
             description = data.get("description") or f"HTTP {response.status_code}"

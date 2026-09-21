@@ -40,6 +40,18 @@ class TestNotifier(NotifyCase):
     def test_token_is_masked_for_everyone_else(self):
         self.assertEqual(self.notifier.bot_token_masked, "***************")
 
+    def test_token_is_masked_without_read_access_to_the_token_field(self):
+        # bot_token_masked is what an operator — no admin group, so no
+        # access to bot_token itself — sees on the same form. The compute
+        # must not need the access it exists to stand in for.
+        operator = self.env["res.users"].create({
+            "name": "Operator", "login": "notify_operator",
+            "groups_id": [(4, self.env.ref(
+                "ewin_omnichannel_core.group_omni_operator").id)]})
+        self.assertEqual(
+            self.notifier.with_user(operator).bot_token_masked,
+            "***************")
+
     def test_negative_throttle_is_refused(self):
         with self.assertRaises(IntegrityError), mute_logger("odoo.sql_db"):
             self.notifier.throttle_minutes = -1

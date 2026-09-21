@@ -70,8 +70,12 @@ class OmnichannelTelegramNotifier(models.Model):
     @api.depends("bot_token")
     def _compute_bot_token_masked(self):
         for notifier in self:
+            # sudo(): bot_token is admin-only, but this compute also backs
+            # the masked field an operator sees on the same form — reading
+            # the raw value here to derive a fixed-length mask is not the
+            # access grant _client() exists to guard against.
             notifier.bot_token_masked = (
-                "***************" if notifier.bot_token else "")
+                "***************" if notifier.sudo().bot_token else "")
 
     @api.constrains("company_id", "active")
     def _check_one_active_per_company(self):
@@ -141,12 +145,13 @@ class OmnichannelTelegramNotifier(models.Model):
     # ships that view verbatim), but their behaviour is Task 2's job. Odoo
     # validates a type="object" button against the model at module-install
     # time, so the view cannot load without the methods existing — hence the
-    # stubs, not yet callable from the UI in any meaningful way.
+    # stubs. A UserError rather than a bare traceback: a user can already
+    # reach these from the form today, before Task 2 lands.
     def action_check_connection(self):
-        raise NotImplementedError
+        raise UserError(_("This action is not available yet."))
 
     def action_register_webhook(self):
-        raise NotImplementedError
+        raise UserError(_("This action is not available yet."))
 
     def action_remove_webhook(self):
-        raise NotImplementedError
+        raise UserError(_("This action is not available yet."))
