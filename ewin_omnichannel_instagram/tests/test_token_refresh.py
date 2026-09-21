@@ -99,3 +99,22 @@ class TestTokenRefresh(TransactionCase):
         self.assertEqual(action["params"]["type"], "success")
         self.assertEqual(account.sudo().ig_access_token, "NEW")
 
+    def test_a_transient_failure_records_the_reason_without_the_state(self):
+        """A network blip is the last thing that went wrong, not a reason
+        to park the account in error - but the button still has to be able
+        to say what happened."""
+        account = self._account(name="transient")
+        err = InstagramApiError(2, 0, "Temporarily unavailable")
+        with patch(_REFRESH, side_effect=err):
+            action = account.action_ig_refresh_token()
+        self.assertEqual(action["params"]["type"], "danger")
+        self.assertNotEqual(account.state, "error")
+        self.assertTrue(account.sudo().last_error)
+
+    def test_an_account_without_a_token_says_so(self):
+        account = self._account(name="empty", token=False)
+        action = account.action_ig_refresh_token()
+        self.assertEqual(action["params"]["type"], "danger")
+        self.assertIn("access token", action["params"]["message"])
+        self.assertEqual(account.state, "error")
+

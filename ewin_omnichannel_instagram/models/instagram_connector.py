@@ -370,9 +370,11 @@ class InstagramConnector(models.AbstractModel):
         only survives because nothing raises: Odoo commits a request that
         returns, and rolls back one that does not.
 
-        Every failure leaves a trace on the account: a journal row for a
-        provider error, plus the error state and ``last_error`` when the
-        token itself is the problem rather than the connection.
+        Every failure writes its reason to ``last_error`` - that is what
+        the button shows - and a successful refresh clears it. Only a
+        failure the account cannot recover from on its own also flips the
+        state: a transient one is not a reason to park the account in
+        error, and the daily cron will come round again.
         """
         account = account.sudo()
         if not account.ig_access_token:
@@ -381,14 +383,18 @@ class InstagramConnector(models.AbstractModel):
         try:
             data = self._client(account).refresh_long_lived_token()
         except InstagramApiError as err:
+            summary = str(self._friendly(err))
             self.env["omnichannel.error.log"].log(
-                "provider", self._friendly(err), account=account,
+                "provider", summary, account=account,
                 code=str(err.code), technical=err.message)
-            if not err.retriable:
-                account._set_error(str(self._friendly(err)))
+            if err.retriable:
+                account.last_error = summary
+            else:
+                account._set_error(summary)
             return False
         token = data.get("access_token")
         if not token:
+            account.last_error = _("Instagram returned no new token.")
             return False
         vals = {"ig_access_token": token, "last_error": False}
         expires_in = data.get("expires_in")

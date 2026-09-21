@@ -168,7 +168,10 @@ professional account before a release, since the tests mock the Graph API.
    error and an `omnichannel.error.log` entry (unless the Human Agent tag is
    enabled and approved); the send is not retried.
 8. **Token refresh** — the daily job refreshes a token approaching expiry;
-   **Refresh Token** does it on demand and updates **Token Expires**.
+   **Refresh Token** does it on demand and updates **Token Expires**. A refusal
+   comes back as a red notice carrying the reason, which also lands in
+   **Last Error** and in the error log — an expired or revoked token flips the
+   account to **Error**, a transient failure does not.
 9. **Permissions** — an **Omnichannel: Operator** cannot see the access token,
    App Secret or Verify Token (admin-only), nor records of another company.
 10. **Duplicate webhook delivery** — a redelivered event with the same message
