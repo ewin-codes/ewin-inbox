@@ -1,9 +1,10 @@
-import hmac
 import json
 import logging
 
 from odoo import http
 from odoo.http import request
+
+from odoo.addons.ewin_omnichannel_core.tools.security import secret_equals
 
 _logger = logging.getLogger(__name__)
 
@@ -27,8 +28,8 @@ class InstagramWebhookController(http.Controller):
         mode = kwargs.get("hub.mode")
         token = kwargs.get("hub.verify_token") or ""
         challenge = kwargs.get("hub.challenge") or ""
-        if (account and mode == "subscribe" and account.ig_verify_token
-                and hmac.compare_digest(token, account.ig_verify_token)):
+        if (account and mode == "subscribe"
+                and secret_equals(token, account.ig_verify_token or "")):
             return request.make_response(challenge)
         return request.make_response("", status=403)
 

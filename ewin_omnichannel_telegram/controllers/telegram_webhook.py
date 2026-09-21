@@ -1,9 +1,10 @@
-import hmac
 import json
 import logging
 
 from odoo import http
 from odoo.http import request
+
+from odoo.addons.ewin_omnichannel_core.tools.security import secret_equals
 
 _logger = logging.getLogger(__name__)
 
@@ -31,8 +32,10 @@ class TelegramWebhookController(http.Controller):
         stored = account.tg_webhook_secret or ""
         # No stored secret means reject, never "skip the check": the URL is not
         # a credential, and an account whose webhook was registered outside the
-        # Register Webhook button would otherwise accept anything.
-        if not stored or not hmac.compare_digest(secret, stored):
+        # Register Webhook button would otherwise accept anything. secret_equals
+        # answers that, and compares bytes — a non-ASCII byte in the header must
+        # read as a mismatch and not as an error page.
+        if not secret_equals(secret, stored):
             _logger.warning("Rejected Telegram webhook: bad secret (acct %s)",
                             account.id)
             return request.make_json_response({})

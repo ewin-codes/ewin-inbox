@@ -63,3 +63,26 @@ class TestWhatsAppWebhook(HttpCase):
         msg = self.env["omnichannel.message"].search([
             ("external_message_id", "=", "wamid.11")])
         self.assertFalse(msg, "bad signature must not be processed")
+
+    # The header and the query string both reach Python as text a caller
+    # controls: WSGI decodes a header value as Latin-1, a query string as
+    # UTF-8. hmac.compare_digest raises TypeError when a str argument holds
+    # a character outside ASCII, so comparing them as str turned one crafted
+    # byte into an error page — an answer that differs from an ordinary
+    # rejection and so tells an unauthenticated caller that this account
+    # exists and has a secret set. Every rejection has to look the same.
+    def test_non_ascii_verify_token_is_an_ordinary_403(self):
+        resp = self.url_open(
+            self._url() + "?hub.mode=subscribe&hub.verify_token=%C3%A9"
+            "&hub.challenge=CHAL")
+        self.assertEqual(resp.status_code, 403)
+
+    def test_non_ascii_signature_header_is_an_ordinary_rejection(self):
+        body = json.dumps(self._payload("wamid.90")).encode()
+        resp = self.url_open(self._url(), data=body, headers={
+            "Content-Type": "application/json",
+            "X-Hub-Signature-256": "é"})
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(self.env["omnichannel.message"].search(
+            [("account_id", "=", self.account.id),
+             ("direction", "=", "inbound")]))

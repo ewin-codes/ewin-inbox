@@ -1,8 +1,9 @@
-import hmac
 import logging
 
 from odoo import _, _lt, api, fields, models
 from odoo.exceptions import UserError
+
+from odoo.addons.ewin_omnichannel_core.tools.security import secret_equals
 
 from ..services.telegram_api_client import TelegramApiClient, TelegramApiError
 
@@ -95,7 +96,7 @@ class TelegramConnector(models.AbstractModel):
         got = headers.get("X-Telegram-Bot-Api-Secret-Token") or ""
         # Fail closed, like the controller and like the Meta connectors: an
         # unconfigured secret is a reason to refuse, not to wave the update through.
-        if not secret or not hmac.compare_digest(got, secret):
+        if not secret_equals(got, secret):
             _logger.warning("Telegram webhook secret mismatch for account %s",
                             account.id)
             return False

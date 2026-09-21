@@ -6,6 +6,8 @@ import logging
 from odoo import http
 from odoo.http import request
 
+from odoo.addons.ewin_omnichannel_core.tools.security import secret_equals
+
 _logger = logging.getLogger(__name__)
 
 
@@ -32,7 +34,7 @@ class ViberWebhookController(http.Controller):
         # rather than to accept the callback unsigned.
         expected = hmac.new(
             token.encode(), raw_body, hashlib.sha256).hexdigest() if token else ""
-        if not token or not hmac.compare_digest(signature, expected):
+        if not secret_equals(signature, expected):
             _logger.warning(
                 "Rejected Viber webhook: bad signature (acct %s)", account.id)
             return request.make_json_response({})

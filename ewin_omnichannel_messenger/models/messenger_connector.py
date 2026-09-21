@@ -6,6 +6,8 @@ import logging
 from odoo import _, _lt, api, fields, models
 from odoo.exceptions import UserError
 
+from odoo.addons.ewin_omnichannel_core.tools.security import secret_equals
+
 from ..services.messenger_api_client import MessengerApiClient, MessengerApiError
 
 _logger = logging.getLogger(__name__)
@@ -60,7 +62,7 @@ class MessengerConnector(models.AbstractModel):
         header = headers.get("X-Hub-Signature-256") or ""
         expected = "sha256=" + hmac.new(
             secret.encode("utf-8"), raw_body, hashlib.sha256).hexdigest()
-        return hmac.compare_digest(header, expected)
+        return secret_equals(header, expected)
 
     @api.model
     def connect(self, account):

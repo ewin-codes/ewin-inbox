@@ -62,3 +62,20 @@ class TestViberWebhook(HttpCase):
         self.assertEqual(resp.status_code, 200)
         self.assertFalse(self.env["omnichannel.message"].search(
             [("account_id", "=", self.account.id)]))
+
+    # The signature header reaches Python as text a caller controls: WSGI
+    # decodes a header value as Latin-1, and hmac.compare_digest raises
+    # TypeError when a str argument holds a character outside ASCII. So
+    # comparing them as str turned one crafted byte into an error page - an
+    # answer that differs from an ordinary rejection and so tells an
+    # unauthenticated caller that this account exists and has a token set.
+    # Every rejection has to look the same.
+    def test_non_ascii_signature_header_is_an_ordinary_rejection(self):
+        body = json.dumps(self._payload(token=903)).encode()
+        resp = self.url_open(
+            self._url(), data=body,
+            headers={"Content-Type": "application/json",
+                     "X-Viber-Content-Signature": "é"})
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(self.env["omnichannel.message"].search(
+            [("account_id", "=", self.account.id)]))

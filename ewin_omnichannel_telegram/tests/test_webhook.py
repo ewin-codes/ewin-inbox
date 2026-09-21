@@ -122,3 +122,26 @@ class TestWebhook(HttpCase):
                      "X-Telegram-Bot-Api-Secret-Token": "S"})
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(self._job_count(), before)
+
+    # The secret header reaches Python as text a caller controls: WSGI
+    # decodes a header value as Latin-1, and hmac.compare_digest raises
+    # TypeError when a str argument holds a character outside ASCII. So
+    # comparing them as str turned one crafted byte into an error page - an
+    # answer that differs from an ordinary rejection and so tells an
+    # unauthenticated caller that this account exists and has a secret set.
+    # Every rejection has to look the same.
+    def test_non_ascii_secret_header_is_an_ordinary_rejection(self):
+        payload = {"update_id": 910, "message": {
+            "message_id": 20, "date": 1700000010,
+            "from": {"id": 90, "first_name": "Eve"},
+            "chat": {"id": 90, "type": "private"}, "text": "Hi"}}
+        before = self._job_count()
+        resp = self.url_open(
+            self._url(),
+            data=json.dumps(payload),
+            headers={"Content-Type": "application/json",
+                     "X-Telegram-Bot-Api-Secret-Token": "é"})
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(self._job_count(), before)
+        self.assertFalse(self.env["omnichannel.message"].search(
+            [("account_id", "=", self.account.id)]))

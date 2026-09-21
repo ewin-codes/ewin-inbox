@@ -1,9 +1,10 @@
-import hmac
 import json
 import logging
 
 from odoo import _, http
 from odoo.http import request
+
+from odoo.addons.ewin_omnichannel_core.tools.security import secret_equals
 
 from ..services.notify_api_client import escape_html
 
@@ -46,22 +47,15 @@ class TelegramNotifyWebhookController(http.Controller):
             [("webhook_uuid", "=", notifier_uuid)], limit=1)
         if not notifier:
             return  # do not leak existence
-        stored = notifier.webhook_secret or ""
         presented = request.httprequest.headers.get(
             "X-Telegram-Bot-Api-Secret-Token") or ""
-        # No stored secret means reject, never "skip the check": the URL is
-        # not a credential, and Telegram's servers know it.
-        #
-        # Compared as bytes, not str: hmac.compare_digest raises TypeError
-        # when either str argument holds a non-ASCII character, and WSGI
-        # hands header values through as Latin-1 — so any caller can put one
-        # there. An exception here must read exactly like an ordinary
-        # mismatch, or a stray byte in this one header turns the route into
-        # a way to tell a real, secret-configured notifier apart from an
-        # unknown one by status code alone. Do not "simplify" this back to
-        # comparing the two str values directly.
-        if not stored or not hmac.compare_digest(
-                presented.encode(), stored.encode()):
+        # secret_equals carries both guarantees this check needs and states
+        # why: an unset secret rejects rather than waves the update through,
+        # and the comparison runs on bytes so a non-ASCII byte in the header
+        # reads as a mismatch instead of raising — an exception here would
+        # answer differently from a rejection and tell an unauthenticated
+        # caller that this notifier exists.
+        if not secret_equals(presented, notifier.webhook_secret or ""):
             _logger.warning(
                 "Rejected a Telegram notify update: bad secret (notifier %s)",
                 notifier.id)
