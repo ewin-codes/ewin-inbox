@@ -106,6 +106,10 @@ class TestDispatch(NotifyCase):
         with self._with_client(client):
             self.service.send_notification(self.notifier.id, message.id)
         client.send_message.assert_not_called()
+        log = self.env["omnichannel.error.log"].search(
+            [("category", "=", "configuration")], limit=1, order="id desc")
+        self.assertTrue(log)
+        self.assertIn("bot token", log.summary)
 
     def test_the_queue_runs_the_job_end_to_end(self):
         client = self._fake_client()
