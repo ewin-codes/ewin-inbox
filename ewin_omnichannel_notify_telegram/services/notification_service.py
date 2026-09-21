@@ -11,6 +11,39 @@ class TelegramNotificationService(models.AbstractModel):
     _name = "omnichannel.telegram.notification.service"
     _description = "Telegram Notification Service"
 
+    # The one method omnichannel.job may call here. The queue drains as
+    # superuser, so a row is an instruction to the database owner: what it may
+    # name is not "any method" but one this model published.
+    # See omnichannel.job._resolve_target.
+    _job_methods = frozenset({"send_notification"})
+
+    @api.model
+    def schedule(self, message):
+        """Queue one notification about ``message``, if it is due.
+
+        Runs inside the channel's own inbound transaction, so it does two
+        cheap things and no more: claim the throttle window and write a queue
+        row. The network call waits for the cron.
+
+        The window is claimed here rather than after a successful send. With
+        Telegram unreachable the alternative would queue a row per message and
+        deliver the backlog in one burst once it came back.
+        """
+        conversation = message.conversation_id
+        notifier = self.env["omnichannel.telegram.notifier"]._for_company(
+            conversation.company_id)
+        if not notifier:
+            return False
+        if not conversation._tg_claim_notification(notifier.throttle_minutes):
+            return False
+        self.env["omnichannel.job"].sudo().enqueue(
+            model=self._name,
+            method="send_notification",
+            args={"notifier_id": notifier.id, "message_id": message.id},
+            company_id=conversation.company_id.id,
+        )
+        return True
+
     @api.model
     def _compose(self, message):
         """The notification, in Telegram's HTML parse mode.
