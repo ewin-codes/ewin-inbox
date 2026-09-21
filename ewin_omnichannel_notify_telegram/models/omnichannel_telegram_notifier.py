@@ -122,7 +122,36 @@ class OmnichannelTelegramNotifier(models.Model):
         return f"{base}/omnichannel/notify/telegram/{self.webhook_uuid}"
 
     def _set_error(self, description):
-        self.sudo().write({"state": "error", "last_error": description})
+        """Record a provider failure on its own, immediately committed cursor.
+
+        Both callers write this from inside a ``try`` block, right before
+        re-raising the ``UserError`` that reports the same failure to the
+        admin who clicked the button. Odoo commits nothing until the whole
+        request returns successfully — an uncaught exception resets the
+        environment and re-raises (``odoo/service/model.py``'s
+        ``retrying``), and the cursor closes without committing — so on a
+        plain ``self.sudo().write(...)`` the admin got the error modal and,
+        on the next refresh, a record that still claimed its old, better
+        ``state`` with an empty ``last_error``: the write and the raise
+        share one transaction, and Odoo discards it whole. A short-lived
+        cursor keeps the failure notice out of that rollback, the same way
+        ``omnichannel.account._write_isolated`` keeps a webhook registration
+        out of one.
+
+        The caller must not have written this row earlier in the same
+        transaction, or the isolated cursor blocks on the row lock that
+        transaction still holds — true of both current callers, which only
+        read this notifier before failing.
+        """
+        self.ensure_one()
+        with self.pool.cursor() as cr:
+            notifier = self.with_env(self.env(cr=cr))
+            notifier.sudo().write({"state": "error", "last_error": description})
+            # Flush explicitly: a transaction only tracks its environments
+            # weakly, so an environment left to garbage collection takes the
+            # pending write with it and the commit stores nothing.
+            notifier.env.flush_all()
+        self.invalidate_recordset(["state", "last_error"])
 
     @api.model
     def _friendly(self, error):
