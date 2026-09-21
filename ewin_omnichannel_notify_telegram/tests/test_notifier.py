@@ -1,8 +1,6 @@
-from unittest.mock import patch
-
 from psycopg2 import IntegrityError
 
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import ValidationError
 from odoo.tests import tagged
 from odoo.tools import mute_logger
 
@@ -85,91 +83,21 @@ class TestNotifier(NotifyCase):
         client = self._fake_client()
         client.get_me.side_effect = TelegramNotifyError(
             401, "Unauthorized", retriable=False)
-        # A plain try/except, not self.assertRaises() as a context manager:
-        # Odoo's version wraps its block in its own savepoint and rolls it
-        # back whenever the very exception being asserted occurs, which
-        # would undo an ordinary write — the write and the raise happen in
-        # the same method, with no savepoint boundary between them to
-        # protect it.
-        #
-        # The assertion is on the *call* to _set_error(), not on
-        # self.notifier.state read back afterwards: _set_error() now writes
-        # through its own isolated cursor (see its docstring), and
-        # self.notifier is a TransactionCase fixture that TransactionCase
-        # itself never commits ("the transaction's cursor is always closed
-        # without committing"). A genuinely separate connection — which is
-        # exactly what the isolated cursor opens — cannot see or update a
-        # row that exists only, uncommitted, in this test's own transaction,
-        # so reading self.notifier.state back through self.env here would
-        # pass or fail independently of whether _set_error() works at all.
-        # test_set_error_write_survives_a_rollback_of_the_caller below
-        # proves the durability itself, against a row that really is
-        # committed.
-        with self._with_client(client), \
-                patch.object(type(self.notifier), "_set_error") as set_error:
-            try:
-                self.notifier.action_check_connection()
-                self.fail("action_check_connection() did not raise UserError")
-            except UserError:
-                pass
-        set_error.assert_called_once_with("Unauthorized")
+        with self._with_client(client):
+            action = self.notifier.action_check_connection()
+        self.assertEqual(action["params"]["type"], "danger")
+        self.assertEqual(self.notifier.state, "error")
+        self.assertIn("Unauthorized", self.notifier.last_error)
 
     def test_register_webhook_records_a_provider_error(self):
         client = self._fake_client()
         client.set_webhook.side_effect = TelegramNotifyError(
             401, "Unauthorized", retriable=False)
-        # Same reasoning as test_check_connection_records_a_bad_token above.
-        with self._with_client(client), \
-                patch.object(type(self.notifier), "_set_error") as set_error:
-            try:
-                self.notifier.action_register_webhook()
-                self.fail("action_register_webhook() did not raise UserError")
-            except UserError:
-                pass
-        set_error.assert_called_once_with("Unauthorized")
-
-    def test_set_error_write_survives_a_rollback_of_the_caller(self):
-        """_set_error()'s write must outlive a rollback of the caller's own
-        transaction — the situation a real button click hits when the
-        request that raised UserError rolls back around it.
-
-        TransactionCase never commits self.notifier's own creation, so a
-        genuinely separate connection cannot see or update a row that
-        exists only, uncommitted, in this test's own transaction — a plain
-        self.notifier.state assertion would pass or fail independently of
-        whether _set_error() actually used an isolated cursor, because
-        self.env.cr trivially sees its own pending write regardless of how
-        it got there. To prove real, cross-connection durability, this test
-        commits its own throwaway notifier row through an isolated cursor
-        first — exactly as a real notifier already sits committed in the
-        database by the time an admin clicks a button — then reads the
-        result back through a second, independent cursor rather than
-        through self.env.
-        """
-        Notifier = self.env["omnichannel.telegram.notifier"]
-        with self.registry.cursor() as cr:
-            row = Notifier.with_env(self.env(cr=cr)).sudo().create({
-                "name": "Durability check", "bot_token": "X",
-                "company_id": self.company.id, "active": False})
-            row.env.flush_all()
-            notifier_id = row.id
-        self.addCleanup(self._delete_through_isolated_cursor, notifier_id)
-
-        Notifier.browse(notifier_id)._set_error("Unauthorized")
-
-        with self.registry.cursor() as cr:
-            row = Notifier.with_env(self.env(cr=cr)).sudo().browse(notifier_id)
-            self.assertEqual(row.state, "error")
-            self.assertEqual(row.last_error, "Unauthorized")
-
-    def _delete_through_isolated_cursor(self, notifier_id):
-        """Undo the commit test_set_error_... makes: TransactionCase's own
-        rollback cannot reach a row a separate connection actually
-        committed, so the cleanup has to go through one too.
-        """
-        with self.registry.cursor() as cr:
-            self.env["omnichannel.telegram.notifier"].with_env(
-                self.env(cr=cr)).sudo().browse(notifier_id).unlink()
+        with self._with_client(client):
+            action = self.notifier.action_register_webhook()
+        self.assertEqual(action["params"]["type"], "danger")
+        self.assertEqual(self.notifier.state, "error")
+        self.assertIn("Unauthorized", self.notifier.last_error)
 
     def test_register_webhook_generates_a_secret_once(self):
         self.notifier.webhook_secret = False

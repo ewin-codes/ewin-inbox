@@ -122,36 +122,7 @@ class OmnichannelTelegramNotifier(models.Model):
         return f"{base}/omnichannel/notify/telegram/{self.webhook_uuid}"
 
     def _set_error(self, description):
-        """Record a provider failure on its own, immediately committed cursor.
-
-        Both callers write this from inside a ``try`` block, right before
-        re-raising the ``UserError`` that reports the same failure to the
-        admin who clicked the button. Odoo commits nothing until the whole
-        request returns successfully — an uncaught exception resets the
-        environment and re-raises (``odoo/service/model.py``'s
-        ``retrying``), and the cursor closes without committing — so on a
-        plain ``self.sudo().write(...)`` the admin got the error modal and,
-        on the next refresh, a record that still claimed its old, better
-        ``state`` with an empty ``last_error``: the write and the raise
-        share one transaction, and Odoo discards it whole. A short-lived
-        cursor keeps the failure notice out of that rollback, the same way
-        ``omnichannel.account._write_isolated`` keeps a webhook registration
-        out of one.
-
-        The caller must not have written this row earlier in the same
-        transaction, or the isolated cursor blocks on the row lock that
-        transaction still holds — true of both current callers, which only
-        read this notifier before failing.
-        """
-        self.ensure_one()
-        with self.pool.cursor() as cr:
-            notifier = self.with_env(self.env(cr=cr))
-            notifier.sudo().write({"state": "error", "last_error": description})
-            # Flush explicitly: a transaction only tracks its environments
-            # weakly, so an environment left to garbage collection takes the
-            # pending write with it and the commit stores nothing.
-            notifier.env.flush_all()
-        self.invalidate_recordset(["state", "last_error"])
+        self.sudo().write({"state": "error", "last_error": description})
 
     @api.model
     def _friendly(self, error):
@@ -164,10 +135,11 @@ class OmnichannelTelegramNotifier(models.Model):
                  getattr(error, "description", str(error)))
 
     @api.model
-    def _notify_ui(self, message):
+    def _notify_ui(self, message, kind="success"):
         return {
             "type": "ir.actions.client", "tag": "display_notification",
-            "params": {"message": message, "type": "success", "sticky": False},
+            "params": {"message": message, "type": kind,
+                       "sticky": kind == "danger"},
         }
 
     def action_check_connection(self):
@@ -176,6 +148,13 @@ class OmnichannelTelegramNotifier(models.Model):
         ``check_access`` and not «the menu is behind the admin group»: a
         button is reachable through ``call_button`` on any model the caller
         can read, and operators hold read here.
+
+        A provider failure is reported as a sticky danger notification, not
+        a ``UserError``: the record has to come back carrying the failure —
+        red state badge, ``last_error`` filled — and raising would roll that
+        write away with the rest of the request, since Odoo only commits a
+        request that returns successfully. The notification says the same
+        thing to the admin and lets the write land.
         """
         self.ensure_one()
         self.check_access("write")
@@ -183,7 +162,7 @@ class OmnichannelTelegramNotifier(models.Model):
             me = self._client().get_me()
         except TelegramNotifyError as err:
             self._set_error(err.description)
-            raise UserError(self._friendly(err))
+            return self._notify_ui(self._friendly(err), kind="danger")
         self.sudo().write({
             "bot_username": me.get("username"),
             "bot_external_id": str(me.get("id")),
@@ -205,7 +184,7 @@ class OmnichannelTelegramNotifier(models.Model):
             self._client().set_webhook(self._webhook_url(), secret)
         except TelegramNotifyError as err:
             self._set_error(err.description)
-            raise UserError(self._friendly(err))
+            return self._notify_ui(self._friendly(err), kind="danger")
         self.sudo().write({
             "webhook_secret": secret,
             "webhook_status": "registered",
@@ -220,6 +199,6 @@ class OmnichannelTelegramNotifier(models.Model):
         try:
             self._client().delete_webhook()
         except TelegramNotifyError as err:
-            raise UserError(self._friendly(err))
+            return self._notify_ui(self._friendly(err), kind="danger")
         self.sudo().write({"webhook_status": "removed"})
         return self._notify_ui(_("Webhook removed."))
