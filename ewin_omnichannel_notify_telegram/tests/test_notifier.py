@@ -119,3 +119,17 @@ class TestNotifier(NotifyCase):
         with self._with_client(client):
             self.notifier.action_remove_webhook()
         self.assertEqual(self.notifier.webhook_status, "removed")
+
+    def test_remove_webhook_records_a_provider_error(self):
+        self.notifier.webhook_status = "registered"
+        client = self._fake_client()
+        client.delete_webhook.side_effect = TelegramNotifyError(
+            401, "Unauthorized", retriable=False)
+        with self._with_client(client):
+            action = self.notifier.action_remove_webhook()
+        self.assertEqual(action["params"]["type"], "danger")
+        # This button records no state on failure — unlike the other two,
+        # it never calls _set_error() — so the only thing to check is that
+        # the write past the try/except did not run either.
+        self.assertEqual(self.notifier.webhook_status, "registered",
+                          "a failed removal must not mark the webhook removed")
