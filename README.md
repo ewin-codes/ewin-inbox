@@ -149,11 +149,12 @@ links below.
 | Instagram | [`ewin_omnichannel_instagram`](ewin_omnichannel_instagram/README.md) | Instagram Graph API (business login) |
 | Viber | [`ewin_omnichannel_viber`](ewin_omnichannel_viber/README.md) | Bot webhook |
 
-One module is not a channel:
+Two modules are not channels:
 
 | Module | What it adds |
 |---|---|
 | [`ewin_omnichannel_crm`](ewin_omnichannel_crm/README.md) | Links conversations to CRM leads and mirrors their texts into the lead's history |
+| [`ewin_omnichannel_notify_telegram`](ewin_omnichannel_notify_telegram/README.md) | Notifies operators in Telegram when a customer writes — a second bot, not the connector's |
 
 All modules use Odoo model names in the `omnichannel.*` namespace (e.g.
 `omnichannel.conversation`); only the Odoo *module* names carry the `ewin_` prefix.
@@ -170,6 +171,7 @@ ewin_omnichannel_messenger/   # Facebook Messenger (Pages) connector
 ewin_omnichannel_instagram/   # Instagram Direct (business login) connector
 ewin_omnichannel_viber/       # Viber bot connector
 ewin_omnichannel_crm/         # CRM bridge: conversations ↔ leads (optional)
+ewin_omnichannel_notify_telegram/  # Telegram notifications for operators (optional)
 ```
 
 ## Security

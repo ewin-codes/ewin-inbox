@@ -1,0 +1,65 @@
+<section class="oe_container">
+  <style>
+    .ewin-wrap { max-width: 960px; margin: 0 auto; padding: 0 16px;
+      font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #24243a; }
+    .ewin-wrap h1 { font-size: 36px; margin: 24px 0 8px; letter-spacing: -0.5px; }
+    .ewin-wrap h2 { font-size: 22px; margin: 36px 0 12px; color: #2b2b45;
+      border-bottom: 2px solid #ecebf3; padding-bottom: 8px; }
+    .ewin-lead { font-size: 18px; line-height: 1.6; color: #4a4a68; margin: 0 0 20px; }
+    .ewin-badges { margin: 0 0 24px; }
+    .ewin-badge { display: inline-block; font-size: 13px; font-weight: 600;
+      padding: 4px 12px; border-radius: 999px; margin: 0 6px 6px 0; }
+    .b-odoo { background: #eee3f2; color: #714B67; }
+    .b-lic { background: #e3ecfb; color: #2f5fc4; }
+    .b-dev { background: #fdecdc; color: #c1650f; }
+    .ewin-shot { width: 100%; border: 1px solid #e6e5ef; border-radius: 10px; margin: 8px 0 20px; }
+    .ewin-wrap ul { line-height: 1.75; font-size: 16px; padding-left: 22px; }
+    .ewin-req { background: #f7f6fb; border-radius: 10px; padding: 4px 20px; }
+    .ewin-foot { margin: 36px 0 24px; padding: 18px 20px; background: #f7f6fb;
+      border-radius: 10px; font-size: 15px; color: #4a4a68; }
+    .ewin-foot a { color: #714B67; text-decoration: none; font-weight: 600; }
+  </style>
+
+  <div class="ewin-wrap">
+    <h1>EWIN Inbox: Telegram Notifications</h1>
+    <p class="ewin-lead">Notifies your team in Telegram the moment a customer writes to EWIN
+      Inbox, on any channel. A second, dedicated bot for staff — separate from the customer-facing
+      Telegram connector — so nobody has to keep Odoo open to know a reply is waiting.</p>
+
+    <div class="ewin-badges">
+      <span class="ewin-badge b-odoo">Odoo 18</span>
+      <span class="ewin-badge b-lic">LGPL-3</span>
+      <span class="ewin-badge b-dev">Active Development</span>
+    </div>
+
+    <h2>Highlights</h2>
+    <ul>
+      <li>Notifies the assigned operator personally once they've connected their own Telegram, or
+        the shared team chat when there's nobody to notify personally yet</li>
+      <li>Throttled per conversation (10 minutes by default) so a burst of messages produces one
+        notification, not one per message — the first message always gets through</li>
+      <li>Each notification names the channel and the customer, previews what they wrote, and
+        links straight back into the conversation in Odoo</li>
+      <li>One-time, expiring Telegram links for operators to connect their own account from
+        Preferences — no shared credentials, no admin typing chat ids by hand</li>
+      <li>A separate bot and webhook from the customer-facing Telegram connector, and no
+        dependency on it — install this even where that connector isn't</li>
+    </ul>
+
+    <h2>Requirements</h2>
+    <div class="ewin-req">
+      <ul>
+        <li><strong>EWIN Inbox</strong> (<code>ewin_omnichannel_core</code>) installed</li>
+        <li>A second Telegram bot token from <a href="https://t.me/BotFather">@BotFather</a>,
+          distinct from any customer-facing bot</li>
+        <li>A public HTTPS endpoint reachable by Telegram for the webhook</li>
+      </ul>
+    </div>
+
+    <div class="ewin-foot">
+      Licensed under the GNU Lesser General Public License v3.0 (LGPL-3).<br/>
+      Developed and maintained by <a href="https://ewin.codes">EWIN.codes</a>.
+      Support: <a href="mailto:info@ewin.codes">info@ewin.codes</a>.
+    </div>
+  </div>
+</section>
