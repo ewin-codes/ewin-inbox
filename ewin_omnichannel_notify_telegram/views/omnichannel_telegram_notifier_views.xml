@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_telegram_notifier_form" model="ir.ui.view">
+        <field name="name">omnichannel.telegram.notifier.form</field>
+        <field name="model">omnichannel.telegram.notifier</field>
+        <field name="arch" type="xml">
+            <form string="Telegram Notifier">
+                <header>
+                    <button name="action_check_connection" type="object"
+                            string="Check Connection" class="btn-primary"/>
+                    <button name="action_register_webhook" type="object"
+                            string="Register Webhook"/>
+                    <button name="action_remove_webhook" type="object"
+                            string="Remove Webhook"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,connected"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger"
+                            invisible="active"/>
+                    <group>
+                        <group string="Bot">
+                            <field name="name"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="bot_token" password="True"
+                                   groups="ewin_omnichannel_core.group_omni_admin"/>
+                            <field name="bot_token_masked"
+                                   groups="!ewin_omnichannel_core.group_omni_admin"/>
+                            <field name="bot_username" readonly="1"/>
+                            <field name="bot_external_id" readonly="1"/>
+                            <field name="api_base_url" groups="base.group_no_one"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                        <group string="Delivery">
+                            <field name="group_chat_id"/>
+                            <field name="throttle_minutes"/>
+                            <field name="webhook_status" readonly="1"/>
+                            <field name="webhook_uuid" readonly="1"
+                                   groups="base.group_no_one"/>
+                        </group>
+                    </group>
+                    <group string="Last Error" invisible="state != 'error'">
+                        <field name="last_error" nolabel="1" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_telegram_notifier_list" model="ir.ui.view">
+        <field name="name">omnichannel.telegram.notifier.list</field>
+        <field name="model">omnichannel.telegram.notifier</field>
+        <field name="arch" type="xml">
+            <list string="Telegram Notifiers">
+                <field name="name"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="bot_username"/>
+                <field name="group_chat_id"/>
+                <field name="throttle_minutes"/>
+                <field name="state"
+                       decoration-success="state == 'connected'"
+                       decoration-danger="state == 'error'"
+                       widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_telegram_notifier" model="ir.actions.act_window">
+        <field name="name">Telegram Notifications</field>
+        <field name="res_model">omnichannel.telegram.notifier</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Set up the notification bot</p>
+            <p>
+                Create a bot with @BotFather, paste its token here, press Check
+                Connection, then Register Webhook. This bot notifies your team;
+                it is not the bot customers write to.
+            </p>
+        </field>
+    </record>
+</odoo>

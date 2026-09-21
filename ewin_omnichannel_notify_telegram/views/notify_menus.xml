@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_omni_tg_notifier" name="Telegram Notifications"
+              parent="ewin_omnichannel_core.menu_omni_config"
+              action="action_telegram_notifier" sequence="60"/>
+</odoo>
