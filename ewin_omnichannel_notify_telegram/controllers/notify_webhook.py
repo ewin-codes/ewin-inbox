@@ -27,33 +27,48 @@ class TelegramNotifyWebhookController(http.Controller):
                 type="http", auth="public", csrf=False, methods=["POST"],
                 save_session=False)
     def telegram_notify_webhook(self, notifier_uuid, **kwargs):
+        # Every path out of this route is the same empty 200, including one
+        # this method never anticipated: anything that slips past the guard
+        # clauses in _dispatch is still an update Telegram must not retry.
+        try:
+            self._dispatch(notifier_uuid)
+        except Exception:  # noqa: BLE001 — a 200 is the point of this route
+            _logger.exception("Telegram notify update failed")
+            request.env.cr.rollback()
+        return request.make_json_response({})
+
+    def _dispatch(self, notifier_uuid):
         notifier = request.env["omnichannel.telegram.notifier"].sudo().search(
             [("webhook_uuid", "=", notifier_uuid)], limit=1)
         if not notifier:
-            return request.make_json_response({})  # do not leak existence
+            return  # do not leak existence
         stored = notifier.webhook_secret or ""
         presented = request.httprequest.headers.get(
             "X-Telegram-Bot-Api-Secret-Token") or ""
         # No stored secret means reject, never "skip the check": the URL is
         # not a credential, and Telegram's servers know it.
-        if not stored or not hmac.compare_digest(presented, stored):
+        #
+        # Compared as bytes, not str: hmac.compare_digest raises TypeError
+        # when either str argument holds a non-ASCII character, and WSGI
+        # hands header values through as Latin-1 — so any caller can put one
+        # there. An exception here must read exactly like an ordinary
+        # mismatch, or a stray byte in this one header turns the route into
+        # a way to tell a real, secret-configured notifier apart from an
+        # unknown one by status code alone. Do not "simplify" this back to
+        # comparing the two str values directly.
+        if not stored or not hmac.compare_digest(
+                presented.encode(), stored.encode()):
             _logger.warning(
                 "Rejected a Telegram notify update: bad secret (notifier %s)",
                 notifier.id)
-            return request.make_json_response({})
+            return
         try:
             payload = json.loads(request.httprequest.get_data() or b"{}")
         except (ValueError, TypeError):
             _logger.warning("Malformed Telegram notify body (notifier %s)",
                             notifier.id)
-            return request.make_json_response({})
-        try:
-            self._handle(notifier, payload)
-        except Exception:  # noqa: BLE001 — a 200 is the point of this route
-            _logger.exception("Telegram notify update failed (notifier %s)",
-                              notifier.id)
-            request.env.cr.rollback()
-        return request.make_json_response({})
+            return
+        self._handle(notifier, payload)
 
     def _handle(self, notifier, payload):
         """Two commands and silence for everything else."""

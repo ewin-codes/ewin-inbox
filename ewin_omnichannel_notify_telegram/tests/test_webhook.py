@@ -4,6 +4,9 @@ from unittest.mock import patch
 
 from odoo.tests import HttpCase, tagged
 
+from odoo.addons.ewin_omnichannel_notify_telegram.controllers.notify_webhook import (
+    TelegramNotifyWebhookController)
+
 
 @tagged("post_install", "-at_install")
 class TestNotifyWebhook(HttpCase):
@@ -126,3 +129,43 @@ class TestNotifyWebhook(HttpCase):
             headers={"Content-Type": "application/json",
                      "X-Telegram-Bot-Api-Secret-Token": "SECRET"})
         self.assertEqual(response.status_code, 200)
+
+    def test_non_ascii_secret_header_is_a_silent_200(self):
+        # A stray non-ASCII byte in the header must not change the answer.
+        # hmac.compare_digest raises TypeError when either argument is a
+        # str holding a non-ASCII character, and WSGI hands header values
+        # through as Latin-1, so any caller can put one there. Left
+        # uncaught, that exception would turn a real, secret-configured
+        # notifier's response into an error page while an unknown uuid
+        # still answers a plain 200 - the exact oracle this route exists
+        # to prevent.
+        token = self._issue_token()
+        response = self._post(self._private("/start " + token),
+                              secret="é")
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(self.operator.sudo().omni_tg_chat_id)
+
+    def test_an_unexpected_error_while_handling_is_a_silent_200(self):
+        # The route's outer guarantee, exercised directly: something raising
+        # after the security checks have already passed must still answer
+        # 200 and leave nothing written. Telegram retries a delivery it did
+        # not get a fast success for, and a retry against a webhook that
+        # half-applied its effect the first time would double it.
+        token = self._issue_token()
+        with patch.object(TelegramNotifyWebhookController, "_handle",
+                           side_effect=RuntimeError("boom")):
+            response = self._post(self._private(f"/start {token}"))
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(self.operator.sudo().omni_tg_chat_id)
+
+    def test_a_failed_reply_does_not_undo_the_link(self):
+        # _reply is a courtesy call made after the state change already
+        # happened; if Telegram refuses it, the operator must still end up
+        # linked.
+        token = self._issue_token()
+        self.client.return_value.send_message.side_effect = RuntimeError(
+            "network down")
+        response = self._post(self._private(f"/start {token}"))
+        self.assertEqual(response.status_code, 200)
+        self.operator.invalidate_recordset()
+        self.assertEqual(self.operator.sudo().omni_tg_chat_id, "555")
