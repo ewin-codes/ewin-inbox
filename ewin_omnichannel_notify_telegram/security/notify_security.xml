@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- omnichannel.telegram.link carries a live linking token in plain text
+         (the https://t.me/<bot>?start=<token> URL): whoever can read a
+         wizard row receives that user's Telegram notifications from then on.
+         Odoo does NOT scope transient models to their creator on its own —
+         with no ir.rule here, every group_omni_operator user can read, via
+         search_read, every other operator's outstanding link. This rule is
+         what actually enforces "only the person it was made for" once the
+         ACL above grants the group read access to the model at all. -->
+    <record id="rule_telegram_link_own" model="ir.rule">
+        <field name="name">Telegram link: own wizard only</field>
+        <field name="model_id" ref="model_omnichannel_telegram_link"/>
+        <field name="domain_force">[('create_uid', '=', user.id)]</field>
+        <field name="global" eval="True"/>
+    </record>
+</odoo>

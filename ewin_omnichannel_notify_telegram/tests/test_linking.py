@@ -74,3 +74,41 @@ class TestLinking(NotifyCase):
         mine = self.operator.with_user(self.operator)
         self.assertEqual(mine.read(["omni_tg_chat_id"])[0]["omni_tg_chat_id"],
                          "555")
+
+    def test_a_non_admin_cannot_read_their_own_link_token(self):
+        # omni_tg_link_token is not in SELF_READABLE_FIELDS on purpose: it is
+        # the credential, closed to everyone but base.group_system. If that
+        # closure were ever dropped, this must go red.
+        self.operator.with_user(self.operator).action_omni_tg_link()
+        with self.assertRaises(AccessError):
+            self.operator.with_user(self.operator).read(["omni_tg_link_token"])
+
+    def test_an_administrator_can_link_someone_elses_telegram(self):
+        # base.group_system is what _omni_tg_check_own_record lets through;
+        # group_omni_admin is what the Users-form onboarding page itself is
+        # restricted to (and it implies group_omni_operator, which the ACL on
+        # the wizard model requires to create one) — the two together are
+        # what a real administrator onboarding a colleague actually holds.
+        admin = self.env["res.users"].create({
+            "name": "Ida Admin", "login": "ida_link_test",
+            "groups_id": [
+                (4, self.env.ref("base.group_system").id),
+                (4, self.env.ref("ewin_omnichannel_core.group_omni_admin").id),
+            ]})
+        action = self.operator.with_user(admin).action_omni_tg_link()
+        wizard = self.env["omnichannel.telegram.link"].browse(action["res_id"])
+        self.assertEqual(wizard.user_id, self.operator)
+
+    def test_a_colleague_cannot_see_another_operators_wizard(self):
+        # Regression for the leak the review caught: omnichannel.telegram.link
+        # carries the live token in its url field, and without an ir.rule
+        # scoping it to its own creator, every group_omni_operator user could
+        # search_read every other operator's outstanding link.
+        action = self.operator.with_user(self.operator).action_omni_tg_link()
+        other = self.env["res.users"].create({
+            "name": "Peter", "login": "peter_wizard_test",
+            "groups_id": [(4, self.env.ref(
+                "ewin_omnichannel_core.group_omni_operator").id)]})
+        seen = self.env["omnichannel.telegram.link"].with_user(
+            other).search([])
+        self.assertNotIn(action["res_id"], seen.ids)
