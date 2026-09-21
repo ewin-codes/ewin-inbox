@@ -24,7 +24,20 @@ class OmnichannelMessage(models.Model):
             if message.direction != "inbound" or message.sender_type != "customer":
                 continue
             try:
-                service.schedule(message)
+                # The savepoint is what makes the promise below hold for a
+                # database error, not just a Python one: a psycopg2.Error
+                # (e.g. a serialization failure) leaves PostgreSQL in an
+                # aborted-transaction state, and swallowing it without first
+                # rolling back to a savepoint would poison the cursor —
+                # the channel's own webhook would then fail its very next
+                # query with "current transaction is aborted", losing the
+                # customer's message the guard exists to protect. Rolling
+                # back to the savepoint also undoes the throttle claim
+                # schedule() may have already taken, so a failed enqueue
+                # does not leave the conversation silent until the window
+                # expires.
+                with self.env.cr.savepoint():
+                    service.schedule(message)
             except Exception:  # noqa: BLE001
                 # This runs inside the channel's webhook transaction. An
                 # add-on has no right to cost the customer their message —

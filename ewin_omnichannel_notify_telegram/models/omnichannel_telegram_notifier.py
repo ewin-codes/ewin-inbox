@@ -89,7 +89,13 @@ class OmnichannelTelegramNotifier(models.Model):
         for notifier in self:
             if not notifier.active:
                 continue
-            twin = self.search([
+            # sudo(): this enforces a database invariant ("one active
+            # notifier per company"), not an access boundary, so it must not
+            # be scoped by rule_notifier_company. Without sudo() here, that
+            # rule would make the search invisible to a twin in a company the
+            # writing user does not currently carry, and the constraint would
+            # silently let a duplicate through instead of refusing it.
+            twin = self.sudo().search([
                 ("id", "!=", notifier.id),
                 ("company_id", "=", notifier.company_id.id),
             ], limit=1)

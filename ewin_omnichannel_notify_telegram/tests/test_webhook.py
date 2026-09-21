@@ -73,6 +73,16 @@ class TestNotifyWebhook(HttpCase):
         self.assertEqual(response.status_code, 200)
         self.assertFalse(self.operator.sudo().omni_tg_chat_id)
 
+    def test_bare_start_from_a_stranger_links_nobody(self):
+        # No argument at all — what Telegram sends the first time anyone,
+        # operator or stranger, opens the bot. It must not be treated as an
+        # invalid-token case (that reply names Odoo) and must link nothing.
+        response = self._post(self._private("/start", chat_id=999, from_id=999))
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(self.operator.sudo().omni_tg_chat_id)
+        self.assertFalse(self.env["res.users"].sudo().search(
+            [("omni_tg_chat_id", "=", "999")]))
+
     def test_bad_secret_is_a_silent_200(self):
         token = self._issue_token()
         response = self._post(self._private(f"/start {token}"), secret="WRONG")

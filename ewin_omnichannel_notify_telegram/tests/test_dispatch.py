@@ -1,3 +1,5 @@
+from odoo.exceptions import AccessError
+from odoo.service.model import get_public_method
 from odoo.tests import tagged
 
 from odoo.addons.ewin_omnichannel_core.models.omnichannel_job import (
@@ -15,6 +17,18 @@ class TestDispatch(NotifyCase):
         self.service = self.env["omnichannel.telegram.notification.service"]
         self.operator = self.env["res.users"].create({
             "name": "Olga Operator", "login": "olga_notify_test"})
+
+    def test_send_notification_and_schedule_are_not_callable_over_rpc(self):
+        # get_public_method is what odoo/service/model.py's call_kw consults
+        # before letting an authenticated RPC caller invoke a method. Both
+        # sudo() their arguments, so without @api.private any operator could
+        # call them directly with a notifier/message id pair of their own
+        # choosing, sidestepping every record rule that normally hides a
+        # conversation from them.
+        with self.assertRaises(AccessError):
+            get_public_method(self.service, "send_notification")
+        with self.assertRaises(AccessError):
+            get_public_method(self.service, "schedule")
 
     def _send(self, client):
         message = self._inbound()
@@ -97,6 +111,25 @@ class TestDispatch(NotifyCase):
         with self._with_client(client):
             self.assertFalse(
                 self.service.send_notification(self.notifier.id, message_id))
+        client.send_message.assert_not_called()
+
+    def test_a_deleted_notifier_is_a_quiet_no_op(self):
+        message = self._inbound()
+        notifier_id = self.notifier.id
+        self.notifier.unlink()
+        client = self._fake_client()
+        with self._with_client(client):
+            self.assertFalse(
+                self.service.send_notification(notifier_id, message.id))
+        client.send_message.assert_not_called()
+
+    def test_an_archived_notifier_is_a_quiet_no_op(self):
+        message = self._inbound()
+        self.notifier.active = False
+        client = self._fake_client()
+        with self._with_client(client):
+            self.assertFalse(
+                self.service.send_notification(self.notifier.id, message.id))
         client.send_message.assert_not_called()
 
     def test_a_notifier_without_a_token_does_not_reach_the_network(self):

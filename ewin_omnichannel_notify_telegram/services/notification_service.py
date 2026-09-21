@@ -21,6 +21,7 @@ class TelegramNotificationService(models.AbstractModel):
     _job_methods = frozenset({"send_notification"})
 
     @api.model
+    @api.private
     def schedule(self, message):
         """Queue one notification about ``message``, if it is due.
 
@@ -31,6 +32,11 @@ class TelegramNotificationService(models.AbstractModel):
         The window is claimed here rather than after a successful send. With
         Telegram unreachable the alternative would queue a row per message and
         deliver the backlog in one burst once it came back.
+
+        ``@api.private``: this is called from ``omnichannel.message.create()``
+        with the caller's own access rights, never over RPC — a caller with
+        no business seeing a conversation at all must not be able to invoke
+        it directly and choose which notifier and which message to pair up.
         """
         conversation = message.conversation_id
         notifier = self.env["omnichannel.telegram.notifier"]._for_company(
@@ -99,11 +105,22 @@ class TelegramNotificationService(models.AbstractModel):
         return text[:BODY_PREVIEW_LIMIT].rstrip() + "…"
 
     @api.model
+    @api.private
     def send_notification(self, notifier_id, message_id):
         """Deliver one notification. The job queue's entry point.
 
         Everything is resolved now, not when the job was written: if somebody
         took the conversation while it waited, the notification is theirs.
+
+        ``@api.private``: the job queue reaches this through
+        ``getattr(target, self.method)`` in ``omnichannel.job._resolve_target``,
+        never through ``call_kw``, so the decorator does not touch that path
+        (``_job_methods`` is what gates it). What it closes is RPC: this
+        method ``sudo()``s both ids it is given, so without it any
+        authenticated caller — a portal user included — could pick an
+        arbitrary notifier and message and have the bot post that message's
+        sender, text and a deep link into any company's conversation, bypassing
+        every record rule that normally hides it.
         """
         notifier = self.env["omnichannel.telegram.notifier"].sudo().browse(
             notifier_id).exists()

@@ -14,4 +14,18 @@
         <field name="domain_force">[('create_uid', '=', user.id)]</field>
         <field name="global" eval="True"/>
     </record>
+
+    <!-- Every ewin_omnichannel_core model that carries company_id has a
+         global company rule (see omnichannel_security.xml's
+         rule_conversation_company and friends). This model is no different:
+         without one, a company-B administrator who opens Telegram
+         Notifications sees company A's record too — bot_token and
+         webhook_secret are closed by group, not by company, so they would
+         read a bot token, and the webhook secret, that is not theirs. -->
+    <record id="rule_notifier_company" model="ir.rule">
+        <field name="name">Telegram notifier: company</field>
+        <field name="model_id" ref="model_omnichannel_telegram_notifier"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="global" eval="True"/>
+    </record>
 </odoo>

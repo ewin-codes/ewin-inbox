@@ -43,7 +43,7 @@ class TelegramNotifyError(Exception):
 
 
 class TelegramNotifyClient:
-    """The five Bot API calls this addon needs.
+    """The four Bot API calls this addon needs.
 
     Deliberately not imported from ``ewin_omnichannel_telegram``: that module
     drives a different bot with a different token, and this one has to install
@@ -58,6 +58,22 @@ class TelegramNotifyClient:
         try:
             response = requests.post(
                 f"{self.base}/{method}", data=payload or {}, timeout=self.timeout)
+            data = response.json() if response.content else {}
+        except ValueError:
+            # A proxy or captive portal can answer with an HTML page instead
+            # of JSON. This has to be caught inside the same guarded region
+            # as the request itself — response.json() used to sit outside
+            # it, so this raised a bare JSONDecodeError straight past
+            # TelegramNotifyError, _log_failure() never ran, and the job
+            # just retried with nothing recorded. Retriable: the same
+            # request against Telegram directly would look different. The
+            # response body never reaches the message — it can be arbitrary
+            # — only the status code does. (requests' own JSONDecodeError is
+            # also a RequestException, but this clause is written before the
+            # one below so it is the one that catches it.)
+            raise TelegramNotifyError(
+                response.status_code,
+                f"Non-JSON response (HTTP {response.status_code})") from None
         except requests.RequestException as err:
             # `from None` breaks the implicit __context__ chain: ``err``'s own
             # message usually embeds the full, unredacted request URL, and a
@@ -65,7 +81,6 @@ class TelegramNotifyClient:
             # above exception" even though redact_token() scrubbed this one.
             raise TelegramNotifyError(
                 0, f"Network error: {redact_token(err)}") from None
-        data = response.json() if response.content else {}
         if not data.get("ok"):
             description = data.get("description") or f"HTTP {response.status_code}"
             retriable = response.status_code == 429 or not any(
@@ -82,9 +97,6 @@ class TelegramNotifyClient:
 
     def delete_webhook(self):
         return self._call("deleteWebhook")
-
-    def get_webhook_info(self):
-        return self._call("getWebhookInfo")
 
     def send_message(self, chat_id, text):
         return self._call("sendMessage", {

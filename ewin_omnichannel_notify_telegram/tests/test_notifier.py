@@ -1,11 +1,11 @@
 from psycopg2 import IntegrityError
 
-from odoo.exceptions import ValidationError
+from odoo.exceptions import AccessError, ValidationError
 from odoo.tests import tagged
 from odoo.tools import mute_logger
 
 from ..services.notify_api_client import (
-    TelegramNotifyError, escape_html, redact_token)
+    TelegramNotifyClient, TelegramNotifyError, escape_html, redact_token)
 from .common import NotifyCase
 
 
@@ -24,6 +24,43 @@ class TestNotifier(NotifyCase):
         with self.assertRaises(ValidationError):
             self.env["omnichannel.telegram.notifier"].create({
                 "name": "Second", "company_id": self.company.id})
+
+    def test_a_second_company_may_have_its_own_notifier(self):
+        company_b = self.env["res.company"].create({"name": "Notify Co B"})
+        admin_b = self.env["res.users"].create({
+            "name": "Admin B", "login": "notify_admin_b",
+            "company_id": company_b.id,
+            "company_ids": [(6, 0, [company_b.id])],
+            "groups_id": [(4, self.env.ref(
+                "ewin_omnichannel_core.group_omni_admin").id)]})
+        notifier_b = self.env["omnichannel.telegram.notifier"].with_user(
+            admin_b).create({"name": "B", "company_id": company_b.id})
+        self.assertTrue(notifier_b.id)
+        # rule_notifier_company: admin_b's own notifier is visible to them,
+        # company A's (self.notifier) is not.
+        visible = self.env["omnichannel.telegram.notifier"].with_user(
+            admin_b).search([])
+        self.assertIn(notifier_b, visible)
+        self.assertNotIn(self.notifier, visible)
+
+    def test_the_constraint_still_refuses_a_same_company_duplicate_across_scopes(self):
+        # _check_one_active_per_company's own search must not be blinded by
+        # rule_notifier_company: even when the duplicate is created through a
+        # user whose company_ids does not include the target company (here,
+        # by way of an elevated call, the way a migration or an internal
+        # service might reach this model), the twin already sitting in that
+        # company must still be found and the create refused.
+        company_b = self.env["res.company"].create({"name": "Notify Co B"})
+        admin_b = self.env["res.users"].create({
+            "name": "Admin B", "login": "notify_admin_b2",
+            "company_id": company_b.id,
+            "company_ids": [(6, 0, [company_b.id])],
+            "groups_id": [(4, self.env.ref(
+                "ewin_omnichannel_core.group_omni_admin").id)]})
+        with self.assertRaises(ValidationError):
+            self.env["omnichannel.telegram.notifier"].with_user(
+                admin_b).sudo().create({
+                    "name": "Duplicate", "company_id": self.company.id})
 
     def test_archived_notifier_leaves_room_for_another(self):
         self.notifier.active = False
@@ -69,6 +106,24 @@ class TestNotifier(NotifyCase):
     def test_friendly_message_for_a_revoked_token(self):
         error = TelegramNotifyError(401, "Unauthorized", retriable=False)
         self.assertIn("invalid", str(self.notifier._friendly(error)).lower())
+
+    def test_a_non_json_response_is_translated_and_retriable(self):
+        # A proxy or captive portal can answer with an HTML page instead of
+        # JSON. response.json() must be caught in the same guarded region as
+        # the request itself, or this reaches the caller as a bare
+        # JSONDecodeError instead of a TelegramNotifyError.
+        from unittest.mock import MagicMock, patch
+        response = MagicMock()
+        response.content = b"<html>Bad Gateway</html>"
+        response.status_code = 502
+        response.json.side_effect = ValueError(
+            "Expecting value: line 1 column 1 (char 0)")
+        with patch("requests.post", return_value=response):
+            with self.assertRaises(TelegramNotifyError) as cm:
+                TelegramNotifyClient("BOT-TOKEN").get_me()
+        self.assertTrue(cm.exception.retriable)
+        self.assertIn("502", cm.exception.description)
+        self.assertNotIn("Bad Gateway", cm.exception.description)
 
     def test_check_connection_stores_the_bot_identity(self):
         client = self._fake_client()
@@ -119,6 +174,35 @@ class TestNotifier(NotifyCase):
         with self._with_client(client):
             self.notifier.action_remove_webhook()
         self.assertEqual(self.notifier.webhook_status, "removed")
+
+    def test_check_connection_refuses_an_operator(self):
+        # An operator holds only read access (ir.model.access.csv). The
+        # button's own check_access("write") is the only thing standing
+        # between that read grant and the sudo() write inside it — nothing
+        # else in the stack enforces it, since call_button reaches any
+        # button on a model the caller can read.
+        operator = self.env["res.users"].create({
+            "name": "Restricted Operator", "login": "notify_btn_operator_1",
+            "groups_id": [(4, self.env.ref(
+                "ewin_omnichannel_core.group_omni_operator").id)]})
+        with self.assertRaises(AccessError):
+            self.notifier.with_user(operator).action_check_connection()
+
+    def test_register_webhook_refuses_an_operator(self):
+        operator = self.env["res.users"].create({
+            "name": "Restricted Operator", "login": "notify_btn_operator_2",
+            "groups_id": [(4, self.env.ref(
+                "ewin_omnichannel_core.group_omni_operator").id)]})
+        with self.assertRaises(AccessError):
+            self.notifier.with_user(operator).action_register_webhook()
+
+    def test_remove_webhook_refuses_an_operator(self):
+        operator = self.env["res.users"].create({
+            "name": "Restricted Operator", "login": "notify_btn_operator_3",
+            "groups_id": [(4, self.env.ref(
+                "ewin_omnichannel_core.group_omni_operator").id)]})
+        with self.assertRaises(AccessError):
+            self.notifier.with_user(operator).action_remove_webhook()
 
     def test_remove_webhook_records_a_provider_error(self):
         self.notifier.webhook_status = "registered"

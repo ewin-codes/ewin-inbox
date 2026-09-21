@@ -123,20 +123,19 @@ not the Telegram connector is present.
    requires a **public HTTPS `web.base.url`** (Settings → Technical → System
    Parameters) that Telegram's own servers can reach — a local
    `http://localhost:8069` will not work.
-5. Add the bot to the team's Telegram group **as an administrator** — Telegram
-   restricts what a plain member bot receives in a group by default, and
-   making it an admin is the standard way around that — and send `/register`
-   there from an account that (a) has already connected its own Telegram
-   through step 6 below and (b) holds the **EWIN Inbox / Administrator**
-   group. The bot confirms in the chat once it has adopted the group; from
-   then on, that chat is where an unassigned or not-yet-connected
-   conversation notifies.
-6. Each operator connects individually: **Preferences → Connect Telegram**
+5. Each operator connects individually: **Preferences → Connect Telegram**
    opens a wizard with a one-time personal link
    (`https://t.me/<bot>?start=<token>`). Opening it in Telegram and pressing
    **Start** links that operator's account; the link works once and expires
    after 24 hours, whichever comes first. **Disconnect Telegram** clears the
    binding.
+6. Add the bot to the team's Telegram group **as an administrator** — Telegram
+   restricts what a plain member bot receives in a group by default, and
+   making it an admin is the standard way around that — and send `/register`
+   there from an account that (a) has already connected its own Telegram, as
+   above, and (b) holds the **EWIN Inbox / Administrator** group. The bot
+   confirms in the chat once it has adopted the group; from then on, that
+   chat is where an unassigned or not-yet-connected conversation notifies.
 
 ## Security
 
@@ -191,6 +190,19 @@ not the Telegram connector is present.
   webhook address travels to Telegram's own servers once it's registered, so
   simply knowing it, or being present in the group, proves nothing about who
   someone is.
+
+## Known limits
+
+- **Telegram's own rate limit can drop a notification under a burst.**
+  Telegram accepts roughly 20 messages a minute into one group chat, and
+  `omnichannel.job._cron_process_jobs` drains up to 50 jobs per tick. A
+  burst — an email connector's first poll bringing in fifty conversations at
+  once, say — can push past that and get a `429` back. The client does not
+  read `parameters.retry_after` from that response and does not pace sends
+  to stay under the limit, so a `429` is just another retriable failure: the
+  queue's own backoff handles it, but a big enough burst can exhaust a job's
+  retries before Telegram lets it through, and that notification is dropped
+  (the error log records it, so it is not lost silently).
 
 ## Out of scope
 

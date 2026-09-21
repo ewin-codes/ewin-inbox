@@ -72,3 +72,32 @@ class TestSchedule(NotifyCase):
             message = self._inbound()
         self.assertTrue(message.exists())
         self.assertFalse(self._jobs())
+
+    def test_a_database_error_never_poisons_the_cursor(self):
+        """A psycopg2 error, unlike a plain RuntimeError, leaves PostgreSQL's
+        session in an aborted-transaction state until something rolls back —
+        savepoint or not. Swallowing it bare (no savepoint) would leave the
+        channel's own next query on this cursor failing with "current
+        transaction is aborted", losing the message the guard exists to
+        protect. ``schedule`` is replaced with a callable that issues a real
+        broken statement, not a mocked exception object, because only a
+        statement PostgreSQL itself rejects actually reproduces that
+        server-side abort — raising a bare ``psycopg2.OperationalError``
+        instance in Python does not.
+        """
+        from unittest.mock import patch
+
+        def _break_the_transaction(self, message):
+            self.env.cr.execute("SELECT 1/0")  # psycopg2.errors.DivisionByZero
+
+        target = ("odoo.addons.ewin_omnichannel_notify_telegram.services."
+                  "notification_service.TelegramNotificationService.schedule")
+        with patch(target, _break_the_transaction):
+            message = self._inbound()
+        self.assertTrue(message.exists())
+        self.assertFalse(self._jobs())
+        # If the savepoint were missing, this would itself raise "current
+        # transaction is aborted, commands ignored until end of transaction
+        # block" instead of returning a count.
+        self.assertGreaterEqual(
+            self.env["omnichannel.message"].search_count([]), 1)

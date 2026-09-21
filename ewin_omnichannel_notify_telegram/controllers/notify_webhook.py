@@ -33,7 +33,11 @@ class TelegramNotifyWebhookController(http.Controller):
         try:
             self._dispatch(notifier_uuid)
         except Exception:  # noqa: BLE001 — a 200 is the point of this route
-            _logger.exception("Telegram notify update failed")
+            # notifier_uuid is a path segment, not a credential: logging it
+            # is what lets this line — the route's only diagnostic output,
+            # since it always answers 200 — say which notifier failed.
+            _logger.exception(
+                "Telegram notify update failed (notifier %s)", notifier_uuid)
             request.env.cr.rollback()
         return request.make_json_response({})
 
@@ -82,17 +86,33 @@ class TelegramNotifyWebhookController(http.Controller):
         # A command addressed in a group carries the bot: /register@mybot.
         command = command.split("@", 1)[0]
         if command == "/start" and chat.get("type") == "private":
-            self._link_user(notifier, chat, sender, argument.strip())
+            self._start(notifier, chat, sender, argument.strip())
         elif command == "/register" and chat.get("type") in GROUP_CHAT_TYPES:
             self._register_group(notifier, chat, sender)
+
+    def _start(self, notifier, chat, sender, token):
+        """A private ``/start``, with or without a linking token.
+
+        Telegram sends a bare ``/start`` the first time anyone opens a bot at
+        all — most of them strangers who tapped a search result, not an
+        operator mid-setup — so that reply must name nothing about what the
+        bot is for or which product runs it.
+        """
+        if not token:
+            self._reply(notifier, chat, _("Hello!"))
+            return
+        self._link_user(notifier, chat, sender, token)
 
     def _link_user(self, notifier, chat, sender, token):
         users = request.env["res.users"].sudo()
         user = users._omni_tg_consume_link_token(token)
         if not user:
-            self._reply(notifier, chat, _(
-                "That link is not valid any more. Open Odoo, go to "
-                "Preferences and press Connect Telegram again."))
+            # A real but stale or already-used link still needs to say it
+            # did not work, but a stranger presenting a guessed token must
+            # learn nothing about the installation behind the bot either —
+            # so this stays informative about the link and silent about
+            # Odoo.
+            self._reply(notifier, chat, _("This link is no longer valid."))
             return
         user.write({
             "omni_tg_chat_id": str(chat.get("id")),

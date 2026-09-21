@@ -23,21 +23,26 @@
         </field>
     </record>
 
-    <!-- Users form: an administrator onboarding somebody else. -->
+    <!-- Users form: an administrator onboarding somebody else. Gated on
+         base.group_system, not the EWIN admin group: _omni_tg_check_own_record
+         requires base.group_system to act on someone else's record, and
+         issuing another person's linking credential is a system-administrator
+         act. An EWIN Inbox administrator who is not a system administrator
+         must not see a page whose own button would refuse them. -->
     <record id="view_users_form_notify" model="ir.ui.view">
         <field name="name">res.users.form.telegram.notify</field>
         <field name="model">res.users</field>
         <field name="inherit_id" ref="base.view_users_form"/>
         <field name="arch" type="xml">
             <xpath expr="//notebook" position="inside">
-                <page string="Inbox Notifications"
-                      groups="ewin_omnichannel_core.group_omni_admin">
+                <page string="Inbox Notifications" groups="base.group_system">
                     <group>
                         <field name="omni_tg_username" readonly="1"/>
                         <field name="omni_tg_chat_id" readonly="1"/>
                     </group>
                     <button name="action_omni_tg_link" type="object"
-                            string="Connect Telegram" class="btn-secondary"/>
+                            string="Connect Telegram" class="btn-secondary"
+                            invisible="omni_tg_chat_id"/>
                     <button name="action_omni_tg_unlink" type="object"
                             string="Disconnect Telegram" class="btn-link"
                             invisible="not omni_tg_chat_id"/>
