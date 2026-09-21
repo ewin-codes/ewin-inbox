@@ -28,7 +28,14 @@ class OmnichannelAccount(models.Model):
     @api.depends("tg_bot_token")
     def _compute_tg_bot_token_masked(self):
         for acc in self:
-            acc.tg_bot_token_masked = "***************" if acc.tg_bot_token else ""
+            # sudo(): the credential is admin-only, and this compute backs
+            # the field the operator group sees in its place on the same
+            # form. Without it, opening the account form as an operator
+            # raises AccessError from the very field that exists so they
+            # never see the credential. Deriving a fixed-length mask is not
+            # the access the connector's _client() guards.
+            acc.tg_bot_token_masked = (
+                "***************" if acc.sudo().tg_bot_token else "")
 
     def _tg_sync_config(self):
         """Mirror create_contacts flag into the universal connector_config."""

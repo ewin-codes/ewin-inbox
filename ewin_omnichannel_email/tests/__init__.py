@@ -4,3 +4,4 @@ from . import test_connector_inbound
 from . import test_connector_outbound
 from . import test_email_client_smtp
 from . import test_email_client_imap
+from . import test_account_credentials

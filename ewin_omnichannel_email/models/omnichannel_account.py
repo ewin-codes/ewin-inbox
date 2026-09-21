@@ -34,7 +34,14 @@ class OmnichannelAccount(models.Model):
     @api.depends("email_password")
     def _compute_email_password_masked(self):
         for acc in self:
-            acc.email_password_masked = "***************" if acc.email_password else ""
+            # sudo(): the credential is admin-only, and this compute backs
+            # the field the operator group sees in its place on the same
+            # form. Without it, opening the account form as an operator
+            # raises AccessError from the very field that exists so they
+            # never see the credential. Deriving a fixed-length mask is not
+            # the access the connector's _client() guards.
+            acc.email_password_masked = (
+                "***************" if acc.sudo().email_password else "")
 
     def _email_sync_config(self):
         for acc in self:

@@ -32,8 +32,14 @@ class OmnichannelAccount(models.Model):
     @api.depends("wa_access_token")
     def _compute_wa_access_token_masked(self):
         for acc in self:
-            acc.wa_access_token_masked = "***************" \
-                if acc.wa_access_token else ""
+            # sudo(): the credential is admin-only, and this compute backs
+            # the field the operator group sees in its place on the same
+            # form. Without it, opening the account form as an operator
+            # raises AccessError from the very field that exists so they
+            # never see the credential. Deriving a fixed-length mask is not
+            # the access the connector's _client() guards.
+            acc.wa_access_token_masked = (
+                "***************" if acc.sudo().wa_access_token else "")
 
     def _wa_sync_config(self):
         for acc in self:

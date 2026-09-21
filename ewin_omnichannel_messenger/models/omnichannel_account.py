@@ -53,8 +53,14 @@ class OmnichannelAccount(models.Model):
     @api.depends("mg_page_access_token")
     def _compute_mg_token_masked(self):
         for acc in self:
-            acc.mg_page_access_token_masked = "***************" \
-                if acc.mg_page_access_token else ""
+            # sudo(): the credential is admin-only, and this compute backs
+            # the field the operator group sees in its place on the same
+            # form. Without it, opening the account form as an operator
+            # raises AccessError from the very field that exists so they
+            # never see the credential. Deriving a fixed-length mask is not
+            # the access the connector's _client() guards.
+            acc.mg_page_access_token_masked = (
+                "***************" if acc.sudo().mg_page_access_token else "")
 
     @api.depends("webhook_uuid", "channel_code")
     def _compute_mg_webhook_url(self):

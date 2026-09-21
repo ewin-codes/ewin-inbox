@@ -29,8 +29,14 @@ class OmnichannelAccount(models.Model):
     @api.depends("viber_auth_token")
     def _compute_viber_auth_token_masked(self):
         for acc in self:
+            # sudo(): the credential is admin-only, and this compute backs
+            # the field the operator group sees in its place on the same
+            # form. Without it, opening the account form as an operator
+            # raises AccessError from the very field that exists so they
+            # never see the credential. Deriving a fixed-length mask is not
+            # the access the connector's _client() guards.
             acc.viber_auth_token_masked = (
-                "***************" if acc.viber_auth_token else "")
+                "***************" if acc.sudo().viber_auth_token else "")
 
     def _viber_sync_config(self):
         """Mirror create_contacts flag into the universal connector_config."""
