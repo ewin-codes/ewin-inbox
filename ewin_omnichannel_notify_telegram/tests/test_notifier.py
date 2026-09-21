@@ -1,6 +1,6 @@
 from psycopg2 import IntegrityError
 
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
 from odoo.tests import tagged
 from odoo.tools import mute_logger
 
@@ -69,3 +69,52 @@ class TestNotifier(NotifyCase):
     def test_friendly_message_for_a_revoked_token(self):
         error = TelegramNotifyError(401, "Unauthorized", retriable=False)
         self.assertIn("invalid", str(self.notifier._friendly(error)).lower())
+
+    def test_check_connection_stores_the_bot_identity(self):
+        client = self._fake_client()
+        with self._with_client(client):
+            self.notifier.action_check_connection()
+        self.assertEqual(self.notifier.bot_username, "ewin_notify_bot")
+        self.assertEqual(self.notifier.bot_external_id, "1")
+        self.assertEqual(self.notifier.state, "connected")
+        self.assertFalse(self.notifier.last_error)
+
+    def test_check_connection_records_a_bad_token(self):
+        client = self._fake_client()
+        client.get_me.side_effect = TelegramNotifyError(
+            401, "Unauthorized", retriable=False)
+        # A plain try/except, not self.assertRaises() as a context manager:
+        # Odoo's version wraps its block in its own savepoint and rolls it
+        # back whenever the very exception being asserted occurs, which
+        # would silently undo the state/last_error write this test exists
+        # to verify — the write and the raise happen in the same method,
+        # with no savepoint boundary between them to protect it.
+        with self._with_client(client):
+            try:
+                self.notifier.action_check_connection()
+                self.fail("action_check_connection() did not raise UserError")
+            except UserError:
+                pass
+        self.assertEqual(self.notifier.state, "error")
+        self.assertIn("Unauthorized", self.notifier.last_error)
+
+    def test_register_webhook_generates_a_secret_once(self):
+        self.notifier.webhook_secret = False
+        client = self._fake_client()
+        with self._with_client(client):
+            self.notifier.action_register_webhook()
+        secret = self.notifier.webhook_secret
+        self.assertTrue(secret)
+        self.assertEqual(self.notifier.webhook_status, "registered")
+        client.set_webhook.assert_called_once_with(
+            self.notifier._webhook_url(), secret)
+        with self._with_client(client):
+            self.notifier.action_register_webhook()
+        self.assertEqual(self.notifier.webhook_secret, secret,
+                         "re-registering must keep the secret Telegram holds")
+
+    def test_remove_webhook_marks_the_status(self):
+        client = self._fake_client()
+        with self._with_client(client):
+            self.notifier.action_remove_webhook()
+        self.assertEqual(self.notifier.webhook_status, "removed")

@@ -141,17 +141,56 @@ class OmnichannelTelegramNotifier(models.Model):
             "params": {"message": message, "type": "success", "sticky": False},
         }
 
-    # The form view's header wires these three buttons up already (Task 1
-    # ships that view verbatim), but their behaviour is Task 2's job. Odoo
-    # validates a type="object" button against the model at module-install
-    # time, so the view cannot load without the methods existing — hence the
-    # stubs. A UserError rather than a bare traceback: a user can already
-    # reach these from the form today, before Task 2 lands.
     def action_check_connection(self):
-        raise UserError(_("This action is not available yet."))
+        """Ask Telegram who this token belongs to.
+
+        ``check_access`` and not «the menu is behind the admin group»: a
+        button is reachable through ``call_button`` on any model the caller
+        can read, and operators hold read here.
+        """
+        self.ensure_one()
+        self.check_access("write")
+        try:
+            me = self._client().get_me()
+        except TelegramNotifyError as err:
+            self._set_error(err.description)
+            raise UserError(self._friendly(err))
+        self.sudo().write({
+            "bot_username": me.get("username"),
+            "bot_external_id": str(me.get("id")),
+            "state": "connected",
+            "last_error": False,
+        })
+        return self._notify_ui(_("Connected as @%s", me.get("username")))
 
     def action_register_webhook(self):
-        raise UserError(_("This action is not available yet."))
+        """Point Telegram at this database and keep the secret it will send.
+
+        An existing secret is reused: Telegram already holds it, and a fresh
+        one would silently invalidate every update in flight.
+        """
+        self.ensure_one()
+        self.check_access("write")
+        secret = self.sudo().webhook_secret or uuid.uuid4().hex
+        try:
+            self._client().set_webhook(self._webhook_url(), secret)
+        except TelegramNotifyError as err:
+            self._set_error(err.description)
+            raise UserError(self._friendly(err))
+        self.sudo().write({
+            "webhook_secret": secret,
+            "webhook_status": "registered",
+            "state": "connected",
+            "last_error": False,
+        })
+        return self._notify_ui(_("Webhook registered."))
 
     def action_remove_webhook(self):
-        raise UserError(_("This action is not available yet."))
+        self.ensure_one()
+        self.check_access("write")
+        try:
+            self._client().delete_webhook()
+        except TelegramNotifyError as err:
+            raise UserError(self._friendly(err))
+        self.sudo().write({"webhook_status": "removed"})
+        return self._notify_ui(_("Webhook removed."))
