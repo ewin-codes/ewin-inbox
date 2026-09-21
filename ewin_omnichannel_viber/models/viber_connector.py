@@ -91,8 +91,14 @@ class ViberConnector(models.AbstractModel):
 
     @api.model
     def viber_webhook_info(self, account):
-        info = self._client(account).get_account_info()
-        account.viber_webhook_status = "registered" if info.get("webhook") else "none"
+        try:
+            info = self._client(account).get_account_info()
+        except ViberApiError as err:
+            account._set_error(err.description)
+            return self._notify_ui(self._friendly(err), kind="danger")
+        account.sudo().write({
+            "viber_webhook_status": "registered" if info.get("webhook")
+            else "none"})
         return self._notify_ui(str(info.get("webhook") or _("No webhook set.")))
 
     @api.model

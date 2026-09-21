@@ -350,14 +350,18 @@ Unimplemented methods raise `NotImplementedError`, and the core tolerates that
 where the capability is genuinely optional — a polling channel has no webhook
 to register, and a provider without media has nothing to download.
 
-Two rules bind the methods behind the account form's buttons — `connect`,
-`register_webhook`, `remove_webhook` and whatever else a channel adds:
+Two rules bind the methods a button reaches — the account form's `connect`,
+`register_webhook`, `remove_webhook` and whatever else a channel adds, and a
+wizard's send just the same:
 
 - **A provider failure is reported by returning, not by raising.** The failure
   path records what went wrong on the account — the error state, `last_error`,
   a journal row — and Odoo commits a request only when it returns successfully.
   Raising rolls that record away with the rest of the request, so the operator
-  reads the message and the form behind it comes back looking untouched.
+  reads the message and the form behind it comes back looking untouched. A
+  method with two callers — one that catches, like the poll cron isolating one
+  account from the next, and one that does not, like a button — keeps raising
+  and gets a thin wrapper for the button to call.
   `_notify_ui(text, kind="danger")` — defined once on the contract, so every
   connector answers the same way — returns a sticky red toast that says the
   same thing and lets the write land. A `UserError` stays right for what the

@@ -44,3 +44,18 @@ class TestButtonFailure(TransactionCase):
             self.connector.connect(self.account)
         self.assertEqual(self.account.state, "error")
         self.assertTrue(self.account.sudo().last_error)
+
+    def test_sync_templates_reports_a_refusal_too(self):
+        """Every button that calls the Graph API answers the same way.
+
+        This one used to let the provider exception escape raw, which
+        Odoo shows as a traceback dialog and which rolls the request back
+        - so nothing recorded that the sync had been refused.
+        """
+        listing = ("odoo.addons.ewin_omnichannel_whatsapp.services."
+                   "whatsapp_api_client.WhatsAppApiClient.list_templates")
+        with patch(listing, side_effect=self.failure):
+            action = self.connector.sync_templates(self.account)
+        self.assertEqual(action["params"]["type"], "danger")
+        self.assertEqual(self.account.state, "error")
+        self.assertTrue(self.account.sudo().last_error)

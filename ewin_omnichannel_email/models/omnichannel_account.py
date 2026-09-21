@@ -1,4 +1,4 @@
-from odoo import _, api, fields, models
+from odoo import api, fields, models
 from odoo.exceptions import ValidationError
 
 
@@ -83,6 +83,4 @@ class OmnichannelAccount(models.Model):
         return self._run_connector_action("connect")
 
     def action_email_fetch_now(self):
-        self._run_connector_action("poll_account")
-        return self.env["omnichannel.connector.email"]._notify_ui(
-            _("Mailbox polled."))
+        return self._run_connector_action("fetch_now")

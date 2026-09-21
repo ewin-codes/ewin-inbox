@@ -42,3 +42,18 @@ class TestButtonFailure(TransactionCase):
             self.connector.connect(self.account)
         self.assertEqual(self.account.state, "error")
         self.assertTrue(self.account.sudo().last_error)
+
+    def test_webhook_status_reports_a_refusal_too(self):
+        """Every button that calls Telegram answers the same way.
+
+        This one used to let the provider exception escape raw, which
+        Odoo shows as a traceback dialog and which rolls the request back
+        - so the account kept whatever webhook status it had before.
+        """
+        info = ("odoo.addons.ewin_omnichannel_telegram.services."
+                "telegram_api_client.TelegramApiClient.get_webhook_info")
+        with patch(info, side_effect=self.failure):
+            action = self.connector.tg_webhook_info(self.account)
+        self.assertEqual(action["params"]["type"], "danger")
+        self.assertEqual(self.account.state, "error")
+        self.assertTrue(self.account.sudo().last_error)

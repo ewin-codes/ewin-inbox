@@ -81,8 +81,16 @@ class TelegramConnector(models.AbstractModel):
 
     @api.model
     def tg_webhook_info(self, account):
-        info = self._client(account).get_webhook_info()
-        account.tg_webhook_status = info.get("url") and "registered" or "none"
+        try:
+            info = self._client(account).get_webhook_info()
+        except TelegramApiError as err:
+            account._set_error(err.description)
+            return self._notify_ui(self._friendly(err), kind="danger")
+        account.sudo().write({
+            "tg_webhook_status": info.get("url") and "registered" or "none"})
+        # The whole reply, deliberately: it carries pending_update_count and
+        # last_error_message, which are what this button is opened for when
+        # Telegram has the webhook on file and updates still are not arriving.
         return self._notify_ui(str(info))
 
     @api.model

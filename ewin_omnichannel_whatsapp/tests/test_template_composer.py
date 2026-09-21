@@ -4,6 +4,9 @@ from unittest.mock import patch
 from odoo import fields
 from odoo.tests import TransactionCase, tagged
 
+from odoo.addons.ewin_omnichannel_whatsapp.services.whatsapp_api_client import (
+    WhatsAppApiError)
+
 
 @tagged("post_install", "-at_install")
 class TestTemplateComposer(TransactionCase):
@@ -113,3 +116,27 @@ class TestTemplateComposer(TransactionCase):
             "last_customer_message_at": (
                 fields.Datetime.now() - datetime.timedelta(hours=48))})
         self.assertFalse(other_conv.wa_window_closed)
+
+    def test_a_refused_template_send_reports_and_keeps_the_journal_row(self):
+        """Meta refusing a template is the one record of the attempt.
+
+        No omnichannel.message is created on that path, so the error log
+        row is all there is - and it only survives because the wizard
+        returns instead of letting the provider exception out.
+        """
+        wizard = self.env["omnichannel.whatsapp.send_template.wizard"].create({
+            "conversation_id": self.conversation.id,
+            "template_id": self.template.id})
+        wizard._onchange_template_id()
+        for line in wizard.line_ids:
+            line.value = "x"
+        err = WhatsAppApiError(131047, 0, "Re-engagement message",
+                               retriable=False)
+        with patch("odoo.addons.ewin_omnichannel_whatsapp.services."
+                   "whatsapp_api_client.WhatsAppApiClient.send_template",
+                   side_effect=err):
+            action = wizard.action_send()
+        self.assertEqual(action["params"]["type"], "danger")
+        self.assertTrue(self.env["omnichannel.error.log"].search(
+            [("account_id", "=", self.account.id)]))
+

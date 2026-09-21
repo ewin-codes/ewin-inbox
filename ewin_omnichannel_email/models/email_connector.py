@@ -45,6 +45,32 @@ class EmailConnector(models.AbstractModel):
         account.sudo().write({"state": "connected", "last_error": False})
         return self._notify_ui(_("Connection OK — IMAP and SMTP both work."))
 
+    @api.model
+    def fetch_now(self, account):
+        """The Fetch Now button: poll the mailbox once and say how it went.
+
+        ``poll_account`` keeps raising, because that is how ``poll_all``
+        isolates one account from the next - it catches and moves on. A
+        button has no such caller, so the failure is caught, recorded and
+        reported here instead. Only a failure the mailbox will not recover
+        from on its own flips the state; a timeout or a refused connection
+        is the last thing that went wrong, not a reason to disable the
+        account behind the operator's back.
+        """
+        from ..services.email_client import EmailError
+        try:
+            self.poll_account(account)
+        except EmailError as err:
+            summary = _("Mailbox poll failed - %s", err)
+            self.env["omnichannel.error.log"].log(
+                "provider", summary, account=account, technical=str(err))
+            if err.retriable:
+                account.sudo().last_error = summary
+            else:
+                account._set_error(summary)
+            return self._notify_ui(summary, kind="danger")
+        return self._notify_ui(_("Mailbox polled."))
+
     # ---- inbound polling ----
     @api.model
     def poll_all(self):

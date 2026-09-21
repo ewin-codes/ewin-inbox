@@ -56,3 +56,51 @@ class TestButtonFailure(TransactionCase):
             self.connector.connect(self.account)
         self.assertEqual(self.account.state, "error")
         self.assertIn("IMAP login refused", self.account.sudo().last_error)
+
+    def test_fetch_now_reports_a_refused_mailbox(self):
+        """Fetch Now has no caller to catch for it.
+
+        poll_account raises on purpose - that is how the poll cron skips
+        one account and carries on to the next - so the button is where
+        the failure gets caught, recorded and shown.
+        """
+        self.account.email_imap_host = "imap.example.com"
+        with patch(_CLIENT + ".connect_imap",
+                   side_effect=EmailError("Connection timed out")):
+            action = self.connector.fetch_now(self.account)
+        self.assertEqual(action["params"]["type"], "danger")
+        self.assertIn("timed out", action["params"]["message"])
+        self.assertTrue(self.account.sudo().last_error)
+        self.assertTrue(self.env["omnichannel.error.log"].search(
+            [("account_id", "=", self.account.id)]))
+
+    def test_a_transient_poll_failure_does_not_park_the_account(self):
+        # A timeout is the last thing that went wrong, not a reason to put
+        # the account in the error state and stop the poll cron touching it.
+        self.account.email_imap_host = "imap.example.com"
+        with patch(_CLIENT + ".connect_imap",
+                   side_effect=EmailError("Connection timed out")):
+            self.connector.fetch_now(self.account)
+        self.assertNotEqual(self.account.state, "error")
+
+    def test_a_refused_login_does_park_the_account(self):
+        self.account.email_imap_host = "imap.example.com"
+        with patch(_CLIENT + ".connect_imap",
+                   side_effect=EmailError("Login refused", retriable=False)):
+            self.connector.fetch_now(self.account)
+        self.assertEqual(self.account.state, "error")
+
+    def _empty_mailbox(self):
+        """The mailbox answers and holds nothing new."""
+        stack = ExitStack()
+        stack.enter_context(patch(_CLIENT + ".connect_imap"))
+        stack.enter_context(patch(_CLIENT + ".fetch_unseen", return_value=[]))
+        stack.enter_context(patch(_CLIENT + ".logout"))
+        return stack
+
+    def test_a_successful_poll_confirms(self):
+        self.account.email_imap_host = "imap.example.com"
+        with self._empty_mailbox():
+            action = self.connector.fetch_now(self.account)
+        self.assertEqual(action["params"]["type"], "success")
+        self.assertFalse(action["params"]["sticky"])

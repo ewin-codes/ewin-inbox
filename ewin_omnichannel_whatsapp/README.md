@@ -126,7 +126,10 @@ conversation header opens a wizard that lists the template's variables and
 previews the rendered text; it calls `send_template(account, conversation,
 template, variables)` on the connector. The send is recorded as an ordinary
 outbound message, so it reaches the mirrored Discuss channel and the linked
-customer's history like any other reply.
+customer's history like any other reply. A refusal from Meta closes the wizard
+with a red notice carrying the reason and leaves an error-log row against the
+account and the conversation — which is the whole record of the attempt, since
+no message is created on that path.
 
 ## Security
 

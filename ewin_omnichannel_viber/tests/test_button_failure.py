@@ -42,3 +42,16 @@ class TestButtonFailure(TransactionCase):
             self.connector.connect(self.account)
         self.assertEqual(self.account.state, "error")
         self.assertTrue(self.account.sudo().last_error)
+
+    def test_webhook_status_reports_a_refusal_too(self):
+        """Every button that calls Viber answers the same way.
+
+        This one used to let the provider exception escape raw, which
+        Odoo shows as a traceback dialog and which rolls the request back
+        - so the account kept whatever webhook status it had before.
+        """
+        with patch(_CALL, side_effect=self.failure):
+            action = self.connector.viber_webhook_info(self.account)
+        self.assertEqual(action["params"]["type"], "danger")
+        self.assertEqual(self.account.state, "error")
+        self.assertTrue(self.account.sudo().last_error)

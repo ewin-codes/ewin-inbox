@@ -1,6 +1,8 @@
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
+from ..services.whatsapp_api_client import WhatsAppApiError
+
 
 class WhatsAppSendTemplateWizard(models.TransientModel):
     _name = "omnichannel.whatsapp.send_template.wizard"
@@ -43,8 +45,20 @@ class WhatsAppSendTemplateWizard(models.TransientModel):
         if not self.template_id:
             raise UserError(_("Select a template first."))
         values = [line.value or "" for line in self.line_ids.sorted("sequence")]
-        self.conversation_id.account_id._get_connector().send_template(
-            self.account_id, self.conversation_id, self.template_id, values)
+        connector = self.conversation_id.account_id._get_connector()
+        try:
+            connector.send_template(
+                self.account_id, self.conversation_id, self.template_id,
+                values)
+        except WhatsAppApiError as err:
+            # send_template logged the refusal against the account and the
+            # conversation before re-raising. Report it by returning rather
+            # than by letting the exception out: Odoo commits a request that
+            # returns and rolls back one that does not, and that journal row
+            # is the only record left that this customer was nearly messaged
+            # - the message itself was never created.
+            return connector._notify_ui(
+                connector._friendly(err), kind="danger")
         return {"type": "ir.actions.act_window_close"}
 
 

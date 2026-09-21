@@ -203,7 +203,11 @@ class WhatsAppConnector(models.AbstractModel):
     @api.model
     def sync_templates(self, account):
         Template = self.env["omnichannel.whatsapp.template"]
-        remote = self._client(account).list_templates()
+        try:
+            remote = self._client(account).list_templates()
+        except WhatsAppApiError as err:
+            account._set_error(err.message)
+            return self._notify_ui(self._friendly(err), kind="danger")
         seen = Template
         for tpl in remote:
             if tpl.get("status") != "APPROVED":
