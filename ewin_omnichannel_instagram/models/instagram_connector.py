@@ -420,20 +420,3 @@ class InstagramConnector(models.AbstractModel):
         if code in FRIENDLY_ERRORS:
             return FRIENDLY_ERRORS[code]
         return _("Instagram error: %s", getattr(error, "message", str(error)))
-
-    @api.model
-    def _notify_ui(self, message, kind="success"):
-        """A toast on the account form.
-
-        A provider failure is reported this way and never by raising: the
-        failure path records what went wrong on the account - the error
-        state, ``last_error``, a journal row - and Odoo commits a request
-        only when it returns successfully. Raising would roll that record
-        away and leave the form looking untouched by a failure the user
-        was just told about.
-        """
-        return {
-            "type": "ir.actions.client", "tag": "display_notification",
-            "params": {"message": message, "type": kind,
-                       "sticky": kind != "success"},
-        }

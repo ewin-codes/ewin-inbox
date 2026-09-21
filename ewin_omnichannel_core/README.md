@@ -344,6 +344,7 @@ by name from the account — it never imports a connector directly.
 | `download_attachment` | Provider media → `ir.attachment` |
 | `get_external_profile` | Customer profile lookup, where the provider offers one |
 | `handle_provider_error` | Provider error → operator-friendly text + error log |
+| `_notify_ui` | The toast a button answers with — implemented here, not per connector |
 
 Unimplemented methods raise `NotImplementedError`, and the core tolerates that
 where the capability is genuinely optional — a polling channel has no webhook
@@ -357,7 +358,8 @@ Two rules bind the methods behind the account form's buttons — `connect`,
   a journal row — and Odoo commits a request only when it returns successfully.
   Raising rolls that record away with the rest of the request, so the operator
   reads the message and the form behind it comes back looking untouched.
-  `_notify_ui(text, kind="danger")` returns a sticky red toast that says the
+  `_notify_ui(text, kind="danger")` — defined once on the contract, so every
+  connector answers the same way — returns a sticky red toast that says the
   same thing and lets the write land. A `UserError` stays right for what the
   user must fix *before* anything is attempted — a missing credential, a
   refused setting — because nothing has been written yet.

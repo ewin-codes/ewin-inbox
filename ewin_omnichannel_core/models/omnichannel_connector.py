@@ -1,4 +1,4 @@
-from odoo import models
+from odoo import api, models
 
 
 class OmnichannelConnector(models.AbstractModel):
@@ -48,3 +48,26 @@ class OmnichannelConnector(models.AbstractModel):
 
     def handle_provider_error(self, account, error):
         raise NotImplementedError
+
+    @api.model
+    def _notify_ui(self, message, kind="success"):
+        """A toast on the account form, and how a button answers.
+
+        A provider failure is reported this way and never by raising. The
+        failure path records what went wrong on the account - the error
+        state, ``last_error``, a journal row - and Odoo commits a request
+        only when it returns successfully, so raising rolls that record
+        away with the rest of the request: the user reads the message and
+        the form behind it comes back looking untouched by it. A danger
+        toast says the same sentence and lets the write land, and it is
+        sticky because a failure should not disappear on its own.
+
+        A ``UserError`` stays right for what the user must fix *before*
+        anything is attempted - a credential that is not set, a setting
+        that is refused - because nothing has been written at that point.
+        """
+        return {
+            "type": "ir.actions.client", "tag": "display_notification",
+            "params": {"message": message, "type": kind,
+                       "sticky": kind != "success"},
+        }

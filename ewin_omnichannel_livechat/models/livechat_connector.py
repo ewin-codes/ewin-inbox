@@ -79,10 +79,3 @@ class LivechatConnector(models.AbstractModel):
         att = self.env["ir.attachment"].browse(
             provider_attachment.get("attachment_id")).exists()
         return att.sudo().copy() if att else self.env["ir.attachment"]
-
-    @api.model
-    def _notify_ui(self, message):
-        return {
-            "type": "ir.actions.client", "tag": "display_notification",
-            "params": {"message": message, "type": "success", "sticky": False},
-        }
