@@ -28,11 +28,18 @@ addons; Telegram is used below wherever one connector has to stand for all of th
   Telegram's `X-Telegram-Bot-Api-Secret-Token` against a per-account random secret,
   Viber's `X-Viber-Content-Signature` and Meta's `X-Hub-Signature-256` as HMAC-SHA256 over
   the raw request body, always with `hmac.compare_digest` (constant-time) to avoid timing
-  side channels. Every connector fails **closed**: an account with no secret configured
-  rejects the request rather than skipping the check. Requests with a missing/incorrect
-  signature, an unknown account UUID, a disabled account, or a malformed body are rejected
-  with a plain `200 OK` and no job is enqueued — the webhook never leaks whether an account
-  exists or why a request was rejected.
+  side channels. Every comparison goes through `ewin_omnichannel_core.tools.security`'s
+  `secret_equals`, which compares the two values **as UTF-8 bytes**: `compare_digest`
+  raises `TypeError` on a `str` holding a character outside ASCII, and a header value
+  reaches Python decoded as Latin-1 while a query string carries whatever the caller
+  likes — so comparing as `str` would let one crafted byte raise where a mismatch
+  returns `False`, and the resulting error page would tell an unauthenticated caller
+  that the account exists. The same helper carries the fail-**closed** rule: an account
+  with no secret configured rejects the request rather than skipping the check.
+  Requests with a missing/incorrect signature, an unknown account UUID, a disabled
+  account, or a malformed body are rejected with a plain `200 OK` and no job is
+  enqueued — the webhook never leaks whether an account exists or why a request was
+  rejected.
 - **Transport security.** IMAP and SMTP connections are opened with an explicit
   `ssl.create_default_context()` on both the implicit-TLS and the STARTTLS path, so the
   mail server's certificate and hostname are verified before the mailbox password is sent.

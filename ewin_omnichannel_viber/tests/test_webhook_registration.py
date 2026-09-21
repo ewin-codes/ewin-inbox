@@ -1,6 +1,5 @@
 from unittest.mock import patch
 
-from odoo.exceptions import UserError
 from odoo.tests import TransactionCase, tagged
 
 from ..services.viber_api_client import ViberApiError
@@ -59,8 +58,8 @@ class TestViberWebhookRegistration(TransactionCase):
         with patch(SET_WEBHOOK_PATH, side_effect=ViberApiError(
                 1, "webhookUrlInvalid", retriable=False)), \
                 patch(ISOLATED_WRITE_PATH) as mock_write:
-            with self.assertRaises(UserError):
-                self.connector.register_webhook(self.account)
+            action = self.connector.register_webhook(self.account)
+        self.assertEqual(action["params"]["type"], "danger")
         mock_write.assert_called_once_with({
             "state": "error", "last_error": "webhookUrlInvalid"})
 

@@ -50,7 +50,7 @@ class ViberConnector(models.AbstractModel):
             info = self._client(account).get_account_info()
         except ViberApiError as err:
             account._set_error(err.description)
-            raise UserError(self._friendly(err))
+            return self._notify_ui(self._friendly(err), kind="danger")
         account.sudo().write({
             "viber_bot_name": account.viber_bot_name or info.get("name"),
             "viber_bot_uri": info.get("uri"),
@@ -73,7 +73,7 @@ class ViberConnector(models.AbstractModel):
         except ViberApiError as err:
             account.sudo()._write_isolated({
                 "state": "error", "last_error": err.description})
-            raise UserError(self._friendly(err))
+            return self._notify_ui(self._friendly(err), kind="danger")
         account.sudo()._write_isolated({
             "viber_webhook_status": "registered",
             "state": "connected",
@@ -85,7 +85,7 @@ class ViberConnector(models.AbstractModel):
         try:
             self._client(account).remove_webhook()
         except ViberApiError as err:
-            raise UserError(self._friendly(err))
+            return self._notify_ui(self._friendly(err), kind="danger")
         account.sudo().write({"viber_webhook_status": "removed"})
         return self._notify_ui(_("Webhook removed."))
 
@@ -232,8 +232,18 @@ class ViberConnector(models.AbstractModel):
         return _("Viber error: %s", getattr(error, "description", str(error)))
 
     @api.model
-    def _notify_ui(self, message):
+    def _notify_ui(self, message, kind="success"):
+        """A toast on the account form.
+
+        A provider failure is reported this way and never by raising: the
+        failure path records what went wrong on the account - the error
+        state, ``last_error``, a journal row - and Odoo commits a request
+        only when it returns successfully. Raising would roll that record
+        away and leave the form looking untouched by a failure the user
+        was just told about.
+        """
         return {
             "type": "ir.actions.client", "tag": "display_notification",
-            "params": {"message": message, "type": "success", "sticky": False},
+            "params": {"message": message, "type": kind,
+                       "sticky": kind != "success"},
         }

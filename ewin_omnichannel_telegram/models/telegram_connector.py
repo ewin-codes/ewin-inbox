@@ -44,7 +44,7 @@ class TelegramConnector(models.AbstractModel):
             me = self._client(account).get_me()
         except TelegramApiError as err:
             account._set_error(err.description)
-            raise UserError(self._friendly(err))
+            return self._notify_ui(self._friendly(err), kind="danger")
         account.sudo().write({
             "tg_bot_username": me.get("username"),
             "tg_bot_external_id": str(me.get("id")),
@@ -62,7 +62,7 @@ class TelegramConnector(models.AbstractModel):
             self._client(account).set_webhook(url, secret)
         except TelegramApiError as err:
             account._set_error(err.description)
-            raise UserError(self._friendly(err))
+            return self._notify_ui(self._friendly(err), kind="danger")
         account.sudo().write({
             "tg_webhook_secret": secret,
             "tg_webhook_status": "registered",
@@ -75,7 +75,7 @@ class TelegramConnector(models.AbstractModel):
         try:
             self._client(account).delete_webhook()
         except TelegramApiError as err:
-            raise UserError(self._friendly(err))
+            return self._notify_ui(self._friendly(err), kind="danger")
         account.sudo().write({"tg_webhook_status": "removed"})
         return self._notify_ui(_("Webhook removed."))
 
@@ -210,8 +210,18 @@ class TelegramConnector(models.AbstractModel):
         return _("Telegram error: %s", getattr(error, "description", str(error)))
 
     @api.model
-    def _notify_ui(self, message):
+    def _notify_ui(self, message, kind="success"):
+        """A toast on the account form.
+
+        A provider failure is reported this way and never by raising: the
+        failure path records what went wrong on the account - the error
+        state, ``last_error``, a journal row - and Odoo commits a request
+        only when it returns successfully. Raising would roll that record
+        away and leave the form looking untouched by a failure the user
+        was just told about.
+        """
         return {
             "type": "ir.actions.client", "tag": "display_notification",
-            "params": {"message": message, "type": "success", "sticky": False},
+            "params": {"message": message, "type": kind,
+                       "sticky": kind != "success"},
         }

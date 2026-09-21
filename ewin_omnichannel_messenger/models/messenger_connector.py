@@ -85,7 +85,7 @@ class MessengerConnector(models.AbstractModel):
                       "optional and not shown — it needs the "
                       "'pages_read_engagement' permission.)"))
             account._set_error(err.message)
-            raise UserError(self._friendly(err))
+            return self._notify_ui(self._friendly(err), kind="danger")
         account.sudo().write({
             "mg_page_name": info.get("name"),
             "state": "connected", "last_error": False})
@@ -385,9 +385,18 @@ class MessengerConnector(models.AbstractModel):
         return _("Messenger error: %s", getattr(error, "message", str(error)))
 
     @api.model
-    def _notify_ui(self, message, type_="success"):
+    def _notify_ui(self, message, kind="success"):
+        """A toast on the account form.
+
+        A provider failure is reported this way and never by raising: the
+        failure path records what went wrong on the account - the error
+        state, ``last_error``, a journal row - and Odoo commits a request
+        only when it returns successfully. Raising would roll that record
+        away and leave the form looking untouched by a failure the user
+        was just told about.
+        """
         return {
             "type": "ir.actions.client", "tag": "display_notification",
-            "params": {"message": message, "type": type_,
-                       "sticky": type_ != "success"},
+            "params": {"message": message, "type": kind,
+                       "sticky": kind != "success"},
         }

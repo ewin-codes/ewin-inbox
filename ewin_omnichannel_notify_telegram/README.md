@@ -139,20 +139,21 @@ not the Telegram connector is present.
 
 ## Security
 
-- **The webhook secret is compared as bytes, with `hmac.compare_digest`**, not
-  as two `str` values. `compare_digest` raises `TypeError` when a `str`
-  argument holds a non-ASCII character, and WSGI hands header values through
-  decoded as Latin-1 — so any caller can put one in
-  `X-Telegram-Bot-Api-Secret-Token`. Comparing as `str` would let a stray byte
-  raise an exception instead of failing the comparison, and that exception
-  would answer differently than an ordinary mismatch — telling an
+- **The webhook secret is compared as bytes**, through the core's
+  `secret_equals`, not as two `str` values. `hmac.compare_digest` raises
+  `TypeError` when a `str` argument holds a non-ASCII character, and WSGI
+  hands header values through decoded as Latin-1 — so any caller can put one
+  in `X-Telegram-Bot-Api-Secret-Token`. Comparing as `str` would let a stray
+  byte raise an exception instead of failing the comparison, and that
+  exception would answer differently than an ordinary mismatch — telling an
   unauthenticated caller that a given notifier UUID exists at all. Encoding
   both sides to bytes first keeps every rejection, whatever caused it,
-  indistinguishable from every other.
+  indistinguishable from every other. Every connector in the suite compares
+  its own secret through that same helper.
 - **An empty stored secret rejects the request; it never waves it through.**
   The webhook address is not a credential on its own — Telegram's servers also
   know it — so a notifier with no secret registered yet must refuse, not
-  accept unsigned updates.
+  accept unsigned updates. That rule lives inside `secret_equals` as well.
 - **An unknown notifier UUID answers exactly like a bad secret**: a silent
   `200` with nothing else. The route never distinguishes "this address does
   not exist" from "this address exists but you're not authorized," so probing

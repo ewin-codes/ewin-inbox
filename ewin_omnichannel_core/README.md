@@ -349,6 +349,23 @@ Unimplemented methods raise `NotImplementedError`, and the core tolerates that
 where the capability is genuinely optional — a polling channel has no webhook
 to register, and a provider without media has nothing to download.
 
+Two rules bind the methods behind the account form's buttons — `connect`,
+`register_webhook`, `remove_webhook` and whatever else a channel adds:
+
+- **A provider failure is reported by returning, not by raising.** The failure
+  path records what went wrong on the account — the error state, `last_error`,
+  a journal row — and Odoo commits a request only when it returns successfully.
+  Raising rolls that record away with the rest of the request, so the operator
+  reads the message and the form behind it comes back looking untouched.
+  `_notify_ui(text, kind="danger")` returns a sticky red toast that says the
+  same thing and lets the write land. A `UserError` stays right for what the
+  user must fix *before* anything is attempted — a missing credential, a
+  refused setting — because nothing has been written yet.
+- **The secret of an inbound callback is compared with
+  `ewin_omnichannel_core.tools.security.secret_equals`**, never with
+  `hmac.compare_digest` directly. It compares bytes and refuses an unset
+  expected value; SECURITY.md explains what each of those prevents.
+
 ## Job queue and scheduled actions
 
 - **`Omnichannel: Process job queue`** — every minute. Runs due jobs, applies
@@ -382,7 +399,11 @@ Three groups, under the **EWIN Inbox** application category:
 
 Provider secrets live on fields restricted to the admin group; connectors expose
 a masked companion field so an operator can confirm *a* token is set without
-reading it. Record rules scope accounts, identities, conversations, messages,
+reading it. That companion's compute reads the secret through `sudo()` on
+purpose: it is the field the operator group sees *instead of* the secret, so
+needing the access it stands in for would make the whole account form an
+`AccessError` for exactly the group it was added for. Deriving a fixed-length
+mask is not the access the connector's `_client()` guards. Record rules scope accounts, identities, conversations, messages,
 events, teams, templates, tags, close reasons and error logs by company, and
 conversations and messages additionally by operator/team for the operator role —
 a message inherits its scope from the conversation it belongs to, the same

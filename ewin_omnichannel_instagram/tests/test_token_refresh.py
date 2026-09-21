@@ -63,7 +63,7 @@ class TestTokenRefresh(TransactionCase):
         called = []
         original = type(self.connector).refresh_token
 
-        def _spy(self, account, raise_on_error=False):
+        def _spy(self, account):
             called.append(account.id)
             return True
 
@@ -72,3 +72,30 @@ class TestTokenRefresh(TransactionCase):
         self.assertIn(near.id, called)
         self.assertNotIn(far.id, called)
         self.assertIs(type(self.connector).refresh_token, original)
+
+    def test_the_button_reports_a_refusal_and_leaves_the_reason(self):
+        """The manual Refresh Token button.
+
+        refresh_token records the reason on the account and returns False
+        rather than raising, because raising would roll that record back
+        with the request - the journal row included. The button reads it
+        back and shows it.
+        """
+        account = self._account(name="button")
+        err = InstagramApiError(190, 0, "Token expired", retriable=False)
+        with patch(_REFRESH, side_effect=err):
+            action = account.action_ig_refresh_token()
+        self.assertEqual(action["params"]["type"], "danger")
+        self.assertEqual(account.state, "error")
+        self.assertTrue(account.sudo().last_error)
+        self.assertTrue(self.env["omnichannel.error.log"].search(
+            [("account_id", "=", account.id)]))
+
+    def test_the_button_confirms_a_refresh(self):
+        account = self._account(name="button_ok")
+        with patch(_REFRESH, return_value={
+                "access_token": "NEW", "expires_in": 5184000}):
+            action = account.action_ig_refresh_token()
+        self.assertEqual(action["params"]["type"], "success")
+        self.assertEqual(account.sudo().ig_access_token, "NEW")
+

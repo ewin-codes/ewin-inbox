@@ -1,6 +1,5 @@
 from unittest.mock import patch
 
-from odoo.exceptions import UserError
 from odoo.tests import TransactionCase, tagged
 
 from odoo.addons.ewin_omnichannel_instagram.services.instagram_api_client \
@@ -32,8 +31,7 @@ class TestConnect(TransactionCase):
     def test_connect_fails_on_invalid_token(self):
         err = InstagramApiError(190, 0, "Invalid OAuth access token")
         with patch(_CLIENT, side_effect=err):
-            with self.assertRaises(UserError):
-                self.connector.connect(self.account)
-        # Note: connect() writes state='error' before raising, but Odoo's
-        # assertRaises rolls the pre-raise write back via a savepoint, so the
-        # state is not asserted here (it is verified in production paths).
+            action = self.connector.connect(self.account)
+        self.assertEqual(action["params"]["type"], "danger")
+        self.assertEqual(self.account.state, "error")
+        self.assertTrue(self.account.sudo().last_error)

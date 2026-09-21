@@ -132,9 +132,15 @@ class OmnichannelAccount(models.Model):
         return self._run_connector_action("connect")
 
     def action_ig_refresh_token(self):
-        self._run_connector_action("refresh_token", raise_on_error=True)
-        return self.env["omnichannel.connector.instagram"]._notify_ui(
-            _("Access token refreshed."))
+        connector = self.env["omnichannel.connector.instagram"]
+        if self._run_connector_action("refresh_token"):
+            return connector._notify_ui(_("Access token refreshed."))
+        # refresh_token wrote the reason on the account rather than raising
+        # it, so that both the journal row and the error state survive this
+        # request. Read it back instead of restating it here.
+        return connector._notify_ui(
+            self.sudo().last_error or _("Instagram refused the refresh."),
+            kind="danger")
 
     @api.model
     def _cron_ig_refresh_tokens(self):

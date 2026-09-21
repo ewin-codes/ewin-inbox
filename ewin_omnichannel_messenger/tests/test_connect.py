@@ -1,6 +1,5 @@
 from unittest.mock import patch
 
-from odoo.exceptions import UserError
 from odoo.tests import TransactionCase, tagged
 
 from odoo.addons.ewin_omnichannel_messenger.services.messenger_api_client \
@@ -39,5 +38,7 @@ class TestConnect(TransactionCase):
     def test_connect_fails_on_invalid_token(self):
         err = MessengerApiError(190, 0, "Invalid OAuth access token")
         with patch(_CLIENT, side_effect=err):
-            with self.assertRaises(UserError):
-                self.connector.connect(self.account)
+            action = self.connector.connect(self.account)
+        self.assertEqual(action["params"]["type"], "danger")
+        self.assertEqual(self.account.state, "error")
+        self.assertTrue(self.account.sudo().last_error)

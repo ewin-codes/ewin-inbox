@@ -67,7 +67,7 @@ class InstagramConnector(models.AbstractModel):
             info = self._client(account).get_me()
         except InstagramApiError as err:
             account._set_error(err.message)
-            raise UserError(self._friendly(err))
+            return self._notify_ui(self._friendly(err), kind="danger")
         account.sudo().write({
             "ig_user_id": info.get("user_id") and str(info["user_id"]),
             "ig_username": info.get("username"),
@@ -361,17 +361,22 @@ class InstagramConnector(models.AbstractModel):
 
     # --- token maintenance ---
     @api.model
-    def refresh_token(self, account, raise_on_error=False):
+    def refresh_token(self, account):
         """Refresh the long-lived Instagram token and store the new expiry.
 
-        Returns True on success. On failure it logs and records the error; an
-        invalid/expired token also flips the account to the error state. With
-        ``raise_on_error`` (the manual button) the error is surfaced to the
-        user instead of swallowed."""
+        Returns True on success, and never raises. The daily cron calls it
+        once per account with no guard of its own, and the manual button
+        reports a False by reading what the failure recorded here - which
+        only survives because nothing raises: Odoo commits a request that
+        returns, and rolls back one that does not.
+
+        Every failure leaves a trace on the account: a journal row for a
+        provider error, plus the error state and ``last_error`` when the
+        token itself is the problem rather than the connection.
+        """
         account = account.sudo()
         if not account.ig_access_token:
-            if raise_on_error:
-                raise UserError(_("No Instagram access token to refresh."))
+            account._set_error(_("No Instagram access token to refresh."))
             return False
         try:
             data = self._client(account).refresh_long_lived_token()
@@ -381,8 +386,6 @@ class InstagramConnector(models.AbstractModel):
                 code=str(err.code), technical=err.message)
             if not err.retriable:
                 account._set_error(str(self._friendly(err)))
-            if raise_on_error:
-                raise UserError(self._friendly(err))
             return False
         token = data.get("access_token")
         if not token:
@@ -419,9 +422,18 @@ class InstagramConnector(models.AbstractModel):
         return _("Instagram error: %s", getattr(error, "message", str(error)))
 
     @api.model
-    def _notify_ui(self, message, type_="success"):
+    def _notify_ui(self, message, kind="success"):
+        """A toast on the account form.
+
+        A provider failure is reported this way and never by raising: the
+        failure path records what went wrong on the account - the error
+        state, ``last_error``, a journal row - and Odoo commits a request
+        only when it returns successfully. Raising would roll that record
+        away and leave the form looking untouched by a failure the user
+        was just told about.
+        """
         return {
             "type": "ir.actions.client", "tag": "display_notification",
-            "params": {"message": message, "type": type_,
-                       "sticky": type_ != "success"},
+            "params": {"message": message, "type": kind,
+                       "sticky": kind != "success"},
         }
