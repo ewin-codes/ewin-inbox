@@ -1,6 +1,9 @@
 from odoo import _, api, models
 
-from .notify_api_client import escape_html
+from odoo.addons.ewin_omnichannel_core.models.omnichannel_job import (
+    NonRetriableError)
+
+from .notify_api_client import TelegramNotifyError, escape_html
 
 # How much of the customer's own text a notification carries. Long enough to
 # recognise the question, short enough that the operator still opens Odoo.
@@ -94,3 +97,72 @@ class TelegramNotificationService(models.AbstractModel):
         if len(text) <= BODY_PREVIEW_LIMIT:
             return text
         return text[:BODY_PREVIEW_LIMIT].rstrip() + "…"
+
+    @api.model
+    def send_notification(self, notifier_id, message_id):
+        """Deliver one notification. The job queue's entry point.
+
+        Everything is resolved now, not when the job was written: if somebody
+        took the conversation while it waited, the notification is theirs.
+        """
+        notifier = self.env["omnichannel.telegram.notifier"].sudo().browse(
+            notifier_id).exists()
+        message = self.env["omnichannel.message"].sudo().browse(
+            message_id).exists()
+        if not notifier or not notifier.active or not message:
+            return False
+        conversation = message.conversation_id
+        if not notifier.bot_token:
+            self._log_configuration(
+                conversation, "The Telegram notifier has no bot token",
+                "Paste the @BotFather token on the notifier and press Check "
+                "Connection.")
+            return False
+        chat_id = self._resolve_chat_id(notifier, conversation)
+        if not chat_id:
+            self._log_configuration(
+                conversation, "No Telegram recipient for a notification",
+                "The conversation has no operator with a linked Telegram, and "
+                "the notifier has no group chat. Send /register in the team "
+                "group, or ask the operator to connect Telegram.")
+            return False
+        try:
+            notifier._client().send_message(chat_id, self._compose(message))
+        except TelegramNotifyError as err:
+            self._log_failure(notifier, conversation, err)
+            if not err.retriable:
+                # Terminal: the queue must stop, and the notifier now says why.
+                raise NonRetriableError(err.description) from err
+            raise
+        if notifier.state == "error":
+            notifier.write({"state": "connected", "last_error": False})
+        return True
+
+    @api.model
+    def _resolve_chat_id(self, notifier, conversation):
+        """Who hears about this conversation.
+
+        The assigned operator when they have linked their Telegram, the team
+        group otherwise — including when nobody is assigned. A notification
+        with nowhere to go is worse than a noisy group, so the group is the
+        floor, not the exception.
+        """
+        return (conversation.operator_id.sudo().omni_tg_chat_id
+                or notifier.group_chat_id
+                or False)
+
+    @api.model
+    def _log_configuration(self, conversation, summary, technical):
+        """Something is not set up. Not a delivery failure, so the queue row
+        completes: the error log is where an administrator looks."""
+        self.env["omnichannel.error.log"].sudo().log(
+            "configuration", summary, account=conversation.account_id,
+            conversation_id=conversation.id, technical=technical)
+
+    @api.model
+    def _log_failure(self, notifier, conversation, error):
+        notifier._set_error(error.description)
+        self.env["omnichannel.error.log"].sudo().log(
+            "provider", str(notifier._friendly(error)), code=str(error.code),
+            account=conversation.account_id,
+            conversation_id=conversation.id, technical=str(error))
