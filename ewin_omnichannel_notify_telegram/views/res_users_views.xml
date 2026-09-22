@@ -9,15 +9,35 @@
             <xpath expr="//group[@name='preferences']" position="after">
                 <group string="EWIN Inbox Notifications"
                        groups="ewin_omnichannel_core.group_omni_operator">
+                    <field name="omni_tg_chat_id" invisible="1"/>
                     <field name="omni_tg_username" readonly="1"
                            invisible="not omni_tg_username"/>
-                    <field name="omni_tg_chat_id" invisible="1"/>
-                    <button name="action_omni_tg_link" type="object"
-                            string="Connect Telegram" class="btn-link"
-                            invisible="omni_tg_chat_id"/>
-                    <button name="action_omni_tg_unlink" type="object"
-                            string="Disconnect Telegram" class="btn-link"
-                            invisible="not omni_tg_chat_id"/>
+                    <!-- Outside the group's label/value columns and styled
+                         as a real button: as a btn-link in a field row this
+                         read as a caption, and nothing suggested that
+                         pressing it opened anything. It is the one action
+                         an operator ever takes here. -->
+                    <div colspan="2" invisible="omni_tg_chat_id">
+                        <p class="text-muted mb-2">
+                            Get a personal Telegram message whenever a customer
+                            writes to a conversation assigned to you. Press the
+                            button, then open the link it shows and press
+                            <b>Start</b> in Telegram.
+                        </p>
+                        <button name="action_omni_tg_link" type="object"
+                                string="Connect Telegram"
+                                class="btn btn-primary"
+                                icon="fa-telegram"/>
+                    </div>
+                    <div colspan="2" invisible="not omni_tg_chat_id">
+                        <p class="text-muted mb-2">
+                            Connected. Notifications for your conversations
+                            arrive in that Telegram chat.
+                        </p>
+                        <button name="action_omni_tg_unlink" type="object"
+                                string="Disconnect Telegram"
+                                class="btn btn-secondary"/>
+                    </div>
                 </group>
             </xpath>
         </field>

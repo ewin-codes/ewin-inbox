@@ -128,12 +128,17 @@ not the Telegram connector is present.
    it asks `getMe` itself when the bot is still unknown, because every later
    step needs the username and nothing about the two buttons says which comes
    first.
-5. Each operator connects individually: **Preferences → Connect Telegram**
-   opens a wizard with a one-time personal link
-   (`https://t.me/<bot>?start=<token>`). Opening it in Telegram and pressing
-   **Start** links that operator's account; the link works once and expires
-   after 24 hours, whichever comes first. **Disconnect Telegram** clears the
-   binding.
+5. Each operator connects individually: **Preferences → EWIN Inbox
+   Notifications → Connect Telegram** opens a wizard holding a one-time
+   personal link (`https://t.me/<bot>?start=<token>`). The link is a link —
+   click it, Telegram opens on the bot, press **Start** — and a copy button
+   sits beside it for moving it to another device. It works once and expires
+   after 24 hours, whichever comes first, so it is a credential and not
+   something to forward. **Disconnect Telegram** clears the binding.
+
+   Do this before step 6. `/register` is accepted only from somebody who has
+   already connected their own Telegram, so an administrator who skips it
+   finds the group command silently refusing them.
 6. Add the bot to the team's Telegram group **as an administrator** — Telegram
    restricts what a plain member bot receives in a group by default, and
    making it an admin is the standard way around that — and send `/register`

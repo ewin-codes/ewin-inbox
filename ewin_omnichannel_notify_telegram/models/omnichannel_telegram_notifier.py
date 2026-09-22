@@ -71,6 +71,21 @@ class OmnichannelTelegramNotifier(models.Model):
          "The throttle window cannot be negative."),
     ]
 
+    my_telegram_connected = fields.Boolean(
+        string="You are connected",
+        compute="_compute_my_telegram_connected",
+        help="Whether the person reading this form has connected their own "
+             "Telegram. Personal, so the setup panel can show the step they "
+             "are on rather than the whole procedure every time.")
+
+    @api.depends_context("uid")
+    def _compute_my_telegram_connected(self):
+        # depends_context("uid"): the answer is about the reader, not the
+        # record, so the cache has to be keyed by who is asking.
+        connected = bool(self.env.user.omni_tg_chat_id)
+        for notifier in self:
+            notifier.my_telegram_connected = connected
+
     @api.depends("bot_token")
     def _compute_bot_token_masked(self):
         for notifier in self:

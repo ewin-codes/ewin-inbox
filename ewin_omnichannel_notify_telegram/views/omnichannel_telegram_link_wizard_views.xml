@@ -6,13 +6,21 @@
         <field name="arch" type="xml">
             <form string="Connect Telegram">
                 <div class="alert alert-info" role="status">
-                    Open this link in Telegram and press <b>Start</b>. It works
-                    once and expires in 24 hours.
+                    <b>Click the link below.</b> It opens the bot in Telegram -
+                    press <b>Start</b> there, and this Odoo user starts
+                    receiving its notifications in that chat. The link carries
+                    a one-time key: it works once and expires in 24 hours, so
+                    treat it like a password and do not forward it.
                 </div>
                 <group>
                     <field name="user_id" invisible="1"/>
                     <field name="bot_username" invisible="1"/>
-                    <field name="url" widget="CopyClipboardChar" nolabel="1"/>
+                    <!-- CopyClipboardURL, not CopyClipboardChar: the address
+                         is there to be opened, and handing somebody a string
+                         to select and paste made the one interactive step of
+                         the whole setup the most awkward. The copy button is
+                         still there for a link opened on another device. -->
+                    <field name="url" widget="CopyClipboardURL" nolabel="1"/>
                 </group>
                 <footer>
                     <button string="Close" class="btn-primary" special="cancel"/>

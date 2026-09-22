@@ -42,51 +42,106 @@
                     <group string="Last Error" invisible="state != 'error'">
                         <field name="last_error" nolabel="1" readonly="1"/>
                     </group>
-                    <!-- Setting this up runs across three places: Odoo,
-                         @BotFather and the team's Telegram group. Each step
-                         shows only while it is the one still to do, so the
-                         panel tells you where you are instead of making you
-                         re-read the whole procedure every time. The note
-                         about operators stays: people join over time, and
-                         nothing on this form ever marks it finished. -->
+                    <field name="my_telegram_connected" invisible="1"/>
+                    <!-- Four acts across three places: Odoo, @BotFather and
+                         the team's chat. Each step shows only while it is
+                         the one still to do - including step 3, which is
+                         about the person reading the form rather than the
+                         record, and so uses my_telegram_connected. What is
+                         on screen is what is left. -->
+                    <div class="alert alert-success" role="status"
+                         invisible="not bot_username or webhook_status != 'registered' or not group_chat_id or not my_telegram_connected">
+                        <b>Set up.</b> A customer message notifies the
+                        assigned operator personally, or
+                        <b><field name="group_chat_id" readonly="1" nolabel="1"
+                        class="oe_inline"/></b> when there is nobody to notify.
+                        A conversation notifies at most once every
+                        <b><field name="throttle_minutes" readonly="1"
+                        nolabel="1" class="oe_inline"/></b> minutes; its first
+                        message always does. Delivery goes through the job
+                        queue, so allow up to a minute.
+                    </div>
                     <div class="alert alert-info" role="status"
                          invisible="bot_username">
-                        <b>Step 1 of 3 - the bot.</b>
-                        Create one with
-                        <a href="https://t.me/BotFather" target="_blank">@BotFather</a>,
-                        paste its token below, save, and press
-                        <b>Check Connection</b>. It has to be a
-                        <b>different bot</b> from the one a Telegram channel
-                        uses to talk to customers - everybody who presses
-                        Start in that one becomes a customer in the Inbox.
+                        <b>Step 1 of 4 — the bot.</b>
+                        <p class="mb-1">
+                            Open
+                            <a href="https://t.me/BotFather" target="_blank">@BotFather</a>
+                            in Telegram, send <b>/newbot</b>, answer its two
+                            questions and copy the token it gives you. Paste
+                            that token into <b>Bot Token</b> above, save, and
+                            press <b>Check Connection</b>.
+                        </p>
+                        <p class="mb-0">
+                            It has to be a bot of its own. The bot a Telegram
+                            <i>channel</i> uses to talk to customers cannot
+                            also do this job: every colleague who pressed
+                            Start there would turn into a customer in the
+                            Inbox, with a contact and a conversation of their
+                            own.
+                        </p>
                     </div>
                     <div class="alert alert-info" role="status"
                          invisible="not bot_username or webhook_status == 'registered'">
-                        <b>Step 2 of 3 - the webhook.</b>
-                        Press <b>Register Webhook</b> so Telegram delivers this
-                        bot's updates here. Nothing below works until it does:
-                        every command reaches Odoo through it.
+                        <b>Step 2 of 4 — the webhook.</b>
+                        <p class="mb-0">
+                            Press <b>Register Webhook</b>. That is how Telegram
+                            learns where to deliver this bot's messages.
+                            Nothing below works until it does: every command
+                            you type in Telegram reaches Odoo through it.
+                        </p>
                     </div>
                     <div class="alert alert-info" role="status"
-                         invisible="webhook_status != 'registered' or group_chat_id">
-                        <b>Step 3 of 3 - the team's group.</b>
-                        Add the bot to the group as an <b>administrator</b>
-                        (its username is under Bot, below), then send
-                        <b>/register</b> in that group. The bot answers there
-                        and fills in Group Chat ID itself - the number is not
-                        something to look up and type. It accepts the command
-                        only from someone who has connected their own Telegram
-                        and holds <i>EWIN Inbox / Administrator</i>.
+                         invisible="webhook_status != 'registered' or my_telegram_connected">
+                        <b>Step 3 of 4 — your own notifications.</b>
+                        <p class="mb-1">
+                            Open your own preferences — your name in the top
+                            right, then <b>Preferences</b> — and find
+                            <b>EWIN Inbox Notifications</b>. Press
+                            <b>Connect Telegram</b>: a link appears, click it,
+                            Telegram opens on the bot, press <b>Start</b>
+                            there. That is the whole binding. Nobody types a
+                            username or a chat id anywhere, here or in
+                            Telegram.
+                        </p>
+                        <p class="mb-1">
+                            From then on you get a personal message for every
+                            customer message in a conversation assigned to
+                            you. Every operator does this once, for
+                            themselves.
+                        </p>
+                        <p class="mb-0">
+                            Do it before step 4: <b>/register</b> is accepted
+                            only from someone who has already connected their
+                            own Telegram.
+                        </p>
+                    </div>
+                    <div class="alert alert-info" role="status"
+                         invisible="webhook_status != 'registered' or not my_telegram_connected or group_chat_id">
+                        <b>Step 4 of 4 — the team's chat.</b>
+                        <p class="mb-1">
+                            Add the bot to the chat your team shares and make
+                            it an <b>administrator</b> there. Then send
+                            <b>/register</b> in that chat. The bot answers in
+                            the chat and fills in <b>Group Chat ID</b> itself —
+                            that number is not something to look up, Telegram
+                            shows it nowhere.
+                        </p>
+                        <p class="mb-0">
+                            That chat is the floor under the notifications:
+                            everything with nobody to notify personally lands
+                            there — a conversation no operator has taken yet,
+                            and one whose operator has not done step 3.
+                        </p>
                     </div>
                     <div class="alert alert-secondary" role="status"
-                         invisible="webhook_status != 'registered'">
-                        <b>How an operator gets their own notifications.</b>
-                        Nobody types a username or a chat id anywhere. Each
-                        person opens their own <i>Preferences → EWIN Inbox
-                        Notifications → Connect Telegram</i>, follows the
-                        one-time link it shows and presses Start in Telegram.
-                        Until someone does that, their conversations notify the
-                        group chat instead of them.
+                         invisible="webhook_status != 'registered' or not group_chat_id or my_telegram_connected">
+                        <b>You are not connected yourself.</b>
+                        The group chat is set, so nothing is lost — but your
+                        own conversations notify the group instead of you.
+                        Connect your Telegram under
+                        <i>Preferences → EWIN Inbox Notifications</i>. Every
+                        operator does it once, for themselves.
                     </div>
                 </sheet>
             </form>
