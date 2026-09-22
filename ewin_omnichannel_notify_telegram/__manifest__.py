@@ -15,6 +15,7 @@
         "security/ir.model.access.csv",
         "security/notify_security.xml",
         "views/omnichannel_telegram_notifier_views.xml",
+        "views/omnichannel_account_views.xml",
         "views/omnichannel_telegram_link_wizard_views.xml",
         "views/res_users_views.xml",
         "views/notify_menus.xml",

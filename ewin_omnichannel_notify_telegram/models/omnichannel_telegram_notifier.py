@@ -45,9 +45,13 @@ class OmnichannelTelegramNotifier(models.Model):
         required=True, default="https://api.telegram.org")
 
     group_chat_id = fields.Char(
-        help="The chat the team shares. Used when a conversation has no "
-             "operator, or the operator has not linked their Telegram. Set it "
-             "by sending /register in that group.")
+        string="Group Chat ID",
+        help="Telegram's own numeric id for the team's shared chat - the "
+             "fallback used when a conversation has no operator, or the "
+             "operator has not connected their Telegram. There is nothing to "
+             "type here: Telegram shows this number nowhere in its interface, "
+             "and the bot writes it itself when an administrator sends "
+             "/register in the group.")
     throttle_minutes = fields.Integer(
         required=True, default=10,
         help="A conversation notifies at most once per this many minutes. The "

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- The account form is where somebody looking for "the Telegram
+         settings" lands first, and it is the wrong place for notifications:
+         an account is the bot a *customer* writes to. The note inherits the
+         core form rather than the Telegram connector's, so this module keeps
+         depending on the core alone - it has to work on an installation that
+         has no Telegram channel at all, and channel_code is a core field. -->
+    <record id="view_account_form_notify_hint" model="ir.ui.view">
+        <field name="name">omnichannel.account.form.notify.hint</field>
+        <field name="model">omnichannel.account</field>
+        <field name="inherit_id" ref="ewin_omnichannel_core.view_account_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='last_error']" position="before">
+                <div class="alert alert-secondary" role="status"
+                     invisible="channel_code != 'telegram'">
+                    This account is the bot <b>customers</b> write to: what
+                    arrives here opens a conversation in the Inbox. Notifying
+                    your own team in Telegram is a separate bot with its own
+                    token, configured under
+                    <i>Configuration → Telegram Notifications</i>. One bot
+                    cannot do both - every colleague who pressed Start would
+                    become a customer here.
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

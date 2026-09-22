@@ -18,6 +18,52 @@
                 <sheet>
                     <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger"
                             invisible="active"/>
+                    <!-- Setting this up runs across three places: Odoo,
+                         @BotFather and the team's Telegram group. Each step
+                         shows only while it is the one still to do, so the
+                         panel tells you where you are instead of making you
+                         re-read the whole procedure every time. The note
+                         about operators stays: people join over time, and
+                         nothing on this form ever marks it finished. -->
+                    <div class="alert alert-info" role="status"
+                         invisible="bot_username">
+                        <b>Step 1 of 3 - the bot.</b>
+                        Create one with
+                        <a href="https://t.me/BotFather" target="_blank">@BotFather</a>,
+                        paste its token below, save, and press
+                        <b>Check Connection</b>. It has to be a
+                        <b>different bot</b> from the one a Telegram channel
+                        uses to talk to customers - everybody who presses
+                        Start in that one becomes a customer in the Inbox.
+                    </div>
+                    <div class="alert alert-info" role="status"
+                         invisible="not bot_username or webhook_status == 'registered'">
+                        <b>Step 2 of 3 - the webhook.</b>
+                        Press <b>Register Webhook</b> so Telegram delivers this
+                        bot's updates here. Nothing below works until it does:
+                        every command reaches Odoo through it.
+                    </div>
+                    <div class="alert alert-info" role="status"
+                         invisible="webhook_status != 'registered' or group_chat_id">
+                        <b>Step 3 of 3 - the team's group.</b>
+                        Add the bot to the group as an <b>administrator</b>
+                        (its username is under Bot, below), then send
+                        <b>/register</b> in that group. The bot answers there
+                        and fills in Group Chat ID itself - the number is not
+                        something to look up and type. It accepts the command
+                        only from someone who has connected their own Telegram
+                        and holds <i>EWIN Inbox / Administrator</i>.
+                    </div>
+                    <div class="alert alert-secondary" role="status"
+                         invisible="webhook_status != 'registered'">
+                        <b>How an operator gets their own notifications.</b>
+                        Nobody types a username or a chat id anywhere. Each
+                        person opens their own <i>Preferences → EWIN Inbox
+                        Notifications → Connect Telegram</i>, follows the
+                        one-time link it shows and presses Start in Telegram.
+                        Until someone does that, their conversations notify the
+                        group chat instead of them.
+                    </div>
                     <group>
                         <group string="Bot">
                             <field name="name"/>

@@ -116,7 +116,9 @@ not the Telegram connector is present.
    **EWIN Inbox → Configuration → Telegram Notifications** and create a
    record (nothing is pre-created; one company can hold only one active
    notifier). Paste the token into **Bot Token** — only the admin group can
-   read or edit it, everyone else sees it masked.
+   read or edit it, everyone else sees it masked. The form walks through the
+   rest itself: it shows one step at a time, and each disappears as it is
+   done, so what is left on screen is what is left to do.
 3. Click **Check Connection**. This calls `getMe` and, on success, fills in
    the bot's username and id and moves the record to **Connected**.
 4. Click **Register Webhook** to point Telegram at this database. This
@@ -136,6 +138,16 @@ not the Telegram connector is present.
    above, and (b) holds the **EWIN Inbox / Administrator** group. The bot
    confirms in the chat once it has adopted the group; from then on, that
    chat is where an unassigned or not-yet-connected conversation notifies.
+   **Group Chat ID** on the form is filled in by that command and is not
+   something to look up: Telegram shows a group's numeric id nowhere in its
+   own interface.
+
+Two questions this ordering answers before they are asked. Nobody types a
+Telegram username or a chat id anywhere — an operator's binding is made by
+opening their own one-time link, and the group's by the bot itself. And the
+account form of a Telegram *channel* carries a note saying so, because that
+screen is where somebody looking for "the Telegram settings" lands first and
+it is the wrong one: an account is the bot customers write to.
 
 ## Security
 
