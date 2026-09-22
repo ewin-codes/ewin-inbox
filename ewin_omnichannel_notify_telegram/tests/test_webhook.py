@@ -112,16 +112,44 @@ class TestNotifyWebhook(HttpCase):
         self.notifier.invalidate_recordset()
         self.assertEqual(self.notifier.group_chat_id, "-100777")
 
-    def test_register_from_a_stranger_is_ignored(self):
+    def test_register_from_a_stranger_is_refused(self):
         self._post(self._group("/register", from_id=12345))
         self.notifier.invalidate_recordset()
         self.assertFalse(self.notifier.group_chat_id)
 
-    def test_register_from_a_non_admin_is_ignored(self):
+    def test_register_from_a_non_admin_is_refused(self):
         self.operator.sudo().omni_tg_chat_id = "555"
         self._post(self._group("/register", from_id=555))
         self.notifier.invalidate_recordset()
         self.assertFalse(self.notifier.group_chat_id)
+
+    def test_a_refusal_says_so_in_the_group(self):
+        """Silence is the worst answer this command can give.
+
+        The person who typed it cannot tell a gate they have not passed
+        from a webhook that never arrived or a bot that cannot read the
+        group - and the first thing they do is go and debug one of those.
+        """
+        self._post(self._group("/register", from_id=12345))
+        chat_id, text = self.client.return_value.send_message.call_args[0]
+        self.assertEqual(chat_id, -100777)
+        self.assertIn("administrator", text)
+        self.assertIn("/register", text)
+
+    def test_a_refusal_does_not_say_which_condition_failed(self):
+        """One sentence for both cases.
+
+        Answering an unlinked sender differently from a linked non-admin
+        would tell a stranger whether their own Telegram is known to this
+        database - the one detail worth keeping back.
+        """
+        self._post(self._group("/register", from_id=12345))
+        stranger = self.client.return_value.send_message.call_args[0][1]
+        self.client.return_value.send_message.reset_mock()
+        self.operator.sudo().omni_tg_chat_id = "555"
+        self._post(self._group("/register", from_id=555))
+        non_admin = self.client.return_value.send_message.call_args[0][1]
+        self.assertEqual(stranger, non_admin)
 
     def test_register_in_a_private_chat_is_ignored(self):
         self._post(self._private("/register", from_id=900, chat_id=900))

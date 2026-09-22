@@ -131,6 +131,27 @@ class OmnichannelTelegramNotifier(models.Model):
         base = self.env["ir.config_parameter"].sudo().get_param("web.base.url")
         return f"{base}/omnichannel/notify/telegram/{self.webhook_uuid}"
 
+    def _ensure_bot_identity(self):
+        """Ask Telegram who this token belongs to, unless we already know.
+
+        Register Webhook needs the answer as much as Check Connection does,
+        and the head of the form is not an order of operations - either
+        button can be pressed first. Without this, registering the webhook
+        first left the record Connected, the webhook genuinely working, and
+        the whole thing unusable: the operator's linking address is
+        https://t.me/<bot>?start=<token>, so with no username there is no
+        link to issue, and with nobody linked /register is refused by every
+        sender. One missing call, and every later step fails somewhere else.
+        """
+        self.ensure_one()
+        if self.bot_username:
+            return
+        me = self._client().get_me()
+        self.sudo().write({
+            "bot_username": me.get("username"),
+            "bot_external_id": str(me.get("id")),
+        })
+
     def _set_error(self, description):
         self.sudo().write({"state": "error", "last_error": description})
 
@@ -191,6 +212,7 @@ class OmnichannelTelegramNotifier(models.Model):
         self.check_access("write")
         secret = self.sudo().webhook_secret or uuid.uuid4().hex
         try:
+            self._ensure_bot_identity()
             self._client().set_webhook(self._webhook_url(), secret)
         except TelegramNotifyError as err:
             self._set_error(err.description)

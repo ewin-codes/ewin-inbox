@@ -124,7 +124,10 @@ not the Telegram connector is present.
 4. Click **Register Webhook** to point Telegram at this database. This
    requires a **public HTTPS `web.base.url`** (Settings → Technical → System
    Parameters) that Telegram's own servers can reach — a local
-   `http://localhost:8069` will not work.
+   `http://localhost:8069` will not work. Pressing it before step 3 is fine:
+   it asks `getMe` itself when the bot is still unknown, because every later
+   step needs the username and nothing about the two buttons says which comes
+   first.
 5. Each operator connects individually: **Preferences → Connect Telegram**
    opens a wizard with a one-time personal link
    (`https://t.me/<bot>?start=<token>`). Opening it in Telegram and pressing
@@ -138,6 +141,10 @@ not the Telegram connector is present.
    above, and (b) holds the **EWIN Inbox / Administrator** group. The bot
    confirms in the chat once it has adopted the group; from then on, that
    chat is where an unassigned or not-yet-connected conversation notifies.
+   A sender who fails either half of that test gets an answer in the chat
+   saying so — a silent refusal is indistinguishable from a webhook that
+   never arrived, and sends whoever typed the command off debugging the
+   wrong thing.
    **Group Chat ID** on the form is filled in by that command and is not
    something to look up: Telegram shows a group's numeric id nowhere in its
    own interface.

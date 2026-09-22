@@ -127,8 +127,21 @@ class TelegramNotifyWebhookController(http.Controller):
         if not user or not user.has_group(
                 "ewin_omnichannel_core.group_omni_admin"):
             _logger.info(
-                "Ignored /register from an unlinked or non-admin Telegram "
+                "Refused /register from an unlinked or non-admin Telegram "
                 "user (notifier %s)", notifier.id)
+            # Say so in the chat. A refusal that looks exactly like the bot
+            # not being there is the worst answer available: the person who
+            # typed the command cannot tell a missing webhook, a bot without
+            # permission to read the group, and a gate they have not passed
+            # apart - and the first two send them debugging the wrong thing.
+            #
+            # One sentence for both cases, not two. Which of the conditions
+            # failed is the one thing worth keeping back: it would tell a
+            # stranger whether their own Telegram is known to this database.
+            self._reply(notifier, chat, _(
+                "Only an EWIN Inbox administrator who has connected their "
+                "own Telegram can register a group. Connect it in Odoo "
+                "under Preferences and send /register again."))
             return
         notifier.write({"group_chat_id": str(chat.get("id"))})
         self._reply(notifier, chat, _(

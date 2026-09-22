@@ -217,3 +217,42 @@ class TestNotifier(NotifyCase):
         # the write past the try/except did not run either.
         self.assertEqual(self.notifier.webhook_status, "registered",
                           "a failed removal must not mark the webhook removed")
+
+    def test_registering_first_still_learns_the_bot(self):
+        """The head of the form is not an order of operations.
+
+        Pressing Register Webhook before Check Connection used to leave the
+        record Connected with a working webhook and no bot_username - and
+        every later step then failed somewhere else: Connect Telegram
+        refuses without a username, so nobody links, so /register is
+        refused for every sender.
+        """
+        self.notifier.sudo().write({
+            "bot_username": False, "bot_external_id": False})
+        client = self._fake_client()
+        with self._with_client(client):
+            self.notifier.action_register_webhook()
+        client.get_me.assert_called_once()
+        self.assertEqual(self.notifier.bot_username, "ewin_notify_bot")
+        self.assertEqual(self.notifier.bot_external_id, "1")
+        self.assertEqual(self.notifier.webhook_status, "registered")
+
+    def test_registering_again_does_not_ask_who_the_bot_is(self):
+        # One call per thing that is unknown: the username is already on
+        # the record, and getMe is a network round trip.
+        client = self._fake_client()
+        with self._with_client(client):
+            self.notifier.action_register_webhook()
+        client.get_me.assert_not_called()
+
+    def test_a_refused_getme_stops_the_registration(self):
+        self.notifier.sudo().bot_username = False
+        client = self._fake_client()
+        client.get_me.side_effect = TelegramNotifyError(
+            401, "Unauthorized", retriable=False)
+        with self._with_client(client):
+            action = self.notifier.action_register_webhook()
+        self.assertEqual(action["params"]["type"], "danger")
+        self.assertEqual(self.notifier.state, "error")
+        client.set_webhook.assert_not_called()
+
