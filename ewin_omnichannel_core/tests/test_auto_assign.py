@@ -57,11 +57,14 @@ class TestAutoAssign(OmnichannelCase):
         self.assertEqual(message["conversation_id"], self.conv.id)
         self.assertEqual(message["event"], "message_received")
 
-    def test_notify_is_noop_without_operator(self):
+    def test_notify_without_operator_only_refreshes_the_menu_badges(self):
         with patch.object(type(self.env["bus.bus"]), "_sendone") as send:
             self.conv._notify_omni_event("message_received")
-        self.assertFalse(
-            send.called, "no operator to notify -> no bus traffic")
+        types = [call[0][1] for call in send.call_args_list]
+        self.assertEqual(
+            types, ["omni.menu.counters"],
+            "nobody owns this conversation, so the only thing to say is that "
+            "the unclaimed queue has grown")
 
     def test_member_sync_goes_through_add_members(self):
         """Membership must be granted with discuss.channel.add_members.

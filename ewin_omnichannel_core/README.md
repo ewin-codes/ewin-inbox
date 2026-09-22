@@ -29,6 +29,12 @@ Depends on `base`, `mail`, `contacts`.
 - **Realtime.** New messages and assignment changes are pushed over the bus to
   the assigned operator, so the open thread and the conversation list update
   without a manual reload.
+- **Counters on the menu.** **Inbox** wears a grey badge with the number of
+  inbound messages in conversations nobody has taken, and **My Conversations**
+  a red one with what is unread in the conversations assigned to the reader.
+  Both move on their own over the bus — the grey one for every operator at
+  once, the red one for its owner — so nobody has to walk the menu to find out
+  whether it holds anything new.
 - **Discuss mirror.** Every conversation is mirrored into a `discuss.channel`,
   so operators get native Odoo unread badges and notifications, and can reply
   either from the Inbox composer or straight from Discuss — both paths reach
@@ -242,6 +248,50 @@ off each other's rows instead of one blocking on the other.
   crash between a successful send and that iteration's commit means the next
   tick resends it, the same trade-off the ordinary synchronous first attempt
   in `deliver_outbound` already makes.
+
+## Menu badges
+
+The two menus an operator lives in wear their own number, so the answer to
+"is there anything new?" is on screen instead of one click away.
+
+| Menu | Colour | Counts |
+|---|---|---|
+| **Inbox** | grey | inbound messages in conversations that are not closed and have no operator |
+| **My Conversations** | red | unread messages in the conversations assigned to the reader |
+
+Grey is the queue that belongs to whoever is free; red is addressed to the
+reader personally, and is the one worth leaving another app for. Both are
+message counts, not conversation counts, and `omni_menu_counters()` reads them
+with the caller's own rights — the record rules decide what an operator is
+told about.
+
+There is no read state to subtract from the grey one: reading is a
+`discuss.channel` membership, and an untaken conversation has no member, so
+nothing in it has been read by anyone. Taking it — or closing it — is what
+empties the number.
+
+Neither is polled. The server pushes an empty `omni.menu.counters` over the
+bus and the client asks for both numbers again:
+
+- **to the operator group**, from `_notify_omni_event` — that is, on every new
+  message, assignment and closure. `ir.websocket._build_bus_channel_list`
+  subscribes every user to a channel per group they hold, so the unclaimed
+  queue, which belongs to nobody and has no personal channel to aim at,
+  needs no channel of its own. The ping carries no ids on purpose: it reaches
+  operators whose record rules keep that conversation out of their own lists.
+- **to one partner**, from `_mark_read` — reading is what makes the red badge
+  fall, and the number is the reader's own.
+
+On the client the numbers live in the `omni_menu_counters` service and the
+badge is drawn by an extension of Odoo's three navbar templates
+(`web.NavBar.SectionsMenu`, its `MoreDropdown` overflow and the phone
+sidebar's `web.SectionMenu`). The service asks the server for nothing until
+the navbar reports EWIN Inbox is the open app, so a user working in Sales pays
+nothing for it. Odoo resolves OWL template inheritance in the browser, where a
+target that has moved fails as a console message and an app that quietly
+renders without its badges — `tests/test_menu_badge_assets.py` runs the same
+lookups against the installed Odoo source, so an upgrade that renames a navbar
+template fails the suite instead.
 
 ## Customer history
 

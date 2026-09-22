@@ -30,6 +30,12 @@ CHANNEL_IMAGE_ICONS = ("viber", "messenger")
 # How hard the Close button asks why: "off" | "optional" | "required".
 CLOSE_REASON_POLICY_PARAM = "ewin_omnichannel.close_reason_policy"
 
+# Bus notification type the menu badges listen on. It carries no payload on
+# purpose: it travels to every operator at once, and a conversation id in it
+# would tell an operator about threads their own record rules keep out of
+# their lists.
+MENU_COUNTERS_BUS = "omni.menu.counters"
+
 
 class OmnichannelConversation(models.Model):
     _name = "omnichannel.conversation"
@@ -398,6 +404,7 @@ class OmnichannelConversation(models.Model):
         drives unread_count (native member seen state). Reading anywhere else
         (Discuss app, chat window) clears it the same way."""
         partner = self.env.user.partner_id
+        marked = False
         for conv in self:
             channel = conv.discuss_channel_id
             if not channel:
@@ -407,6 +414,11 @@ class OmnichannelConversation(models.Model):
             if not member or not channel.message_ids:
                 continue
             member._mark_as_read(max(channel.message_ids.ids))
+            marked = True
+        if marked:
+            # Reading is what makes the "My Conversations" badge fall, and the
+            # number is the reader's own — aim the refresh at them alone.
+            self._notify_menu_counters(partner)
 
     @api.model
     def action_seen(self, conversation_ids):
@@ -536,6 +548,9 @@ class OmnichannelConversation(models.Model):
         just granted. Also a hook point for future automations/CRM/AI.
         """
         self.ensure_one()
+        # The badges move on every one of these events, and on the unassigned
+        # ones there is no operator below to carry the signal.
+        self._notify_menu_counters()
         partner = self.operator_id.partner_id
         if not partner:
             return True
@@ -549,6 +564,48 @@ class OmnichannelConversation(models.Model):
             data.update(payload)
         self.env["bus.bus"]._sendone(partner, "omni.inbox", data)
         return True
+
+    @api.model
+    def _notify_menu_counters(self, partner=None):
+        """Tell the web client that the menu badges are stale.
+
+        Aimed at one partner it refreshes that person alone. Aimed at nobody
+        it reaches the whole floor: ir.websocket subscribes every user to a
+        bus channel per group they hold, so the unclaimed queue — which
+        belongs to no one and therefore has no personal channel to carry it —
+        needs no channel of its own.
+        """
+        target = partner or self.env.ref(
+            "ewin_omnichannel_core.group_omni_operator",
+            raise_if_not_found=False)
+        if target:
+            self.env["bus.bus"]._sendone(target, MENU_COUNTERS_BUS, {})
+        return True
+
+    @api.model
+    def omni_menu_counters(self):
+        """The two numbers the Inbox and My Conversations menus wear.
+
+        Both count messages rather than conversations, and both are read with
+        the caller's own rights — the record rules decide what an operator is
+        allowed to be told about.
+
+        Unassigned is the whole inbound side of every conversation nobody has
+        taken. There is no read state to subtract there: reading is a Discuss
+        channel membership, and an unassigned conversation has no member, so
+        nothing in it has been read by anyone. Taking it or closing it is what
+        empties the number.
+        """
+        unassigned = self.env["omnichannel.message"].search_count([
+            ("direction", "=", "inbound"),
+            ("conversation_id.operator_id", "=", False),
+            ("conversation_id.state", "!=", "closed"),
+        ])
+        mine = sum(self.search([
+            ("operator_id", "=", self.env.uid),
+            ("state", "!=", "closed"),
+        ]).mapped("unread_count"))
+        return {"unassigned": unassigned, "mine": mine}
 
     def _post_composer(self, scheduled_at=None):
         """Post the composed reply, clearing the composer after.

@@ -22,6 +22,9 @@ Developed and maintained by [EWIN.codes](https://ewin.codes).
 - Contact matching with `res.partner`
 - Agent and team assignment — replying takes an unassigned conversation
 - Realtime thread and list updates, no manual reload
+- Unread counters on the menu — a grey badge on **Inbox** for the queue
+  nobody has taken, a red one on **My Conversations** for what is addressed
+  to you; both move over the bus
 - Delivery and read statuses where supported
 - Canned replies
 - Scheduled replies — defer an answer to a chosen date and time; a counted tab

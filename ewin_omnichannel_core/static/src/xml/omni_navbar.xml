@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<templates xml:space="preserve">
+
+  <!-- The badge itself. Rendered from the navbar's own context, so it reads
+       the `section` the surrounding menu entry is drawing. -->
+  <t t-name="ewin_omnichannel_core.MenuBadge">
+    <t t-set="omniBadge" t-value="omniMenuBadge(section)"/>
+    <span t-if="omniBadge" class="o_omni_menu_badge badge rounded-pill ms-1"
+          t-att-class="omniBadge.className" t-att-title="omniBadge.title"
+          t-esc="omniBadge.count"/>
+  </t>
+
+  <!-- The app's own menus in the top bar. The entry's text arrives as a
+       `t-esc` on the component, i.e. as its default slot; the badge has to
+       share that slot, so the attribute goes and the two become children.
+       Everything else about the entry is left to Odoo. -->
+  <t t-inherit="web.NavBar.SectionsMenu" t-inherit-mode="extension">
+    <xpath expr="//DropdownItem[@class=&quot;'o_nav_entry'&quot;]" position="attributes">
+      <attribute name="t-esc"/>
+    </xpath>
+    <xpath expr="//DropdownItem[@class=&quot;'o_nav_entry'&quot;]" position="inside">
+      <t t-esc="section.name"/>
+      <t t-call="ewin_omnichannel_core.MenuBadge"/>
+    </xpath>
+  </t>
+
+  <!-- The same entries once the window is too narrow to hold them all and
+       they fall into the "More" dropdown. -->
+  <t t-inherit="web.NavBar.SectionsMenu.MoreDropdown" t-inherit-mode="extension">
+    <xpath expr="//DropdownItem[@class=&quot;'o_more_dropdown_section'&quot;]" position="attributes">
+      <attribute name="t-esc"/>
+    </xpath>
+    <xpath expr="//DropdownItem[@class=&quot;'o_more_dropdown_section'&quot;]" position="inside">
+      <t t-esc="section.name"/>
+      <t t-call="ewin_omnichannel_core.MenuBadge"/>
+    </xpath>
+  </t>
+
+  <!-- And on a phone, where the same menus live in the burger sidebar. -->
+  <t t-inherit="web.SectionMenu" t-inherit-mode="extension">
+    <xpath expr="//li[@t-else]" position="inside">
+      <t t-call="ewin_omnichannel_core.MenuBadge"/>
+    </xpath>
+  </t>
+
+</templates>
