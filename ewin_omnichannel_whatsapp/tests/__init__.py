@@ -7,3 +7,4 @@ from . import test_template
 from . import test_template_composer
 from . import test_account_credentials
 from . import test_button_failure
+from . import test_public_address

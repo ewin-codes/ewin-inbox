@@ -58,6 +58,14 @@ class OmnichannelAccount(models.Model):
             self._tg_sync_config()
         return res
 
+    def _get_public_address(self):
+        self.ensure_one()
+        if self.channel_code != "telegram":
+            return super()._get_public_address()
+        # Typed by hand on the form, so it may already carry the "@".
+        username = (self.sudo().tg_bot_username or "").lstrip("@")
+        return f"@{username}" if username else ""
+
     def action_tg_check_connection(self):
         return self._run_connector_action("connect")
 

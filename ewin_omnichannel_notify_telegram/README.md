@@ -19,12 +19,22 @@ Depends on `ewin_omnichannel_core`.
   in a row produces one notification, not five — but the very first message of
   a conversation always notifies, whatever the window, so a new conversation
   is never silent.
-- **The notification text** is three lines: the channel and the customer's
-  name (with their @handle appended alongside it whenever they have one that
-  differs from the name — useful both for addressing them back and for
-  telling two same-named customers apart), the opening of what they wrote,
-  cut to 200 characters (a message with no text of its own, like a photo, is
-  named by its type instead), and a link back into that conversation in Odoo.
+- **The notification text** is four lines. The first says where the customer
+  wrote: the channel and the address of the account they wrote to — the
+  mailbox, the `@bot`, the business phone, the page — so an operator with two
+  mailboxes or two bots knows which one to answer from; the account's name
+  stands in when its connector knows no address. In a database with more than
+  one active company the conversation's company leads that line, because one
+  notifier bot can serve several of them:
+  `greedy.art · Email — info@greedy.art`. The second line is the customer's
+  name, with their @handle appended alongside it whenever they have one that
+  differs from the name — useful both for addressing them back and for telling
+  two same-named customers apart. Then the opening of what they wrote, cut to
+  200 characters (a message with no text of its own, like a photo, is named by
+  its type instead), and a link back into that conversation in Odoo. The
+  address comes from `omnichannel.account._get_public_address()`, which the
+  core declares and each connector fills in, so this module still depends on
+  the core alone.
 - **Delivery goes through the shared job queue**, so it arrives with a delay of
   up to about a minute — the same `Omnichannel: Process job queue` cron
   ewin_omnichannel_core runs every minute for every other retriable job in the

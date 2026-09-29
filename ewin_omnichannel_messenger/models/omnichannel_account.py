@@ -97,5 +97,11 @@ class OmnichannelAccount(models.Model):
             self._mg_sync_config()
         return res
 
+    def _get_public_address(self):
+        self.ensure_one()
+        if self.channel_code != "messenger":
+            return super()._get_public_address()
+        return self.sudo().mg_page_name or ""
+
     def action_mg_check_connection(self):
         return self._run_connector_action("connect")

@@ -22,6 +22,11 @@ class TestAccount(OmnichannelCase):
         with self.assertRaises(UserError):
             acc._get_connector()
 
+    def test_public_address_is_empty_without_a_connector(self):
+        acc = self.env["omnichannel.account"].create(
+            {"name": "Bot", "channel_id": self.channel.id})
+        self.assertEqual(acc._get_public_address(), "")
+
     def test_action_disable(self):
         acc = self.env["omnichannel.account"].create(
             {"name": "Bot", "channel_id": self.channel.id})

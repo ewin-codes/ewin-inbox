@@ -57,21 +57,55 @@ class TelegramNotificationService(models.AbstractModel):
     def _compose(self, message):
         """The notification, in Telegram's HTML parse mode.
 
-        Three lines: who wrote and where, what they said, and the way back
-        into Odoo. Every value that came from outside is escaped — including
-        the link, whose query string carries an ``&``.
+        Four lines: where the customer wrote, who they are, what they said,
+        and the way back into Odoo. Every value that came from outside is
+        escaped — including the link, whose query string carries an ``&``.
         """
         conversation = message.conversation_id
-        channel = conversation.channel_id.name or conversation.account_id.name
         url = conversation._notify_get_action_link("view")
         lines = [
-            "<b>%s</b> — %s" % (escape_html(channel),
-                                escape_html(self._sender_label(conversation))),
+            self._headline(conversation),
+            escape_html(self._sender_label(conversation)),
             escape_html(self._preview(message)),
             '<a href="%s">%s</a>' % (escape_html(url),
                                      escape_html(_("Open conversation"))),
         ]
         return "\n".join(line for line in lines if line)
+
+    @api.model
+    def _headline(self, conversation):
+        """Which inbox the customer wrote to, already escaped.
+
+        ``<b>Company · Channel</b> — address``. The address is what tells two
+        mailboxes or two bots of one company apart, so the operator knows
+        which one to answer from. The company is named only when there is
+        more than one: a single notifier bot may serve several companies, and
+        then the channel alone does not say whose customer it is.
+        """
+        account = conversation.account_id
+        channel = conversation.channel_id.name or account.name
+        title = channel
+        if self._several_companies():
+            title = f"{conversation.company_id.name} · {channel}"
+        headline = "<b>%s</b>" % escape_html(title)
+        address = account._get_public_address() or account.name
+        # Without an address of its own an account is often named after its
+        # channel, and "Email — Email" says nothing twice.
+        if address and address != channel:
+            headline += " — %s" % escape_html(address)
+        return headline
+
+    @api.model
+    def _several_companies(self):
+        """Whether the database runs more than one active company.
+
+        Counted on every send rather than cached: companies are created
+        rarely, and a stale answer would put the wrong words in front of an
+        operator. ``sudo()``: the question is about the database, not about
+        the companies the current user happens to be allowed into. Archived
+        companies drop out through the default ``active`` filter.
+        """
+        return self.env["res.company"].sudo().search_count([], limit=2) > 1
 
     @api.model
     def _sender_label(self, conversation):

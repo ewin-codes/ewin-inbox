@@ -67,6 +67,12 @@ class OmnichannelAccount(models.Model):
             self._wa_sync_config()
         return res
 
+    def _get_public_address(self):
+        self.ensure_one()
+        if self.channel_code != "whatsapp":
+            return super()._get_public_address()
+        return self.sudo().wa_business_phone or ""
+
     def action_wa_check_connection(self):
         return self._run_connector_action("connect")
 

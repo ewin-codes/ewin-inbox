@@ -79,6 +79,12 @@ class OmnichannelAccount(models.Model):
                     "Email Address is required for an email account (it is the "
                     "mailbox login and the From address).")
 
+    def _get_public_address(self):
+        self.ensure_one()
+        if self.channel_code != "email":
+            return super()._get_public_address()
+        return self.sudo().email_address or ""
+
     def action_email_check_connection(self):
         return self._run_connector_action("connect")
 

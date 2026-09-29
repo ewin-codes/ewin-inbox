@@ -128,6 +128,13 @@ class OmnichannelAccount(models.Model):
             self._ig_sync_config()
         return res
 
+    def _get_public_address(self):
+        self.ensure_one()
+        if self.channel_code != "instagram":
+            return super()._get_public_address()
+        username = (self.sudo().ig_username or "").lstrip("@")
+        return f"@{username}" if username else ""
+
     def action_ig_check_connection(self):
         return self._run_connector_action("connect")
 

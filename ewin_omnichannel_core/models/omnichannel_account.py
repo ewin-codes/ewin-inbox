@@ -49,6 +49,22 @@ class OmnichannelAccount(models.Model):
             )
         return self.env[model_name]
 
+    def _get_public_address(self):
+        """The address the customer writes to: a mailbox, a @bot, a phone
+        number, a page.
+
+        Only the connector knows which of its fields that is, so each one
+        overrides this for its own channel code and defers to ``super()`` for
+        the rest. An empty string when nobody knows — never ``False`` and
+        never a bare ``@``, so a caller can fall back with a plain ``or``.
+
+        Overrides read their field under ``sudo()``. The Telegram notifier
+        asks from the job queue's cron, and whoever asks next must not trip
+        over a field some connector put behind a group.
+        """
+        self.ensure_one()
+        return ""
+
     def _run_connector_action(self, method, **kwargs):
         """Run a connector maintenance action on this account.
 

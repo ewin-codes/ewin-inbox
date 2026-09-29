@@ -12,6 +12,12 @@ class OmnichannelAccount(models.Model):
         help="Technical operator that keeps livechat sessions open. EWIN owns "
              "the real routing; this user does no human work.")
 
+    def _get_public_address(self):
+        self.ensure_one()
+        if self.channel_code != "livechat":
+            return super()._get_public_address()
+        return self.sudo().livechat_channel_id.name or ""
+
     def action_livechat_check_connection(self):
         return self._run_connector_action("connect")
 

@@ -59,6 +59,12 @@ class OmnichannelAccount(models.Model):
             self._viber_sync_config()
         return res
 
+    def _get_public_address(self):
+        self.ensure_one()
+        if self.channel_code != "viber":
+            return super()._get_public_address()
+        return self.sudo().viber_bot_name or ""
+
     def action_viber_check_connection(self):
         return self._run_connector_action("connect")
 

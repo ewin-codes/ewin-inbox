@@ -509,6 +509,10 @@ reasonable reading would put the control elsewhere:
    `CHANNEL_IMAGE_ICONS` when it does not (FontAwesome has no Viber or
    Messenger glyph, and a missing class renders as a blank cell rather than
    failing).
+7. Override `omnichannel.account._get_public_address()` for your channel code
+   — the address a customer writes to (a mailbox, `@bot`, phone, page), read
+   under `sudo()`, an empty string when unknown — and call `super()` for every
+   other code. The Telegram notifier names the inbox by it.
 
 If your connector needs to react when a conversation actually closes (ending
 a live session, notifying a third party, and so on), override
