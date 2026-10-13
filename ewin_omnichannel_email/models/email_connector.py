@@ -100,11 +100,22 @@ class EmailConnector(models.AbstractModel):
                 try:
                     self._process_raw(account, raw)
                     self.env.cr.commit()
-                    client.mark_seen(uid)
                 except Exception as err:  # noqa: BLE001 - keep polling
                     self.env.cr.rollback()
                     self.env["omnichannel.error.log"].log(
                         "internal", "Failed to process email",
+                        account=account, technical=str(err))
+                    continue
+                # Past the commit the email is stored, so a refused \Seen
+                # flag loses nothing: the next poll fetches it again and the
+                # event's idempotency key skips it. Reported apart so the log
+                # does not send anyone looking for a message that arrived.
+                try:
+                    client.mark_seen(uid)
+                except Exception as err:  # noqa: BLE001 - keep polling
+                    self.env["omnichannel.error.log"].log(
+                        "internal",
+                        "Email stored but not marked as read on the server",
                         account=account, technical=str(err))
         finally:
             client.logout()

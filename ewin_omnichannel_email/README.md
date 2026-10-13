@@ -27,7 +27,10 @@ on a host with no public HTTPS endpoint at all.
   Inbox conversation instead of opening a new one.
 - **One bad mail does not stop the run** — each message is committed on its own;
   a message that fails to parse is rolled back, logged, and polling continues
-  with the next one. Likewise, one broken account never blocks the others.
+  with the next one. A message the server refuses to mark seen after it was
+  stored is logged as exactly that; the next poll fetches it again and
+  skips it as a duplicate. Likewise, one broken account never blocks the
+  others.
 
 ## How it works
 
