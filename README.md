@@ -35,6 +35,35 @@ Developed and maintained by [EWIN.codes](https://ewin.codes).
 - Retry queue
 - Reporting
 
+## Screenshots
+
+The data below is fictional, a furniture store with four operators.
+
+**A conversation.** The customer's thread from Telegram, the operator's reply
+and an internal note that never leaves Odoo. The composer answers in the
+customer's own channel.
+
+![A conversation](screenshots/conversation.png)
+
+**Scheduled replies.** A reply waiting for its time, in a tab of its own above
+the chat. It can be edited, sent now or cancelled.
+
+![Scheduled replies](screenshots/scheduled-replies.png)
+
+**Discuss.** Every conversation is mirrored into a Discuss channel that carries
+the channel's own avatar. A reply typed there goes to the customer too.
+
+![Discuss mirror](screenshots/discuss.png)
+
+**Reporting.** Message volume per channel, inbound against outbound.
+
+![Message volume](screenshots/reporting.png)
+
+**Channel setup.** A Telegram account: connection checks, webhook registration
+and a test send, run from the form.
+
+![Telegram account](screenshots/channel-setup.png)
+
 ## Channel status
 
 | Channel | Status |
