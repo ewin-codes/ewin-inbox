@@ -1,3 +1,4 @@
+from odoo.exceptions import UserError
 from odoo.tests import tagged
 from odoo.tools import file_open
 
@@ -34,6 +35,23 @@ class TestConversation(OmnichannelCase):
         conv.action_reopen()
         self.assertEqual(conv.state, "open")
         self.assertFalse(conv.closed_at)
+
+    def test_set_pending_refuses_a_closed_conversation(self):
+        """Pending on a closed thread would leave closed_at, closed_by and
+        the close reason describing a closure the state no longer shows —
+        the way back from Closed is Re-open."""
+        conv = self._new_conv()
+        conv.action_close()
+        with self.assertRaises(UserError):
+            conv.action_set_pending()
+        self.assertEqual(conv.state, "closed")
+
+    def test_wait_for_customer_is_hidden_once_closed(self):
+        view = self.env.ref("ewin_omnichannel_core.view_conversation_form")
+        button = view.get_combined_arch()
+        self.assertRegex(
+            button,
+            r'name="action_set_pending"[^>]*invisible="[^"]*closed')
 
     def test_ensure_discuss_channel(self):
         conv = self._new_conv()

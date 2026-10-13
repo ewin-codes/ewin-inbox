@@ -32,7 +32,8 @@
                     <button name="action_take" string="Take" type="object"
                             class="btn-primary" invisible="operator_id == uid"/>
                     <button name="action_set_pending" string="Wait for customer"
-                            type="object"/>
+                            type="object"
+                            invisible="state in ('pending', 'closed')"/>
                     <button name="action_close" string="Close" type="object"
                             invisible="state == 'closed'"/>
                     <button name="action_reopen" string="Re-open" type="object"

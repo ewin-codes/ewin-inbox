@@ -466,6 +466,15 @@ class OmnichannelConversation(models.Model):
             CLOSE_REASON_POLICY_PARAM, "off")
 
     def action_set_pending(self):
+        """Park the conversations until the customer answers.
+
+        Refused on a closed one: the closure fields would stay behind on a
+        conversation that no longer shows as closed. Re-open is the way back.
+        """
+        if any(conv.state == "closed" for conv in self):
+            raise UserError(_(
+                "A closed conversation cannot wait for the customer. "
+                "Re-open it first."))
         self.write({"state": "pending"})
 
     def action_close(self):
