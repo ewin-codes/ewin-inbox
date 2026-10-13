@@ -138,19 +138,19 @@ webhook/poll entry point — not re-implementing the inbox.
 
 ```mermaid
 flowchart LR
-    subgraph Providers
-      TG[Telegram] & EM[Email] & LC[Live Chat] & WA[WhatsApp] & MS[Messenger] & IG[Instagram] & VB[Viber]
-    end
-    subgraph Connectors["Connector addons (thin)"]
-      C1[webhook / poll] --> C2[api_client] --> C3[normalizer]
+    P["Providers<br/>Telegram · WhatsApp · Email<br/>Instagram · Messenger · Viber · Live Chat"]
+    subgraph Connector["Connector addon, one per channel"]
+      W[webhook / poll] --> N[normalizer]
+      S[send_message] --> A[api_client]
     end
     subgraph Core["ewin_omnichannel_core"]
-      R[routing_service] --> I[identity] --> V[conversation] --> M[message]
-      M --> D[(Discuss mirror)]
-      Q[job queue]
+      R[routing_service] --> V[identity + conversation] --> M[message] --> D[(Discuss mirror)]
+      M -->|operator reply| Q[retry queue]
     end
-    Providers --> Connectors --> R
-    M -->|outbound| Connectors --> Providers
+    P -->|inbound| W
+    N --> R
+    Q --> S
+    A -->|outbound| P
 ```
 
 - **`ewin_omnichannel_core`** owns the domain: channels, accounts, identities,
