@@ -201,6 +201,18 @@ class TestCloseReason(OmnichannelCase):
         self.assertIn("Reopened", body)
         self.assertIn(self.reason.name, body)
 
+    def test_reopen_escapes_the_reason_name(self):
+        """An administrator types the reason name; it reaches an HTML chatter
+        body the same way the closing message does — escaped."""
+        reason = self.env["omnichannel.close.reason"].create(
+            {"name": "<b>Escalated</b>"})
+        conv = self._new_conv()
+        conv._close(reason=reason)
+        conv.action_reopen()
+        body = conv.message_ids[0].body
+        self.assertNotIn("<b>Escalated", body)
+        self.assertIn("&lt;b&gt;Escalated", body)
+
     def test_reopen_without_a_reason_still_posts_a_notice(self):
         conv = self._new_conv()
         conv._close()

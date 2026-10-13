@@ -539,9 +539,9 @@ class OmnichannelConversation(models.Model):
         cleared (e.g. an inbound reply auto-reopening a closed thread)."""
         self.ensure_one()
         if self.close_reason_id:
-            return _("Reopened — clearing the close reason (%s).",
-                     self.close_reason_id.name)
-        return _("Reopened.")
+            return escape(_("Reopened — clearing the close reason (%s).",
+                            self.close_reason_id.name))
+        return escape(_("Reopened."))
 
     def _notify_omni_event(self, event_name, payload=None):
         """Push a lightweight realtime signal so the Inbox thread and list
