@@ -55,7 +55,15 @@ Depends on `base`, `mail`, `contacts`.
   admin-editable list of preset answers plus a free-text comment. The question
   is off by default and can be made optional or mandatory — mandatory means a
   conversation without an answer stays open. The reason is stored on the
-  conversation and groupable in the Inbox and the reports.
+  conversation and groupable in the Inbox and the reports. A reason belongs
+  to one company or is shared by all of them, and a conversation only takes
+  a reason of its own company or a shared one. Closing an already closed
+  conversation changes nothing — who closed it, why and when stay as they
+  were. A reopen clears the stored reason, including the automatic reopen
+  when a customer writes into a closed thread or a scheduled reply goes out
+  on one; the reopen posts the reason it cleared to the chatter, which from
+  then on holds the only copy. A closed conversation cannot be set to
+  *Wait for customer* — it has to be reopened first.
 - **Reporting.** Pivot and graph views over conversations and message volume,
   including a stored first-response time per conversation.
 
