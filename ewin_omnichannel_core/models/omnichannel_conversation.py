@@ -498,15 +498,19 @@ class OmnichannelConversation(models.Model):
         suite writes the Closed state behind it. A direct ``write({"state":
         "closed"})`` over RPC still bypasses this method entirely — this is
         a workflow guard, not a database-level invariant.
+
+        Conversations already closed are left alone: closing again must not
+        rewrite who closed them and why, nor post the closure twice.
         """
-        self.write({
+        to_close = self.filtered(lambda conv: conv.state != "closed")
+        to_close.write({
             "state": "closed",
             "closed_at": fields.Datetime.now(),
             "closed_by": self.env.uid,
             "close_reason_id": reason.id if reason else False,
             "close_note": note or False,
         })
-        for conv in self:
+        for conv in to_close:
             conv.message_post(body=conv._close_message(reason, note))
             conv._notify_omni_event("conversation_closed")
         return True

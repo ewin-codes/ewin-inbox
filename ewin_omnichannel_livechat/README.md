@@ -105,7 +105,8 @@ an operator attaches to a reply in Inbox is passed straight through
   close-reason wizard) posts a closing notice into L (so the visitor sees the
   conversation ended) and then ends the live session
   (`_close_livechat_session()`). The notice is a plain system post, not a new
-  inbound message — it does not get re-ingested.
+  inbound message — it does not get re-ingested. Closing a conversation that
+  is already closed posts nothing.
 
 ## Bridge presence heartbeat
 

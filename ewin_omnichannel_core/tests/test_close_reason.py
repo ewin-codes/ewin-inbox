@@ -153,6 +153,29 @@ class TestCloseReason(OmnichannelCase):
             self.assertEqual(conv.state, "closed")
             self.assertEqual(conv.close_reason_id, self.reason)
 
+    def test_closing_a_closed_conversation_changes_nothing(self):
+        """A second close — a double click, a stale form, a batch that
+        overlaps an earlier one — must not rewrite who closed it and why,
+        nor post the closure to the chatter twice."""
+        conv = self._new_conv()
+        conv._close(reason=self.reason, note="Refund issued")
+        closed_at, posted = conv.closed_at, len(conv.message_ids)
+        other = self.env.ref("ewin_omnichannel_core.close_reason_spam")
+        conv._close(reason=other, note="Second thoughts")
+        self.assertEqual(conv.close_reason_id, self.reason)
+        self.assertEqual(conv.close_note, "Refund issued")
+        self.assertEqual(conv.closed_at, closed_at)
+        self.assertEqual(len(conv.message_ids), posted)
+
+    def test_closing_a_mixed_batch_closes_only_the_open_ones(self):
+        closed, still_open = self._new_conv(), self._new_conv()
+        closed._close(reason=self.reason)
+        other = self.env.ref("ewin_omnichannel_core.close_reason_spam")
+        (closed | still_open)._close(reason=other)
+        self.assertEqual(closed.close_reason_id, self.reason)
+        self.assertEqual(still_open.state, "closed")
+        self.assertEqual(still_open.close_reason_id, other)
+
     def test_reopen_clears_the_reason_and_the_note(self):
         """The fields describe the closure that was just undone."""
         conv = self._new_conv()

@@ -10,8 +10,11 @@ class OmnichannelConversation(models.Model):
              "conversation to the visitor.")
 
     def _close(self, reason=None, note=None):
+        # Taken before super(), which skips the already-closed ones and
+        # leaves every record closed: the visitor hears of a closure once.
+        closing = self.filtered(lambda conv: conv.state != "closed")
         res = super()._close(reason=reason, note=note)
-        for conv in self.filtered("livechat_channel_id"):
+        for conv in closing.filtered("livechat_channel_id"):
             channel = conv.livechat_channel_id
             if not channel.exists() or not channel.livechat_active:
                 continue
