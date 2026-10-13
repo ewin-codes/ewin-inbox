@@ -63,8 +63,7 @@ class MessageService(models.AbstractModel):
         conv_vals = {
             "last_message_at": now,
             "last_customer_message_at": now,
-            "state": "open" if conversation.state == "new" and conversation.operator_id
-                     else conversation.state,
+            "state": self._state_after_customer_message(conversation),
         }
         if not conversation.first_customer_message_at:
             conv_vals["first_customer_message_at"] = now
@@ -78,6 +77,21 @@ class MessageService(models.AbstractModel):
         conversation._sync_channel_members()
         conversation._notify_omni_event("message_received")
         return message
+
+    @api.model
+    def _state_after_customer_message(self, conversation):
+        """Where a message from the customer leaves the conversation.
+
+        New and Pending are both waiting for something the customer has just
+        delivered: a New conversation someone has taken becomes their open
+        work, and a Pending one stops waiting — back to Open if it has an
+        operator, back to New, the queue anyone free picks from, if it does
+        not. Open stays open. A closed conversation never reaches this point
+        closed: finding it for a customer's message reopens it first.
+        """
+        if conversation.state not in ("new", "pending"):
+            return conversation.state
+        return "open" if conversation.operator_id else "new"
 
     @api.model
     def _anchor_attachments(self, conversation, attachments):

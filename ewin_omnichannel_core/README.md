@@ -64,6 +64,11 @@ Depends on `base`, `mail`, `contacts`.
   on one; the reopen posts the reason it cleared to the chatter, which from
   then on holds the only copy. A closed conversation cannot be set to
   *Wait for customer* — it has to be reopened first.
+- **Waiting for the customer.** *Wait for customer* parks a conversation in
+  *Pending Customer* until the customer answers. Their next message ends the
+  wait by itself: the conversation goes back to *Open* if it has an operator,
+  and back to *New* — the queue the Inbox shows to whoever is free — if it
+  does not.
 - **Reporting.** Pivot and graph views over conversations and message volume,
   including a stored first-response time per conversation.
 

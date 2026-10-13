@@ -124,3 +124,37 @@ class TestInboundFlow(OmnichannelCase):
         ev2["external_message_id"] = "m3"
         other = svc.process_event(self.account, ev2)
         self.assertNotEqual(other.conversation_id, first.conversation_id)
+
+    def _event_with_id(self, ext_id, text="Hello"):
+        ev = self._event(text=text)
+        ev["external_message_id"] = ext_id
+        return ev
+
+    def test_customer_reply_brings_a_pending_conversation_back(self):
+        """Waiting for the customer ends when the customer answers: the
+        conversation goes back to its operator's open work instead of
+        sitting in Pending with a reply in it nobody is looking for."""
+        svc = self.env["omnichannel.routing.service"]
+        conv = svc.process_event(
+            self.account, self._event_with_id("p1")).conversation_id
+        conv.action_take()
+        conv.action_set_pending()
+
+        svc.process_event(self.account, self._event_with_id("p2", "Here it is"))
+
+        self.assertEqual(conv.state, "open")
+        self.assertEqual(conv.operator_id, self.env.user)
+
+    def test_customer_reply_to_an_unassigned_pending_returns_it_to_the_queue(self):
+        """Pending without an operator goes back to New, not Open: an open
+        conversation with nobody on it would drop out of the queue the
+        Inbox shows to whoever is free."""
+        svc = self.env["omnichannel.routing.service"]
+        conv = svc.process_event(
+            self.account, self._event_with_id("q1")).conversation_id
+        conv.action_set_pending()
+
+        svc.process_event(self.account, self._event_with_id("q2", "Still there?"))
+
+        self.assertEqual(conv.state, "new")
+        self.assertFalse(conv.operator_id)
