@@ -10,7 +10,7 @@ assignment, delivery statuses, canned replies, retries and reporting.
 
 Developed and maintained by [EWIN.codes](https://ewin.codes).
 
-![Odoo](https://img.shields.io/badge/Odoo-18.0-714B67) ![License](https://img.shields.io/badge/license-LGPL--3-blue) ![Status](https://img.shields.io/badge/status-active%20development-orange)
+![Odoo](https://img.shields.io/badge/Odoo-18.0-714B67) ![License](https://img.shields.io/badge/license-LGPL--3-blue) ![Status](https://img.shields.io/badge/status-active%20development-orange) [![Odoo Apps](https://img.shields.io/badge/Odoo%20Apps-EWIN%20Inbox-714B67)](https://apps.odoo.com/apps/modules/18.0/ewin_omnichannel_core)
 
 ![EWIN Inbox](screenshots/inbox.png)
 
@@ -82,7 +82,11 @@ and a test send, run from the form.
 
 ## Installation
 
-1. Clone the repository.
+Every module is also published on the
+[Odoo Apps Store](https://apps.odoo.com/apps/modules/18.0/ewin_omnichannel_core),
+free, where each one can be downloaded on its own. From this repository:
+
+1. Clone the repository (branch `18.0`).
 2. Add the repository path to the Odoo `addons_path`.
 3. Update the Apps list.
 4. Install EWIN Inbox.
