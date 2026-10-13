@@ -51,11 +51,14 @@ class TestLivechatLifecycle(LivechatCase):
         with the conversation itself stuck in pending."""
         conv, channel = self._conversation()
         conv.operator_id = self.env.user
+        state_before = conv.state
         self.env["ir.config_parameter"].sudo().set_param(
             "ewin_omnichannel.close_reason_policy", "required")
         action = conv.action_close()
         self.assertEqual(action["res_model"], "omnichannel.close.wizard")
-        self.assertNotEqual(conv.state, "closed")
+        # Exactly as it was, not merely "not closed": a session ended behind
+        # the operator's back would show up here as pending.
+        self.assertEqual(conv.state, state_before)
         self.assertTrue(channel.livechat_active)
         self.assertFalse(any(
             "closed" in (m.body or "").lower() for m in channel.message_ids))
