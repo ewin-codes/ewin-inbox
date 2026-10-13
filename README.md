@@ -32,6 +32,11 @@ Developed and maintained by [EWIN.codes](https://ewin.codes).
   rewritten in the composer, rescheduled, sent early or cancelled until it
   leaves
 - Close reasons — optional or mandatory, from a configurable list
+- Telegram alerts — the assigned operator, or the team chat, gets a message in
+  Telegram the moment a customer writes, with a link back into the
+  conversation (`ewin_omnichannel_notify_telegram`)
+- Customer history — every message copied into the chatter of the linked
+  contact, and of the linked CRM lead with `ewin_omnichannel_crm`
 - Retry queue
 - Reporting
 
