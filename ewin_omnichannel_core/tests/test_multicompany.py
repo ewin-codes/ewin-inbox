@@ -1,3 +1,4 @@
+from odoo.exceptions import UserError
 from odoo.tests import tagged
 from .common import OmnichannelCase
 
@@ -55,3 +56,26 @@ class TestMultiCompany(OmnichannelCase):
             {"name": "B only", "company_id": self.company_b.id})
         tags = self.env["omnichannel.tag"].with_user(self.operator).search([])
         self.assertNotIn(tag_b, tags)
+
+    def test_conversation_refuses_another_companys_close_reason(self):
+        """A reason owned by company B describes B's way of working; stamping
+        it on A's conversation would put a label into A's reports that A's
+        own administrators cannot see, edit or archive."""
+        reason_b = self.env["omnichannel.close.reason"].create(
+            {"name": "B only", "company_id": self.company_b.id})
+        ident_a = self.env["omnichannel.identity"].create(
+            {"account_id": self.account_a.id, "external_id": "1"})
+        conv_a = self.env["omnichannel.conversation"].create(
+            {"name": "ca", "account_id": self.account_a.id,
+             "identity_id": ident_a.id})
+        with self.assertRaises(UserError):
+            conv_a._close(reason=reason_b)
+        self.assertNotEqual(conv_a.state, "closed")
+
+    def test_shared_close_reason_closes_any_companys_conversation(self):
+        """The shipped reasons leave company_id empty precisely so every
+        company can use them without re-creating the list."""
+        shared = self.env.ref("ewin_omnichannel_core.close_reason_resolved")
+        self.conv_b._close(reason=shared)
+        self.assertEqual(self.conv_b.state, "closed")
+        self.assertEqual(self.conv_b.close_reason_id, shared)

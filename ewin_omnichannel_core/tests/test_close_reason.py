@@ -23,8 +23,8 @@ class TestCloseReason(OmnichannelCase):
     def test_shipped_reasons_are_not_owned_by_a_company(self):
         """The seed data leaves company_id empty on every shipped reason —
         the mechanism a second company would need to see them without
-        anyone re-creating the list. (Proving that outcome itself needs a
-        second-company fixture, which is out of scope here.)"""
+        anyone re-creating the list. The outcome itself — a second company
+        closing with a shared reason — is proven in test_multicompany."""
         reasons = self.env["omnichannel.close.reason"].search([])
         self.assertGreaterEqual(len(reasons), 5)
         for xmlid in ("close_reason_resolved", "close_reason_no_answer",

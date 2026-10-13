@@ -42,6 +42,7 @@ class OmnichannelConversation(models.Model):
     _description = "Omnichannel Conversation"
     _inherit = ["mail.thread"]
     _order = "last_message_at desc, id desc"
+    _check_company_auto = True
 
     name = fields.Char(required=True, default="New")
     subject = fields.Char(
@@ -99,7 +100,7 @@ class OmnichannelConversation(models.Model):
     closed_by = fields.Many2one("res.users", readonly=True)
     close_reason_id = fields.Many2one(
         "omnichannel.close.reason", string="Close Reason", readonly=True,
-        index=True, copy=False, ondelete="restrict",
+        index=True, copy=False, ondelete="restrict", check_company=True,
         help="Why the conversation was closed. Cleared when it is reopened; "
              "the chatter keeps the history.")
     close_note = fields.Text(
