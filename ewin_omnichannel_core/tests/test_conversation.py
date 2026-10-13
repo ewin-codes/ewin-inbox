@@ -195,6 +195,18 @@ class TestConversation(OmnichannelCase):
                 self.env["omnichannel.conversation"]._channel_avatar_b64(code),
                 "no brand PNG shipped for %r" % code)
 
+    def test_every_connector_channel_has_a_discuss_avatar(self):
+        """The Discuss sidebar draws the mirror channel's avatar, not the list
+        icon: a channel without a brand PNG shows up there as a generic '#',
+        and every customer on it looks like an ordinary team channel."""
+        channels = self.env["omnichannel.channel"].search(
+            [("connector_module", "!=", False)])
+        for channel in channels:
+            self.assertTrue(
+                self.env["omnichannel.conversation"]._channel_avatar_b64(
+                    channel.code),
+                "no Discuss avatar shipped for %r" % channel.code)
+
     def test_send_shortcut_reads_config(self):
         conv = self._new_conv()
         # default when unset

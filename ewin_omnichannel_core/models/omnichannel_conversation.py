@@ -19,7 +19,9 @@ CHANNEL_ICON_DEFAULT = ("fa-comments-o", "#6c757d")
 # Channel codes that ship a brand PNG under static/src/img. It is the mirrored
 # Discuss channel's avatar, so the source is recognisable in the Discuss
 # sidebar (which shows an avatar, not the FontAwesome list icon).
-CHANNEL_AVATAR_CODES = ("telegram", "viber", "email", "messenger")
+CHANNEL_AVATAR_CODES = (
+    "telegram", "viber", "email", "messenger", "whatsapp", "instagram",
+    "livechat")
 CHANNEL_AVATAR_URL = "/ewin_omnichannel_core/static/src/img/channel_%s.png"
 
 # Channel codes drawn from that brand PNG in the lists too, because Odoo

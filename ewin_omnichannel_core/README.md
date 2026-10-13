@@ -516,7 +516,11 @@ reasonable reading would put the control elsewhere:
    a 128×128 PNG at `static/src/img/channel_<code>.png` listed in
    `CHANNEL_IMAGE_ICONS` when it does not (FontAwesome has no Viber or
    Messenger glyph, and a missing class renders as a blank cell rather than
-   failing).
+   failing). Ship that PNG in every case and list the code in
+   `CHANNEL_AVATAR_CODES` as well: it becomes the avatar of each mirrored
+   Discuss channel, and without it the channel's customers show up in the
+   Discuss sidebar under a generic `#`. A test fails for any connector channel
+   that has none.
 7. Override `omnichannel.account._get_public_address()` for your channel code
    — the address a customer writes to (a mailbox, `@bot`, phone, page), read
    under `sudo()`, an empty string when unknown — and call `super()` for every
