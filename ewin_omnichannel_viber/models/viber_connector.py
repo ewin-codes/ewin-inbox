@@ -10,7 +10,9 @@ _logger = logging.getLogger(__name__)
 # Viber send_message status codes → operator-friendly explanations.
 # Module-level strings use _lt (lazy translation): _() at import time has no
 # language context and would freeze the string in the source language. _lt
-# defers the lookup to render time, when the user's language is known.
+# defers the lookup to where an entry is read, and self.env._() resolves it
+# there in that environment's language — handed on lazy, it would reach
+# the ORM with no environment in reach and fall back to the source text.
 FRIENDLY_ERRORS = {
     1: _lt("The webhook URL is invalid."),
     2: _lt("The Viber auth token is invalid."),
@@ -223,10 +225,8 @@ class ViberConnector(models.AbstractModel):
         if message is not None:
             vals["message_id"] = message.id
             vals["conversation_id"] = message.conversation_id.id
-            # str(): the friendly text is a lazy (_lt) translation; resolve it
-            # before storing so the DB column holds a plain string.
             message.write({"error_code": vals["code"],
-                           "error_message": str(summary)})
+                           "error_message": summary})
         self.env["omnichannel.error.log"].log("provider", summary, **vals)
         return summary
 
@@ -234,5 +234,5 @@ class ViberConnector(models.AbstractModel):
     def _friendly(self, error):
         code = getattr(error, "code", None)
         if code in FRIENDLY_ERRORS:
-            return FRIENDLY_ERRORS[code]
+            return self.env._(FRIENDLY_ERRORS[code])
         return _("Viber error: %s", getattr(error, "description", str(error)))

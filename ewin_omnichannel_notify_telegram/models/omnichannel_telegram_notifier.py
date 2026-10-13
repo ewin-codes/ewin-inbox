@@ -176,7 +176,7 @@ class OmnichannelTelegramNotifier(models.Model):
         description = (getattr(error, "description", "") or "").lower()
         for phrase, message in FRIENDLY_ERRORS.items():
             if phrase in description:
-                return str(message)
+                return self.env._(message)
         return _("Telegram error: %s",
                  getattr(error, "description", str(error)))
 

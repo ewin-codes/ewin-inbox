@@ -14,7 +14,9 @@ _logger = logging.getLogger(__name__)
 # Module-level strings use _lt (lazy translation): _() at import time has no
 # language context and would freeze the string in the source language while
 # emitting a "no translation language detected" warning. _lt defers the
-# lookup to render time, when the user's language is known.
+# lookup to where an entry is read, and self.env._() resolves it there in
+# that environment's language — handed on lazy, it would reach the ORM
+# with no environment in reach and fall back to the source text.
 FRIENDLY_ERRORS = {
     131047: _lt("The customer has not messaged in the last 24 hours — only "
                 "approved templates can be sent until they reply."),
@@ -152,7 +154,7 @@ class WhatsAppConnector(models.AbstractModel):
     def _friendly_status_error(self, err):
         code = err.get("code")
         if code in FRIENDLY_ERRORS:
-            return FRIENDLY_ERRORS[code]
+            return self.env._(FRIENDLY_ERRORS[code])
         return err.get("title") or _("Delivery failed.")
 
     @api.model
@@ -312,5 +314,5 @@ class WhatsAppConnector(models.AbstractModel):
     def _friendly(self, error):
         code = getattr(error, "code", None)
         if code in FRIENDLY_ERRORS:
-            return FRIENDLY_ERRORS[code]
+            return self.env._(FRIENDLY_ERRORS[code])
         return _("WhatsApp error: %s", getattr(error, "message", str(error)))

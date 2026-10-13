@@ -58,3 +58,18 @@ class TestOutbound(TransactionCase):
         with patch(_SEND, side_effect=err):
             with self.assertRaises(NonRetriableError):
                 connector.send_message(self.account, msg)
+
+    def test_a_friendly_error_reaches_the_log_already_translated(self):
+        """The friendly texts are module-level _lt terms. Passed on lazy,
+        they are resolved deep inside the ORM, where no environment is in
+        reach: the operator gets the English source and the server log a
+        "no translation language detected" warning for every failed send."""
+        from odoo.addons.ewin_omnichannel_instagram.services \
+            .instagram_api_client import InstagramApiError
+        connector = self.env["omnichannel.connector.instagram"]
+        with self.assertNoLogs("odoo.tools.translate", "WARNING"):
+            summary = connector.handle_provider_error(
+                self.account,
+                InstagramApiError(
+                    10, 2018278, "Outside window", retriable=False))
+        self.assertIsInstance(summary, str)

@@ -69,3 +69,17 @@ class TestViberConnectorOutbound(TransactionCase):
         self.assertEqual(msg.state, "queued")
         self.assertTrue(self.env["omnichannel.job"].search(
             [("method", "=", "send_outbound")]))
+
+    def test_a_friendly_error_reaches_the_log_already_translated(self):
+        """The friendly texts are module-level _lt terms. Passed on lazy,
+        they are resolved deep inside the ORM, where no environment is in
+        reach: the operator gets the English source and the server log a
+        "no translation language detected" warning for every failed send."""
+        from odoo.addons.ewin_omnichannel_viber.services.viber_api_client \
+            import ViberApiError
+        connector = self.env["omnichannel.connector.viber"]
+        with self.assertNoLogs("odoo.tools.translate", "WARNING"):
+            summary = connector.handle_provider_error(
+                self.account,
+                ViberApiError(6, "receiverNotSubscribed", retriable=False))
+        self.assertIsInstance(summary, str)

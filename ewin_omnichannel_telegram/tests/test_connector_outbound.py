@@ -99,3 +99,15 @@ class TestConnectorOutbound(TransactionCase):
                 raised = True
         self.assertTrue(raised, "NonRetriableError was not propagated to the job")
         self.assertEqual(msg.state, "failed")
+
+    def test_a_friendly_error_reaches_the_log_already_translated(self):
+        """The friendly texts are module-level _lt terms. Passed on lazy,
+        they are resolved deep inside the ORM, where no environment is in
+        reach: the operator gets the English source and the server log a
+        "no translation language detected" warning for every failed send."""
+        with self.assertNoLogs("odoo.tools.translate", "WARNING"):
+            summary = self.connector.handle_provider_error(
+                self.account, TelegramApiError(
+                    403, "Forbidden: bot was blocked by the user",
+                    retriable=False))
+        self.assertIsInstance(summary, str)

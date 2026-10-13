@@ -46,3 +46,23 @@ class TestOutbound(TransactionCase):
                    side_effect=err):
             with self.assertRaises(NonRetriableError):
                 connector.send_message(self.account, msg)
+
+    def test_a_friendly_error_reaches_the_log_already_translated(self):
+        """The friendly texts are module-level _lt terms. Passed on lazy,
+        they are resolved deep inside the ORM, where no environment is in
+        reach: the operator gets the English source and the server log a
+        "no translation language detected" warning for every failed send."""
+        from odoo.addons.ewin_omnichannel_whatsapp.services.whatsapp_api_client \
+            import WhatsAppApiError
+        connector = self.env["omnichannel.connector.whatsapp"]
+        with self.assertNoLogs("odoo.tools.translate", "WARNING"):
+            summary = connector.handle_provider_error(
+                self.account,
+                WhatsAppApiError(131047, 0, "Re-engagement", retriable=False))
+        self.assertIsInstance(summary, str)
+
+    def test_a_friendly_status_error_is_translated(self):
+        """A failed-delivery status takes the same _lt table."""
+        connector = self.env["omnichannel.connector.whatsapp"]
+        self.assertIsInstance(
+            connector._friendly_status_error({"code": 131047}), str)
