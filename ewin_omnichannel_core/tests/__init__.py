@@ -22,3 +22,4 @@ from . import test_inbound_attachments
 from . import test_secret_equals
 from . import test_menu_counters
 from . import test_menu_badge_assets
+from . import test_tag

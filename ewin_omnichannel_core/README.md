@@ -71,7 +71,7 @@ Depends on `base`, `mail`, `contacts`.
 | `omnichannel.event` | Raw provider events, deduplicated per `(account, external event id)` — this is what makes redelivered webhooks harmless. |
 | `omnichannel.job` | The retry queue: `pending`/`running`/`done`/`failed`, `next_run_at`, `retry_count`, `max_retries`. |
 | `omnichannel.team` | An operator team, used for routing and for the "my team" scope. |
-| `omnichannel.tag` | Free-form conversation labels. |
+| `omnichannel.tag` | Free-form conversation labels. A name is unique per company, and among the tags shared by every company. |
 | `omnichannel.close.reason` | Preset answers for "why was this closed". Shipped with five defaults, editable under Configuration. |
 | `omnichannel.template` | Canned reply with a shortcut, optionally channel-specific. |
 | `omnichannel.error.log` | Operator-readable failure log, with the technical detail kept alongside the friendly text. |
