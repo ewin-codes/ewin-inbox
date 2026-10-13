@@ -1,70 +1,19 @@
-<section class="oe_container">
-  <style>
-    .ewin-wrap { max-width: 960px; margin: 0 auto; padding: 0 16px;
-      font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #24243a; }
-    .ewin-wrap h1 { font-size: 36px; margin: 24px 0 8px; letter-spacing: -0.5px; }
-    .ewin-wrap h2 { font-size: 22px; margin: 36px 0 12px; color: #2b2b45;
-      border-bottom: 2px solid #ecebf3; padding-bottom: 8px; }
-    .ewin-lead { font-size: 18px; line-height: 1.6; color: #4a4a68; margin: 0 0 20px; }
-    .ewin-badges { margin: 0 0 24px; }
-    .ewin-badge { display: inline-block; font-size: 13px; font-weight: 600;
-      padding: 4px 12px; border-radius: 999px; margin: 0 6px 6px 0; }
-    .b-odoo { background: #eee3f2; color: #714B67; }
-    .b-lic { background: #e3ecfb; color: #2f5fc4; }
-    .b-unver { background: #fbeede; color: #b46a11; }
-    .ewin-shot { width: 100%; border: 1px solid #e6e5ef; border-radius: 10px; margin: 8px 0 20px; }
-    .ewin-wrap ul { line-height: 1.75; font-size: 16px; padding-left: 22px; }
-    .ewin-req { background: #f7f6fb; border-radius: 10px; padding: 4px 20px; }
-    .ewin-note { border-left: 4px solid #e0a53a; background: #fdf5e8; padding: 14px 18px;
-      border-radius: 6px; margin: 24px 0; font-size: 15px; line-height: 1.6; }
-    .ewin-foot { margin: 36px 0 24px; padding: 18px 20px; background: #f7f6fb;
-      border-radius: 10px; font-size: 15px; color: #4a4a68; }
-    .ewin-foot a { color: #714B67; text-decoration: none; font-weight: 600; }
-  </style>
-
-  <div class="ewin-wrap">
-    <h1>EWIN Inbox: Instagram</h1>
-    <p class="ewin-lead">Instagram Direct connector for EWIN Inbox (Instagram business login,
-      no Facebook Page). Receive and answer Instagram DMs from the unified Odoo inbox, linked
-      to Odoo contacts and mirrored into Discuss.</p>
-
-    <div class="ewin-badges">
-      <span class="ewin-badge b-odoo">Odoo 18</span>
-      <span class="ewin-badge b-lic">LGPL-3</span>
-      <span class="ewin-badge b-unver">Unverified</span>
-    </div>
-
-    <img class="ewin-shot" src="main_screenshot.png" alt="EWIN Inbox: Instagram"/>
-
-    <div class="ewin-note">
-      <strong>Status: Unverified.</strong>
-      This connector has not yet been validated against a live provider account.
-      Test it in a staging environment before production use.
-    </div>
-
-    <h2>Highlights</h2>
-    <ul>
-      <li>Instagram Graph API via Instagram business login (no Facebook Page required)</li>
-      <li>Two-way media messaging with delivery and read receipts</li>
-      <li>Story mentions and story replies handled as conversations</li>
-      <li>Automatic long-lived access-token refresh</li>
-      <li>24-hour-window handling with optional Human Agent tag</li>
-      <li>Fail-closed webhook — HMAC signature verified over the raw body (App Secret)</li>
-    </ul>
-
-    <h2>Requirements</h2>
-    <div class="ewin-req">
-      <ul>
-        <li><strong>EWIN Inbox</strong> (<code>ewin_omnichannel_core</code>) installed</li>
-        <li>An Instagram professional account with business login and Meta app credentials (App Secret)</li>
-        <li>A public HTTPS endpoint reachable by Meta for the webhook</li>
-      </ul>
-    </div>
-
-    <div class="ewin-foot">
-      Licensed under the GNU Lesser General Public License v3.0 (LGPL-3).<br/>
-      Developed and maintained by <a href="https://ewin.codes">EWIN.codes</a>.
-      Support: <a href="mailto:info@ewin.codes">info@ewin.codes</a>.
+<section class="container" style="color:#24243a; font-size:16px">
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      <h1 class="mt-4 mb-2" style="color:#24243a; font-weight:700; font-size:40px">EWIN Inbox: Instagram</h1>
+      <p class="lead mb-3" style="color:#5f5f7a">Instagram Direct connector for EWIN Inbox, with Instagram business login and no Facebook Page required.</p>
+      <div class="mb-4"><span class="badge badge-pill badge-dark mr-1" style="font-size:13px; padding:6px 12px">Odoo 18</span><span class="badge badge-pill badge-primary mr-1" style="font-size:13px; padding:6px 12px">LGPL-3</span><span class="badge badge-pill badge-info mr-1" style="font-size:13px; padding:6px 12px">Free</span><span class="badge badge-pill badge-warning mr-1" style="font-size:13px; padding:6px 12px">Not yet verified live</span></div>
+      <div class="alert alert-warning mt-4" role="alert" style="font-size:15px"><strong>Status: not yet verified live.</strong> This connector is implemented and covered by automated tests, but it has not yet been verified against a live provider account. Try it on a staging database before relying on it in production.</div>
+      <h3 class="mt-5 mb-3" style="color:#3d34bd; font-weight:700; border-bottom:2px solid #e7e5f7; padding-bottom:8px">Highlights</h3><ul style="font-size:16px; color:#24243a"><li class="mb-2">Instagram Graph API with Instagram business login</li><li class="mb-2">Two-way media with delivery and read receipts</li><li class="mb-2">Story mentions and story replies arrive as conversations</li><li class="mb-2">Long-lived access token refreshed automatically</li><li class="mb-2">24-hour window handled, with the optional Human Agent tag</li><li class="mb-2">Webhook that fails closed: the HMAC signature is checked over the raw body</li></ul><h3 class="mt-5 mb-3" style="color:#3d34bd; font-weight:700; border-bottom:2px solid #e7e5f7; padding-bottom:8px">Requirements</h3><ul style="font-size:16px; color:#24243a"><li class="mb-2"><strong>EWIN Inbox</strong> (<code>ewin_omnichannel_core</code>) installed</li><li class="mb-2">An Instagram professional account and a Meta app (App Secret)</li><li class="mb-2">A public HTTPS address Meta can reach for the webhook</li></ul><h3 class="mt-5 mb-3" style="color:#3d34bd; font-weight:700; border-bottom:2px solid #e7e5f7; padding-bottom:8px">Data and external services</h3><p style="font-size:16px">Messages, files and the customer's Instagram username travel between Odoo and the Instagram Graph API (<code>graph.instagram.com</code>). Nothing is sent anywhere else.</p>
+      <div class="card bg-light mt-5 mb-4">
+        <div class="card-body" style="font-size:15px; color:#5f5f7a">
+          Licensed under the GNU Lesser General Public License v3.0 (LGPL-3).
+          Developed and maintained by <strong>EWIN.codes</strong>.
+          Installation, configuration and custom development:
+          <a href="mailto:info@ewin.codes" style="color:#3d34bd; font-weight:600">info@ewin.codes</a>
+        </div>
+      </div>
     </div>
   </div>
 </section>

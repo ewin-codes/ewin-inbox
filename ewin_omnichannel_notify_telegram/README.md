@@ -1,4 +1,4 @@
-# EWIN Inbox — Telegram Notifications
+# EWIN Inbox: Alerts — Telegram notifications
 
 Notifies staff in Telegram when a customer writes to **EWIN Inbox**. It does
 not carry any customer conversation itself — it watches the inbox and pings a

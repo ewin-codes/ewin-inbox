@@ -1,5 +1,5 @@
 {
-    "name": "EWIN Inbox: Telegram Notifications",
+    "name": "EWIN Inbox: Alerts",
     "summary": "Notify operators in Telegram when a customer writes",
     "version": "18.0.1.0.0",
     "category": "Productivity/Discuss",
@@ -8,6 +8,7 @@
     "website": "https://ewin.codes",
     "support": "info@ewin.codes",
     "license": "LGPL-3",
+    "images": ["static/description/banner.png"],
     "depends": [
         "ewin_omnichannel_core",
     ],

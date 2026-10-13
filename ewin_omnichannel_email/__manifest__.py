@@ -8,6 +8,7 @@
     "website": "https://ewin.codes",
     "support": "info@ewin.codes",
     "license": "LGPL-3",
+    "images": ["static/description/banner.png"],
     "depends": ["ewin_omnichannel_core"],
     "data": [
         "data/email_channel_data.xml",

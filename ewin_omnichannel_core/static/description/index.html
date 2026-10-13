@@ -1,101 +1,19 @@
-<section class="oe_container">
-  <style>
-    .ewin-wrap { max-width: 960px; margin: 0 auto; padding: 0 16px;
-      font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #24243a; }
-    .ewin-wrap h1 { font-size: 40px; margin: 24px 0 8px; letter-spacing: -0.5px; }
-    .ewin-wrap h2 { font-size: 24px; margin: 40px 0 12px; color: #2b2b45;
-      border-bottom: 2px solid #ecebf3; padding-bottom: 8px; }
-    .ewin-lead { font-size: 18px; line-height: 1.6; color: #4a4a68; margin: 0 0 20px; }
-    .ewin-badges { margin: 0 0 24px; }
-    .ewin-badge { display: inline-block; font-size: 13px; font-weight: 600;
-      padding: 4px 12px; border-radius: 999px; margin: 0 6px 6px 0; }
-    .b-odoo { background: #eee3f2; color: #714B67; }
-    .b-lic { background: #e3ecfb; color: #2f5fc4; }
-    .b-dev { background: #fdecdc; color: #c1650f; }
-    .ewin-shot { width: 100%; border: 1px solid #e6e5ef; border-radius: 10px; margin: 8px 0 4px; }
-    .ewin-cap { font-size: 13px; color: #8a8aa0; margin: 0 0 20px; text-align: center; }
-    .ewin-wrap ul { line-height: 1.75; font-size: 16px; padding-left: 22px; }
-    .ewin-wrap li { margin: 2px 0; }
-    .ewin-grid { display: table; width: 100%; border-collapse: collapse; margin: 8px 0; }
-    .ewin-grid .row { display: table-row; }
-    .ewin-grid .c { display: table-cell; padding: 9px 12px; border-bottom: 1px solid #ecebf3; font-size: 15px; }
-    .ewin-grid .head { font-weight: 700; background: #f7f6fb; }
-    .pill { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 10px; border-radius: 999px; }
-    .p-tested { background: #dff3e6; color: #1c7a44; }
-    .p-unver { background: #fbeede; color: #b46a11; }
-    .ewin-foot { margin: 40px 0 24px; padding: 18px 20px; background: #f7f6fb;
-      border-radius: 10px; font-size: 15px; color: #4a4a68; }
-    .ewin-foot a { color: #714B67; text-decoration: none; font-weight: 600; }
-  </style>
-
-  <div class="ewin-wrap">
-    <h1>EWIN Inbox</h1>
-    <p class="ewin-lead">Open-source omnichannel customer inbox for Odoo 18. Receive and
-      answer customer messages from Telegram, Email, Live Chat, WhatsApp, Instagram and Viber
-      in one Odoo-native interface — linked to Odoo contacts and mirrored into Discuss.</p>
-
-    <div class="ewin-badges">
-      <span class="ewin-badge b-odoo">Odoo 18</span>
-      <span class="ewin-badge b-lic">LGPL-3</span>
-      <span class="ewin-badge b-dev">Active Development</span>
-    </div>
-
-    <img class="ewin-shot" src="main_screenshot.png" alt="EWIN Inbox — unified conversation list"/>
-    <p class="ewin-cap">The unified inbox: every channel in one conversation list.</p>
-
-    <h2>Features</h2>
-    <ul>
-      <li>Unified inbox for all connected channels</li>
-      <li>Two-way text and media messaging</li>
-      <li>Odoo Discuss integration</li>
-      <li>Contact matching with <code>res.partner</code></li>
-      <li>Agent and team assignment</li>
-      <li>Delivery and read statuses where supported</li>
-      <li>Canned replies</li>
-      <li>Retry queue</li>
-      <li>Reporting</li>
-    </ul>
-
-    <img class="ewin-shot" src="conversation.png" alt="EWIN Inbox — open conversation"/>
-    <p class="ewin-cap">An open conversation, mirrored into Odoo Discuss.</p>
-
-    <h2>Channel status</h2>
-    <div class="ewin-grid">
-      <div class="row"><div class="c head">Channel</div><div class="c head">Status</div></div>
-      <div class="row"><div class="c">Telegram</div><div class="c"><span class="pill p-tested">Tested</span></div></div>
-      <div class="row"><div class="c">Email</div><div class="c"><span class="pill p-tested">Tested</span></div></div>
-      <div class="row"><div class="c">Live Chat</div><div class="c"><span class="pill p-tested">Tested</span></div></div>
-      <div class="row"><div class="c">WhatsApp</div><div class="c"><span class="pill p-unver">Unverified</span></div></div>
-      <div class="row"><div class="c">Instagram</div><div class="c"><span class="pill p-unver">Unverified</span></div></div>
-      <div class="row"><div class="c">Viber</div><div class="c"><span class="pill p-unver">Unverified</span></div></div>
-    </div>
-    <p><strong>Tested</strong> — manually verified using a real provider account.
-      <strong>Unverified</strong> — implementation is complete but has not yet been tested
-      against a live provider account.</p>
-
-    <img class="ewin-shot" src="reporting.png" alt="EWIN Inbox — reporting"/>
-    <p class="ewin-cap">Conversation and message analytics.</p>
-
-    <h2>Requirements</h2>
-    <ul>
-      <li>Odoo 18</li>
-      <li>Public HTTPS endpoint for webhook-based connectors</li>
-      <li>Provider accounts and API credentials for selected channels</li>
-      <li>IMAP and SMTP credentials for Email</li>
-    </ul>
-
-    <h2>Limitations</h2>
-    <ul>
-      <li>WhatsApp and Instagram are subject to Meta API rules and messaging windows.</li>
-      <li>Delivery and read statuses depend on provider capabilities.</li>
-      <li>Unverified connectors should be tested in staging before production use.</li>
-      <li>The module does not bypass provider verification or messaging restrictions.</li>
-    </ul>
-
-    <div class="ewin-foot">
-      Licensed under the GNU Lesser General Public License v3.0 (LGPL-3).<br/>
-      Developed and maintained by <a href="https://ewin.codes">EWIN.codes</a>.
-      Support and commercial services: <a href="mailto:info@ewin.codes">info@ewin.codes</a>.
+<section class="container" style="color:#24243a; font-size:16px">
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      <h1 class="mt-4 mb-2" style="color:#24243a; font-weight:700; font-size:40px">EWIN Inbox</h1>
+      <p class="lead mb-3" style="color:#5f5f7a">Omnichannel customer inbox for Odoo 18. Answer Telegram, WhatsApp, Email, Instagram, Messenger, Viber and Live Chat from one Odoo-native screen, linked to your contacts and mirrored into Discuss.</p>
+      <div class="mb-4"><span class="badge badge-pill badge-dark mr-1" style="font-size:13px; padding:6px 12px">Odoo 18</span><span class="badge badge-pill badge-primary mr-1" style="font-size:13px; padding:6px 12px">LGPL-3</span><span class="badge badge-pill badge-info mr-1" style="font-size:13px; padding:6px 12px">Free</span></div>
+      
+      <div class="text-center my-4"><img src="main_screenshot.png" class="img-fluid shadow rounded" style="border:1px solid #e6e5ef" alt="Every channel in one conversation list, with operator, team, state and priority."/><p class="mt-2" style="font-size:14px; color:#5f5f7a">Every channel in one conversation list, with operator, team, state and priority.</p></div><h3 class="mt-5 mb-3" style="color:#3d34bd; font-weight:700; border-bottom:2px solid #e7e5f7; padding-bottom:8px">What it does</h3><ul style="font-size:16px; color:#24243a"><li class="mb-2">One inbox for Telegram, WhatsApp, Email, Instagram, Messenger, Viber and Odoo Live Chat</li><li class="mb-2">Two-way text and media, with delivery and read statuses where the channel reports them</li><li class="mb-2">Customers matched to Odoo contacts; with <strong>EWIN Inbox: CRM</strong>, conversations attach to leads</li><li class="mb-2">Operator and team assignment; replying takes an unassigned conversation</li><li class="mb-2">Internal notes that never leave Odoo</li><li class="mb-2">Canned replies and scheduled replies</li><li class="mb-2">Close reasons, optional or mandatory, from a configurable list</li><li class="mb-2">Realtime list and thread updates, unread counters on the menu</li><li class="mb-2">Every conversation mirrored into Odoo Discuss; a reply typed there reaches the customer too</li><li class="mb-2">Retry queue for failed sends, error log, conversation and message reporting</li></ul><div class="text-center my-4"><img src="conversation.png" class="img-fluid shadow rounded" style="border:1px solid #e6e5ef" alt="A thread from Telegram: the customer, the operator&#x27;s reply and an internal note."/><p class="mt-2" style="font-size:14px; color:#5f5f7a">A thread from Telegram: the customer, the operator's reply and an internal note.</p></div><div class="text-center my-4"><img src="scheduled_replies.png" class="img-fluid shadow rounded" style="border:1px solid #e6e5ef" alt="Scheduled replies wait in a tab of their own and can be edited, sent now or cancelled."/><p class="mt-2" style="font-size:14px; color:#5f5f7a">Scheduled replies wait in a tab of their own and can be edited, sent now or cancelled.</p></div><div class="text-center my-4"><img src="discuss.png" class="img-fluid shadow rounded" style="border:1px solid #e6e5ef" alt="The Discuss mirror, each channel under its own avatar."/><p class="mt-2" style="font-size:14px; color:#5f5f7a">The Discuss mirror, each channel under its own avatar.</p></div><div class="text-center my-4"><img src="reporting.png" class="img-fluid shadow rounded" style="border:1px solid #e6e5ef" alt="Message volume per channel, inbound against outbound."/><p class="mt-2" style="font-size:14px; color:#5f5f7a">Message volume per channel, inbound against outbound.</p></div><h3 class="mt-5 mb-3" style="color:#3d34bd; font-weight:700; border-bottom:2px solid #e7e5f7; padding-bottom:8px">Channels</h3><p style="font-size:16px">The core holds the inbox; each channel is a separate connector module. Install the ones you need.</p><table class="table table-sm table-striped" style="font-size:15px"><thead><tr><th>Channel</th><th>Module</th><th>Transport</th><th>Status</th></tr></thead><tbody><tr><td>Telegram</td><td><code>ewin_omnichannel_telegram</code></td><td>Bot API webhook</td><td><span class="badge badge-success">Tested</span></td></tr><tr><td>Email</td><td><code>ewin_omnichannel_email</code></td><td>IMAP poll + SMTP</td><td><span class="badge badge-success">Tested</span></td></tr><tr><td>Live Chat</td><td><code>ewin_omnichannel_livechat</code></td><td>Odoo website Live Chat, in process</td><td><span class="badge badge-success">Tested</span></td></tr><tr><td>Messenger</td><td><code>ewin_omnichannel_messenger</code></td><td>Meta Graph API webhook</td><td><span class="badge badge-success">Tested</span></td></tr><tr><td>WhatsApp</td><td><code>ewin_omnichannel_whatsapp</code></td><td>Meta Cloud API webhook</td><td><span class="badge badge-warning">Not yet verified live</span></td></tr><tr><td>Instagram</td><td><code>ewin_omnichannel_instagram</code></td><td>Instagram Graph API webhook</td><td><span class="badge badge-warning">Not yet verified live</span></td></tr><tr><td>Viber</td><td><code>ewin_omnichannel_viber</code></td><td>Viber Bot API webhook</td><td><span class="badge badge-warning">Not yet verified live</span></td></tr></tbody></table><p style="font-size:15px; color:#5f5f7a"><strong>Tested</strong> means verified by hand against a real provider account. The other connectors are complete and covered by automated tests, but have not been run against a live account yet.</p><h3 class="mt-5 mb-3" style="color:#3d34bd; font-weight:700; border-bottom:2px solid #e7e5f7; padding-bottom:8px">Requirements</h3><ul style="font-size:16px; color:#24243a"><li class="mb-2">Odoo 18 Community or Enterprise</li><li class="mb-2">A public HTTPS address for the webhook-based connectors</li><li class="mb-2">Provider accounts and API credentials for the channels you connect</li></ul><h3 class="mt-5 mb-3" style="color:#3d34bd; font-weight:700; border-bottom:2px solid #e7e5f7; padding-bottom:8px">Data and external services</h3><p style="font-size:16px">The core module talks to no external service. Messages leave Odoo only through the connector modules you install, each to its own provider; their pages say exactly where.</p>
+      <div class="card bg-light mt-5 mb-4">
+        <div class="card-body" style="font-size:15px; color:#5f5f7a">
+          Licensed under the GNU Lesser General Public License v3.0 (LGPL-3).
+          Developed and maintained by <strong>EWIN.codes</strong>.
+          Installation, configuration and custom development:
+          <a href="mailto:info@ewin.codes" style="color:#3d34bd; font-weight:600">info@ewin.codes</a>
+        </div>
+      </div>
     </div>
   </div>
 </section>

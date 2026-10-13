@@ -8,6 +8,7 @@
     "website": "https://ewin.codes",
     "support": "info@ewin.codes",
     "license": "LGPL-3",
+    "images": ["static/description/banner.png", "static/description/main_screenshot.png"],
     "depends": [
         "base",
         "mail",
