@@ -185,14 +185,20 @@ class MessageService(models.AbstractModel):
 
     @api.model
     def create_outbound(self, conversation, body, is_internal=False,
-                        attachments=None, scheduled_at=None):
+                        attachments=None, scheduled_at=None, quote=None):
+        """Write and deliver an operator's reply.
+
+        ``quote`` is the quote the operator edited under the reply, sent
+        instead of the one the channel would build; None leaves that to the
+        channel, and an empty string sends the reply without one.
+        """
         if scheduled_at:
             if is_internal:
                 raise UserError(_(
                     "An internal note is never delivered to the customer, so "
                     "there is nothing to schedule."))
             return self._create_scheduled(
-                conversation, body, attachments, scheduled_at)
+                conversation, body, attachments, scheduled_at, quote=quote)
         # Replying to a customer takes an unassigned conversation automatically
         # (internal notes do not — writing a note is not answering the customer).
         if not is_internal:
@@ -207,12 +213,20 @@ class MessageService(models.AbstractModel):
             "author_partner_id": self.env.user.partner_id.id,
             "state": "queued" if not is_internal else "sent",
             "attachment_ids": [(6, 0, (attachments or self.env["ir.attachment"]).ids)],
+            **self._quote_vals(quote),
         })
         self._finalize_send(conversation, message, is_internal)
         return message
 
     @api.model
-    def _create_scheduled(self, conversation, body, attachments, scheduled_at):
+    def _quote_vals(self, quote):
+        if quote is None:
+            return {}
+        return {"quote_edited": True, "quote_body": quote or False}
+
+    @api.model
+    def _create_scheduled(self, conversation, body, attachments, scheduled_at,
+                          quote=None):
         """Park an outbound reply until ``scheduled_at``.
 
         Everything an immediate reply does beyond creating the row is
@@ -242,6 +256,7 @@ class MessageService(models.AbstractModel):
             "scheduled_by": self.env.uid,
             "attachment_ids": [
                 (6, 0, (attachments or self.env["ir.attachment"]).ids)],
+            **self._quote_vals(quote),
         })
         conversation.message_post(body=_(
             "Reply scheduled for %(when)s by %(user)s.",

@@ -29,9 +29,15 @@ on a host with no public HTTPS endpoint at all.
   one inside the other. Internal notes, failed and still-scheduled replies are
   left out, a quoted message with files names them (the files travel only with
   their own email), and a scheduled reply quotes what the customer wrote while
-  it waited. The quote the next reply will carry sits folded under the
-  composer behind a `•••` button, so the operator can check it before sending.
-  On by default, switchable per account.
+  it waited. On by default, switchable per account.
+- **The quote in the reply box** — as in a mail client, the quote sits folded
+  behind a `•••` at the bottom of the reply box, under the signature. Unfolded
+  it is part of the text, greyed, and editable: what the operator leaves there
+  is what goes out, and deleting all of it sends the reply without a quote.
+  Left untouched it is not stored, and the quote is built when the reply
+  leaves — so a scheduled reply still takes in what the customer wrote while
+  it waited. An edited quote is kept with its reply, and is what a later
+  reply quotes in turn.
 - **Signatures in the composer** — two, both optional and both per account:
   the writer's own (the one in their Odoo preferences) and the account's
   shared one beneath it. The composer opens with them under an empty first
@@ -62,8 +68,9 @@ on a host with no public HTTPS endpoint at all.
 - `omnichannel.connector.email` — the connector: the poll loop, message
   processing, outbound send, and provider-error handling.
 - `omnichannel.email.reply` — builds what the customer receives: the reply
-  and the quoted conversation under it, plus the `References` chain; and the
-  same quote for the composer's preview. A reply of ours sent earlier is
+  and the quoted conversation under it (or the operator's edited copy, with
+  the quote's inline styles put back after the HTML sanitizer took them), plus
+  the `References` chain; and the same quote for the reply box. A reply of ours sent earlier is
   rebuilt the same way when it is quoted, so a quoting setting changed since
   then applies to it as well.
 - The connector answers the core's composer hooks: `composer_signature` (the

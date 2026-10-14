@@ -125,6 +125,12 @@ class OmnichannelConversation(models.Model):
     composer_scheduled_at = fields.Datetime(
         string="Send later", copy=False,
         help="Pick a moment to deliver this reply instead of sending it now.")
+    composer_quote_edited = fields.Boolean(
+        copy=False,
+        help="The quote under the reply was changed in the composer; the "
+             "edited copy below is what goes out.")
+    composer_quote_body = fields.Html(
+        copy=False, sanitize_style=True, string="Edited Quote")
     composer_editing_message_id = fields.Many2one(
         "omnichannel.message", string="Editing Scheduled Reply", copy=False,
         help="The waiting reply currently loaded into the composer, if any. "
@@ -707,6 +713,15 @@ class OmnichannelConversation(models.Model):
             return ""
         return plaintext2html(text)
 
+    def _composer_quote(self):
+        """The quote the operator edited in the composer, or None when they
+        left it alone and the channel is to build its own. An edited quote
+        may be empty — that is the operator deleting it."""
+        self.ensure_one()
+        if not self.composer_quote_edited:
+            return None
+        return self.composer_quote_body or ""
+
     def _post_composer(self, scheduled_at=None):
         """Post the composed reply, clearing the composer after.
 
@@ -728,12 +743,17 @@ class OmnichannelConversation(models.Model):
         else:
             self.env["omnichannel.message.service"].create_outbound(
                 self, body, is_internal=self.composer_is_internal,
-                attachments=attachments, scheduled_at=scheduled_at)
+                attachments=attachments, scheduled_at=scheduled_at,
+                quote=self._composer_quote())
         self._mark_read()
-        self.composer_body = False
-        self.composer_scheduled_at = False
-        self.composer_editing_message_id = False
-        self.composer_attachment_ids = [(5, 0, 0)]
+        self.write({
+            "composer_body": False,
+            "composer_scheduled_at": False,
+            "composer_editing_message_id": False,
+            "composer_attachment_ids": [(5, 0, 0)],
+            "composer_quote_edited": False,
+            "composer_quote_body": False,
+        })
 
     def _apply_scheduled_edit(self, message, body, attachments, scheduled_at):
         """Write the composer back onto the reply it was loaded from.
@@ -751,7 +771,12 @@ class OmnichannelConversation(models.Model):
         """
         self.ensure_one()
         message._check_reschedulable()
-        vals = {"body": body}
+        quote = self._composer_quote()
+        vals = {
+            "body": body,
+            "quote_edited": quote is not None,
+            "quote_body": quote or False,
+        }
         if attachments:
             # Append. The reply's own files were never in the composer, and
             # dropping them because they are absent from it would delete work
@@ -787,6 +812,8 @@ class OmnichannelConversation(models.Model):
         self.write({
             "composer_body": message.body_text().strip(),
             "composer_scheduled_at": message.scheduled_at,
+            "composer_quote_edited": message.quote_edited,
+            "composer_quote_body": message.quote_body,
             # A scheduled reply is never an internal note (the service refuses
             # the combination), so loading one always leaves note mode.
             "composer_is_internal": False,
@@ -813,6 +840,8 @@ class OmnichannelConversation(models.Model):
             "composer_body": False,
             "composer_scheduled_at": False,
             "composer_editing_message_id": False,
+            "composer_quote_edited": False,
+            "composer_quote_body": False,
         })
         return True
 

@@ -1,4 +1,5 @@
-from markupsafe import Markup
+from lxml import html as lxml_html
+from markupsafe import Markup, escape
 
 from odoo import api, fields, models
 from odoo.tools import format_datetime
@@ -24,6 +25,16 @@ MAX_REFERENCES = 20
 # reply's own paragraph margin, so the two make one blank line, not two.
 QUOTE_STYLE = "margin:1em 0 0"
 BLOCKQUOTE_STYLE = "margin:0 0 0 .8ex;border-left:1px solid #ccc;padding-left:1ex"
+
+# The quote's own elements, by the classes it is built with, and the inline
+# style each must carry. An edited quote comes back through the HTML
+# sanitizer, which keeps the classes but drops ``border-left`` — the grey bar
+# that makes a quote look like one.
+QUOTE_ELEMENT_STYLES = (
+    ("//div[contains(concat(' ', @class, ' '), ' gmail_quote ')]", QUOTE_STYLE),
+    ("//blockquote[contains(concat(' ', @class, ' '), ' gmail_quote ')]",
+     BLOCKQUOTE_STYLE),
+)
 
 
 class EmailReply(models.AbstractModel):
@@ -79,6 +90,10 @@ class EmailReply(models.AbstractModel):
             return self._content(message)
         account = message.conversation_id.account_id
         html = self._content(message)
+        if message.quote_edited:
+            # The operator opened the quote in the composer and changed it:
+            # theirs goes out as they left it, deleted parts and all.
+            return html + self._restyled(message.quote_body)
         if account.email_quote_history and depth < MAX_QUOTE_DEPTH:
             previous = self._previous(message)
             if previous:
@@ -95,6 +110,20 @@ class EmailReply(models.AbstractModel):
             html += Markup("<p><i>%s</i></p>") % self._operator_env(
                 message.conversation_id)._("Attachments: %s", ", ".join(names))
         return html
+
+    @api.model
+    def _restyled(self, quote):
+        """An edited quote with the inline styles of its quote elements put
+        back, so it reaches the customer looking like the one we build."""
+        if not quote:
+            return Markup()
+        root = lxml_html.fragment_fromstring(str(quote), create_parent="div")
+        for xpath, style in QUOTE_ELEMENT_STYLES:
+            for element in root.xpath(xpath):
+                element.set("style", style)
+        inner = "".join(
+            lxml_html.tostring(child, encoding="unicode") for child in root)
+        return escape(root.text or "") + Markup(inner)
 
     @api.model
     def _quote(self, message, depth):

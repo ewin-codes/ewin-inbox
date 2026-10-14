@@ -84,6 +84,16 @@ class OmnichannelMessage(models.Model):
              "when it was meant to.")
     scheduled_by = fields.Many2one(
         "res.users", readonly=True, copy=False, string="Scheduled by")
+    quote_edited = fields.Boolean(
+        copy=False,
+        help="The operator opened the quote under the reply in the composer "
+             "and changed it: the channel sends Edited Quote instead of the "
+             "quote it would build itself — nothing at all when that is "
+             "empty.")
+    quote_body = fields.Html(
+        string="Edited Quote", copy=False, sanitize_style=True,
+        help="The quote as the operator left it. Styles are kept: a mail "
+             "client draws a quote with inline ones.")
     raw_payload = fields.Json(
         groups="ewin_omnichannel_core.group_omni_admin", default=dict)
 

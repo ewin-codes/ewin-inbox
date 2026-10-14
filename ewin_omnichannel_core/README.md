@@ -59,7 +59,9 @@ Depends on `base`, `mail`, `contacts`.
   line starts a new paragraph in the message the customer gets. A channel
   that signs its replies opens the composer with the signature under an empty
   first line, the caret on that line; anything the channel adds under the
-  reply by itself — the email quote — is shown folded under the box.
+  reply by itself — the email quote — is folded behind a `•••` at the bottom
+  of the box and, unfolded, can be edited there; the edited copy is stored on
+  the message (`quote_edited`, `quote_body`) and sent instead.
 - **Quick replies.** Canned templates with a shortcut, optionally scoped to one
   channel, rendered against the current conversation.
 - **Close reasons.** Closing a conversation can ask the operator why, from an
@@ -428,7 +430,7 @@ by name from the account — it never imports a connector directly.
 | `get_external_profile` | Customer profile lookup, where the provider offers one |
 | `handle_provider_error` | Provider error → operator-friendly text + error log |
 | `composer_signature` | Optional. Plain text the composer opens a reply with, below the operator's words, for the current user |
-| `composer_quote` | Optional. HTML the channel sends under the next reply by itself, shown folded under the composer |
+| `composer_quote` | Optional. HTML the channel sends under the next reply by itself, folded at the bottom of the reply box. A channel that has one honours `message.quote_edited` / `quote_body` when it sends |
 | `_notify_ui` | The toast a button answers with — implemented here, not per connector |
 
 Unimplemented methods raise `NotImplementedError`, and the core tolerates that

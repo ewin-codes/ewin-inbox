@@ -2,14 +2,27 @@
 <templates xml:space="preserve">
     <t t-name="ewin_omnichannel_core.OmniComposerField">
         <div class="o_omni_composer_wrap">
-            <textarea class="o_omni_composer_input form-control"
-                      t-ref="textarea"
-                      rows="2"
-                      t-att-placeholder="props.placeholder"
-                      t-on-input="onInput"
-                      t-on-keydown="onKeydown"
-                      t-on-focus="placeCaret"
-                      t-on-mouseup="placeCaret"/>
+            <!-- One box, as in a mail client: the reply, its signature and,
+                 folded under them, what the channel sends with it. -->
+            <div class="o_omni_composer_box form-control" t-on-click="onBoxClick">
+                <textarea class="o_omni_composer_input"
+                          t-ref="textarea"
+                          rows="2"
+                          t-att-placeholder="props.placeholder"
+                          t-on-input="onInput"
+                          t-on-keydown="onKeydown"
+                          t-on-focus="placeCaret"
+                          t-on-mouseup="placeCaret"/>
+                <t t-if="hasQuote">
+                    <button type="button" class="o_omni_quote_toggle btn btn-light btn-sm"
+                            title="Show or hide what is sent with this reply"
+                            t-att-aria-expanded="state.quoteOpen ? 'true' : 'false'"
+                            t-on-click="toggleQuote">•••</button>
+                    <div t-if="state.quoteOpen" class="o_omni_quote_editor"
+                         contenteditable="true" t-ref="quote"
+                         t-on-input="onQuoteInput"/>
+                </t>
+            </div>
         </div>
     </t>
 </templates>

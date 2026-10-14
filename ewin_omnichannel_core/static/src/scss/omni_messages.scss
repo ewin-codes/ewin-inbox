@@ -230,12 +230,11 @@
     background: var(--o-view-background-color, #fff);
     margin-top: 8px;
 
-    // The composer grows with its text (omni_composer.js) up to the point
-    // where it would crowd out the thread above it; past that it scrolls.
-    // Room for a short reply with a signature under it.
+    // The textarea grows with its text (omni_composer.js); the box around it
+    // stops growing where it would crowd out the thread above, and scrolls —
+    // reply, signature and unfolded quote together, as one piece of text.
     textarea {
         min-height: 38px;
-        max-height: 200px;
     }
 }
 
@@ -452,7 +451,7 @@
     background: #fff8e1;
     border-top: 2px solid #ffca28;
 
-    .o_omni_composer_input {
+    .o_omni_composer_box {
         background: #fffdf5;
         border-color: #ffca28;
     }
@@ -483,31 +482,45 @@
     width: 100%;
 }
 
-.o_omni_composer_input {
-    width: 100%;
+// The box draws the frame (it is the form-control); the textarea inside is
+// bare, so the reply, the signature and the quote read as one text.
+.o_omni_composer_box {
+    max-height: 260px;
+    overflow-y: auto;
+    cursor: text;
+
+    &:focus-within {
+        border-color: $input-focus-border-color;
+        box-shadow: $input-focus-box-shadow;
+    }
 }
 
-// What the channel sends under the reply, folded like a mail client's quote:
-// a small "•••" pill under the textarea, the quote itself only once opened.
-// The quote keeps its own blockquote styling from the server — it is shown as
-// the customer will see it.
-.o_field_omni_quote_preview {
+.o_omni_composer_input {
     display: block;
     width: 100%;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    resize: none;
+    overflow: hidden;
+    background: transparent;
 }
 
+// "•••" under the signature, as mail clients fold a quote. Unfolded, the
+// quote is greyed: it is part of what goes out, but not what is being
+// written. It keeps the blockquote styling it will reach the customer with.
 .o_omni_quote_toggle {
+    margin-top: 4px;
     padding: 0 8px;
     line-height: 1.2;
     letter-spacing: 1px;
     border: 1px solid #e9ecef;
 }
 
-.o_omni_quote_body {
+.o_omni_quote_editor {
     margin-top: 6px;
-    max-height: 320px;
-    overflow-y: auto;
     color: $text-muted;
+    outline: 0;
 }
 
 // Quick-replies dropdown inside the composer.

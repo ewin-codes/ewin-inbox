@@ -184,6 +184,72 @@ class TestEmailReply(TransactionCase):
         self.assertEqual(html.count("ACME Ltd"), 1,
                          "signed once — by the composer, not again on send")
 
+    def test_a_quote_edited_in_the_composer_goes_out_as_edited(self):
+        conv = self._inbound("<in1@x.com>", "Where is my order?").conversation_id
+        conv.write({
+            "composer_body": "On its way",
+            "composer_quote_edited": True,
+            "composer_quote_body": '<div class="gmail_quote" style="margin:1em 0 0">'
+                                   "<p>Only this part</p></div>"})
+        with patch(SEND_PATH, side_effect=lambda **kw: kw["message_id"]) \
+                as send:
+            conv.action_send_reply()
+        html = send.call_args.kwargs["html_body"]
+        self.assertIn("Only this part", html)
+        self.assertNotIn("Where is my order?", html)
+        self.assertIn('style="margin:1em 0 0"', html,
+                      "a quote's inline styles survive the round trip")
+
+    def test_an_edited_quote_keeps_its_grey_bar(self):
+        """The sanitizer drops border-left from a saved quote; it is put back
+        by class, so the edited quote still looks like a quote."""
+        conv = self._inbound("<in1@x.com>", "Where is my order?").conversation_id
+        conv.write({
+            "composer_body": "On its way",
+            "composer_quote_edited": True,
+            "composer_quote_body": conv.composer_quote})
+        self.assertNotIn("border-left", conv.composer_quote_body)
+        with patch(SEND_PATH, side_effect=lambda **kw: kw["message_id"]) \
+                as send:
+            conv.action_send_reply()
+        self.assertIn("border-left:1px solid #ccc",
+                      send.call_args.kwargs["html_body"])
+        self.assertFalse(conv.composer_quote_edited,
+                         "the next reply starts from the channel's quote again")
+
+    def test_a_quote_deleted_in_the_composer_is_not_sent(self):
+        conv = self._inbound("<in1@x.com>", "Where is my order?").conversation_id
+        conv.write({"composer_body": "On its way",
+                    "composer_quote_edited": True,
+                    "composer_quote_body": False})
+        with patch(SEND_PATH, side_effect=lambda **kw: kw["message_id"]) \
+                as send:
+            conv.action_send_reply()
+        self.assertNotIn("gmail_quote", send.call_args.kwargs["html_body"])
+
+    def test_an_edited_quote_is_kept_with_its_reply_when_quoted_later(self):
+        conv = self._inbound("<in1@x.com>", "Where is my order?").conversation_id
+        conv.write({"composer_body": "Checking",
+                    "composer_quote_edited": True,
+                    "composer_quote_body": "<p>trimmed history</p>"})
+        with patch(SEND_PATH, side_effect=lambda **kw: kw["message_id"]):
+            conv.action_send_reply()
+        _message, sent = self._send(conv, "<p>Found it</p>")
+        html = sent["html_body"]
+        self.assertIn("trimmed history", html)
+        self.assertEqual(html.count("Where is my order?"), 0,
+                         "the earlier reply is quoted as it was sent")
+
+    def test_editing_a_scheduled_reply_brings_its_quote_back(self):
+        conv = self._inbound("<in1@x.com>", "Where is my order?").conversation_id
+        later = fields.Datetime.now() + timedelta(hours=1)
+        message = self.service.create_outbound(
+            conv, "<p>Tomorrow</p>", scheduled_at=later,
+            quote="<p>my own quote</p>")
+        conv.action_edit_scheduled(message.id)
+        self.assertTrue(conv.composer_quote_edited)
+        self.assertIn("my own quote", conv.composer_quote_body)
+
     def test_an_untouched_composer_sends_nothing(self):
         """It holds the signature alone: Send must not mail just that."""
         self.account.email_signature = "<p>ACME Ltd</p>"
