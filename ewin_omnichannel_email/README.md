@@ -20,11 +20,28 @@ on a host with no public HTTPS endpoint at all.
   allows it, subject to a per-account size cap.
 - **Outbound replies** — sent from the conversation composer as HTML mail from
   the mailbox address, with the operator's attachments included.
-- **Real threading** — a reply carries a generated `Message-ID` and quotes the
-  last inbound message in `In-Reply-To` and `References`, and keeps the thread's
-  `Subject` with an `Re:` prefix. The customer's mail client threads the
-  conversation the way they expect, and their answer comes back to the same
-  Inbox conversation instead of opening a new one.
+- **The conversation under every reply** — the customer sees what is being
+  answered: under the reply comes the previous message, quoted the way mail
+  clients quote (an *On …, … wrote:* line and an indented block Gmail folds
+  behind its `…`), and under that everything older. A customer's own email is
+  quoted as it arrived — their client has already quoted the history under it,
+  so it is not rebuilt; a run of our replies with no answer in between nests
+  one inside the other. Internal notes, failed and still-scheduled replies are
+  left out, a quoted message with files names them (the files travel only with
+  their own email), and a scheduled reply quotes what the customer wrote while
+  it waited. On by default, switchable per account.
+- **Signatures** — two, both optional and both per account: the replying
+  operator's own (the one in their Odoo preferences — the author's, also when
+  the cron sends a scheduled reply), and the account's shared one beneath it.
+- **The thread stays readable** — signatures and quotes are added at send time
+  and are not stored: the Inbox thread shows each message once, as it was
+  written.
+- **Real threading** — a reply carries a generated `Message-ID`, answers the
+  last inbound message in `In-Reply-To`, lists every earlier message of the
+  conversation in `References` (newest 20), and keeps the thread's `Subject`
+  with an `Re:` prefix. The customer's mail client threads the conversation the
+  way they expect, and their answer comes back to the same Inbox conversation
+  instead of opening a new one.
 - **One bad mail does not stop the run** — each message is committed on its own;
   a message that fails to parse is rolled back, logged, and polling continues
   with the next one. A message the server refuses to mark seen after it was
@@ -38,6 +55,10 @@ on a host with no public HTTPS endpoint at all.
   and sends over an authenticated TLS connection.
 - `omnichannel.connector.email` — the connector: the poll loop, message
   processing, outbound send, and provider-error handling.
+- `omnichannel.email.reply` — builds what the customer receives: the reply,
+  the signatures and the quoted conversation, plus the `References` chain. A
+  reply of ours sent earlier is rebuilt the same way when it is quoted, so a
+  signature or quoting setting changed since then applies to it as well.
 - `omnichannel.email.normalizer` — parses an `email.message` into Inbox's
   normalized shape, deriving the event id from the `Message-ID` (synthesised
   from a content hash when the sender omits one) and the thread reference from
@@ -64,6 +85,9 @@ Go to **EWIN Inbox → Configuration → Accounts**, create a record with channe
 | **SMTP Host / Port / Security** | Defaults to port 587 with STARTTLS. |
 | **Mailbox Folder** | Defaults to `INBOX`. |
 | **Download Files / Max File Size (MB) / Auto-create Contacts** | Same behaviour as every other Inbox connector. |
+| **Quote the Conversation** | On by default: the conversation so far goes under every reply. |
+| **Operator's Signature** | Signs each reply with its author's signature — set in the user menu, **Preferences → Signature**. |
+| **Signature** | The account's shared signature, under the operator's: company name, address, links. |
 
 Click **Check Connection**. It verifies **both** IMAP and SMTP and reports
 whichever side is broken — so a mailbox that receives fine but cannot send is
@@ -101,8 +125,9 @@ These are intentionally not implemented in this version:
   not supported.
 - **Push (IMAP IDLE)** — mail is polled every two minutes, so inbound email has
   up to a two-minute latency; there is no long-lived IDLE connection.
-- **Inline images and rich quoting** — the reply body is the composer's HTML;
-  quoted history and `cid:` inline images are not rebuilt.
+- **Inline images** — `cid:` images in a quoted customer email are not
+  re-attached, so a picture embedded in their message shows as a broken image
+  in the quote.
 - **Cc / Bcc and multi-recipient threads** — a conversation is one customer
   address; additional recipients on an inbound mail are not carried into the
   reply.

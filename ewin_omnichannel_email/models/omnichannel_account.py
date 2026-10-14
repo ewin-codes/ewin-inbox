@@ -30,6 +30,20 @@ class OmnichannelAccount(models.Model):
         string="Email Max File Size (MB)", default=25)
     email_create_contacts = fields.Boolean(
         string="Email Auto-create Contacts", default=True)
+    email_quote_history = fields.Boolean(
+        string="Quote the Conversation", default=True,
+        help="Put the conversation so far under every reply, quoted the way "
+             "mail clients do, so the customer sees what is being answered. "
+             "The thread in Odoo still shows each message once.")
+    email_signature_operator = fields.Boolean(
+        string="Operator's Signature",
+        help="Sign each reply with the replying operator's own signature, "
+             "the one in their user preferences.")
+    email_signature = fields.Html(
+        string="Signature",
+        help="Added under every reply sent from this mailbox, after the "
+             "operator's own signature when that is on — the place for the "
+             "company's name, address and links.")
 
     @api.depends("email_password")
     def _compute_email_password_masked(self):
@@ -78,6 +92,11 @@ class OmnichannelAccount(models.Model):
                 raise ValidationError(
                     "Email Address is required for an email account (it is the "
                     "mailbox login and the From address).")
+
+    def _email_sender(self):
+        """(display name, address) the customer sees in the From line."""
+        self.ensure_one()
+        return (self.email_from_name or self.name, self.email_address)
 
     def _get_public_address(self):
         self.ensure_one()

@@ -30,6 +30,13 @@
                     <field name="email_create_contacts"
                            string="Auto-create Contacts"/>
                 </group>
+                <group string="Replies" invisible="channel_code != 'email'">
+                    <field name="email_quote_history"/>
+                    <field name="email_signature_operator"/>
+                    <field name="email_signature" widget="html"
+                           options="{'codeview': true}"
+                           placeholder="e.g. company name, address, website"/>
+                </group>
             </xpath>
             <xpath expr="//header" position="inside">
                 <button name="action_email_check_connection" type="object"

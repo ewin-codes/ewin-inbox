@@ -198,14 +198,13 @@ class EmailConnector(models.AbstractModel):
         # The From address is the mailbox address (also the auth login). It is
         # required by a constraint, but guard defensively so a bad record fails
         # clearly instead of a cryptic smtplib error on a False address.
-        from_addr = account.email_address
+        from_name, from_addr = account._email_sender()
         if not from_addr:
             from odoo.addons.ewin_omnichannel_core.models.omnichannel_job \
                 import NonRetriableError
             raise NonRetriableError(
                 "This Email account has no address configured; set "
                 "'Email Address' before sending.")
-        from_name = account.email_from_name or account.name
         # Reply keeps the thread's Subject line (conv.subject), not conv.name
         # (which is the customer for email, same as chat channels).
         subject = conv.subject or conv.name or "(no subject)"
@@ -219,13 +218,17 @@ class EmailConnector(models.AbstractModel):
         in_reply_to = last_inbound.external_message_id or None
         domain = from_addr.split("@")[-1] if "@" in from_addr else "ewin"
         message_id = make_msgid(domain=domain)
+        # The body as the customer receives it — the reply, the signatures,
+        # the conversation quoted — and the whole thread in References.
+        reply = self.env["omnichannel.email.reply"]
         client = EmailClient(account)
         try:
             client.send(
                 from_addr=from_addr, from_name=from_name,
                 to_addr=to_addr, subject=subject,
-                html_body=message.body or "", message_id=message_id,
-                in_reply_to=in_reply_to, references=in_reply_to,
+                html_body=reply.html(message), message_id=message_id,
+                in_reply_to=in_reply_to,
+                references=reply.references(message) or in_reply_to,
                 attachments=message.attachment_ids)
         except EmailError as err:
             self.handle_provider_error(account, err, message=message)
