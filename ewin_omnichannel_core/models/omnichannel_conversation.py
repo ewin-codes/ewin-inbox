@@ -4,7 +4,7 @@ from markupsafe import Markup, escape
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
-from odoo.tools import file_open
+from odoo.tools import file_open, plaintext2html
 
 # Channel code -> (fontawesome class, brand colour) for the list icon.
 CHANNEL_ICONS = {
@@ -130,12 +130,36 @@ class OmnichannelConversation(models.Model):
         help="The waiting reply currently loaded into the composer, if any. "
              "Set while an operator edits one; cleared when they save or "
              "leave.")
+    composer_signature = fields.Text(
+        compute="_compute_composer_extras", string="Signature",
+        help="What the channel signs a reply with, for the current user. The "
+             "composer starts every reply with it, below the cursor.")
+    composer_quote = fields.Html(
+        compute="_compute_composer_extras", sanitize=False,
+        string="Sent With the Reply",
+        help="What the channel adds under the next reply by itself — for "
+             "email, the conversation so far, quoted.")
     scheduled_count = fields.Integer(
         compute="_compute_scheduled", string="Scheduled Count")
     scheduled_badge = fields.Html(
         compute="_compute_scheduled", sanitize=False, string="Scheduled Badge",
         help="Clock badge for the list — empty when nothing is waiting, so the "
              "column stays quiet for the ordinary case.")
+
+    @api.depends_context("uid")
+    @api.depends("account_id", "omni_message_ids.state")
+    def _compute_composer_extras(self):
+        for conv in self:
+            # A connector is an empty AbstractModel recordset — falsy — so it
+            # is tested against None, never for truth.
+            connector = conv.account_id and conv.account_id._get_connector(
+                missing_ok=True)
+            if not conv.account_id or connector is None:
+                conv.composer_signature = False
+                conv.composer_quote = False
+                continue
+            conv.composer_signature = connector.composer_signature(conv)
+            conv.composer_quote = connector.composer_quote(conv)
 
     @api.depends_context("uid")
     @api.depends("discuss_channel_id.channel_member_ids.message_unread_counter")
@@ -665,6 +689,24 @@ class OmnichannelConversation(models.Model):
         ]).mapped("unread_count"))
         return {"unassigned": unassigned, "mine": mine}
 
+    def _composer_html(self):
+        """The composer's plain text as the HTML a message body holds.
+
+        The textarea is plain text and a message body is HTML: handed over
+        as it is, every line break is whitespace inside one paragraph and a
+        multi-line reply arrives as a single line. ``plaintext2html`` keeps
+        them — a line break per line, a paragraph per blank line.
+
+        A composer holding nothing but the signature it opened with is
+        empty: Send on an untouched composer must not mail the customer a
+        signature.
+        """
+        self.ensure_one()
+        text = (self.composer_body or "").strip()
+        if not text or text == (self.composer_signature or "").strip():
+            return ""
+        return plaintext2html(text)
+
     def _post_composer(self, scheduled_at=None):
         """Post the composed reply, clearing the composer after.
 
@@ -676,7 +718,7 @@ class OmnichannelConversation(models.Model):
         on that row instead of writing a new one — see ``_apply_scheduled_edit``.
         """
         self.ensure_one()
-        body = (self.composer_body or "").strip()
+        body = self._composer_html()
         attachments = self.composer_attachment_ids
         if not body and not attachments:
             return

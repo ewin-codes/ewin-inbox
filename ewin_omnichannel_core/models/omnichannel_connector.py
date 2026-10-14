@@ -49,6 +49,26 @@ class OmnichannelConnector(models.AbstractModel):
     def handle_provider_error(self, account, error):
         raise NotImplementedError
 
+    # ---- the composer ----
+    # Optional: a channel that has nothing to add leaves both alone.
+
+    @api.model
+    def composer_signature(self, conversation):
+        """Plain text a reply starts with, below the operator's own words.
+
+        The composer shows it the moment it opens and sends it as part of the
+        reply, so what the operator sees is what the customer gets. Read for
+        the current user — a personal signature is the writer's own.
+        """
+        return ""
+
+    @api.model
+    def composer_quote(self, conversation):
+        """HTML the channel will send under the next reply on its own — the
+        email quote of the conversation so far, for instance — shown folded
+        under the composer so it is no surprise. Empty when there is none."""
+        return ""
+
     @api.model
     def _notify_ui(self, message, kind="success"):
         """A toast on the account form, and how a button answers.

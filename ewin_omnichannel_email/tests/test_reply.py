@@ -135,41 +135,63 @@ class TestEmailReply(TransactionCase):
             "<in1@x.com> %s <in2@x.com>" % first.external_message_id)
         self.assertEqual(sent["in_reply_to"], "<in2@x.com>")
 
-    # ---- signatures ----
+    def test_the_gap_above_the_quote_is_one_blank_line(self):
+        """A margin that collapses into the reply's paragraph margin, not a
+        <br/> stacked on top of it."""
+        conv = self._inbound("<in1@x.com>", "Where is my order?").conversation_id
+        _message, sent = self._send(conv, "<p>On its way</p>")
+        self.assertNotIn("<br/><div", sent["html_body"])
+        self.assertIn('<div class="gmail_quote" style="margin:1em 0 0">',
+                      sent["html_body"])
+
+    # ---- the composer ----
+
+    def test_the_composer_shows_the_quote_the_next_reply_will_carry(self):
+        conv = self._inbound("<in1@x.com>", "Where is my order?").conversation_id
+        self.assertIn("Where is my order?", conv.composer_quote)
+        self.assertIn("wrote:", conv.composer_quote)
+        self.account.email_quote_history = False
+        conv.invalidate_recordset(["composer_quote"])
+        self.assertFalse(conv.composer_quote)
 
     def test_no_signature_unless_asked_for(self):
         conv = self._inbound("<in1@x.com>", "Hi").conversation_id
-        _message, sent = self._send(conv, "<p>Hello</p>")
-        self.assertNotIn("o_omni_signature", sent["html_body"])
+        self.assertFalse(conv.composer_signature)
 
-    def test_operator_signature_then_the_accounts(self):
+    def test_the_composer_signs_with_the_writer_then_the_mailbox(self):
         self.account.write({
             "email_signature_operator": True,
-            "email_signature": "<p>ACME Ltd · acme.example</p>"})
+            "email_signature": "<pre>---<br>ACME Ltd\nacme.example</pre>"})
         conv = self._inbound("<in1@x.com>", "Hi").conversation_id
-        message, sent = self._send(conv, "<p>Hello</p>")
-        html = sent["html_body"]
-        self.assertTrue(
-            html.index("Hello") < html.index("Mitchell, support lead")
-            < html.index("ACME Ltd") < html.index("gmail_quote"),
-            "reply, the operator's signature, the account's, then the quote")
-        self.assertNotIn("ACME Ltd", message.body)
+        self.assertEqual(
+            conv.composer_signature,
+            "--\nMitchell, support lead\n---\nACME Ltd\nacme.example",
+            "plain text, a line per line, the writer's signature first")
 
-    def test_the_signature_is_the_replying_operators(self):
-        """A scheduled reply goes out from the cron, as the superuser — it is
-        still signed by whoever wrote it."""
-        self.account.email_signature_operator = True
-        colleague = self.env["res.users"].create({
-            "name": "Jane", "login": "reply_sig_jane",
-            "signature": "<p>Jane, accounts</p>",
-            "groups_id": [(4, self.env.ref(
-                "ewin_omnichannel_core.group_omni_operator").id)]})
+    def test_the_signature_is_sent_as_written_and_kept_in_the_thread(self):
+        self.account.email_signature = "<p>ACME Ltd</p>"
         conv = self._inbound("<in1@x.com>", "Hi").conversation_id
-        conv.operator_id = colleague
-        message = self.env["omnichannel.message"].create({
-            "conversation_id": conv.id, "direction": "outbound",
-            "sender_type": "operator", "body": "<p>Hello</p>",
-            "author_partner_id": colleague.partner_id.id, "state": "queued"})
-        html = self.env["omnichannel.email.reply"].html(message)
-        self.assertIn("Jane, accounts", html)
-        self.assertNotIn("Mitchell", html)
+        conv.composer_body = "Hello\nsecond line\n\n" + conv.composer_signature
+        with patch(SEND_PATH, side_effect=lambda **kw: kw["message_id"]) \
+                as send:
+            conv.action_send_reply()
+        message = conv.omni_message_ids.filtered(
+            lambda m: m.direction == "outbound")
+        self.assertEqual(
+            message.body, "<p>Hello<br>second line</p><p>ACME Ltd</p>",
+            "line breaks survive, and the signature is a paragraph of its own")
+        html = send.call_args.kwargs["html_body"]
+        self.assertEqual(html.count("ACME Ltd"), 1,
+                         "signed once — by the composer, not again on send")
+
+    def test_an_untouched_composer_sends_nothing(self):
+        """It holds the signature alone: Send must not mail just that."""
+        self.account.email_signature = "<p>ACME Ltd</p>"
+        conv = self._inbound("<in1@x.com>", "Hi").conversation_id
+        conv.composer_body = "\n\n" + conv.composer_signature
+        with patch(SEND_PATH) as send:
+            conv.action_send_reply()
+        self.assertFalse(send.called)
+        self.assertFalse(conv.omni_message_ids.filtered(
+            lambda m: m.direction == "outbound"))
+

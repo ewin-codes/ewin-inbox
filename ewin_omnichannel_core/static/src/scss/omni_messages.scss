@@ -230,9 +230,12 @@
     background: var(--o-view-background-color, #fff);
     margin-top: 8px;
 
+    // The composer grows with its text (omni_composer.js) up to the point
+    // where it would crowd out the thread above it; past that it scrolls.
+    // Room for a short reply with a signature under it.
     textarea {
         min-height: 38px;
-        max-height: 90px;
+        max-height: 200px;
     }
 }
 
@@ -482,6 +485,29 @@
 
 .o_omni_composer_input {
     width: 100%;
+}
+
+// What the channel sends under the reply, folded like a mail client's quote:
+// a small "•••" pill under the textarea, the quote itself only once opened.
+// The quote keeps its own blockquote styling from the server — it is shown as
+// the customer will see it.
+.o_field_omni_quote_preview {
+    display: block;
+    width: 100%;
+}
+
+.o_omni_quote_toggle {
+    padding: 0 8px;
+    line-height: 1.2;
+    letter-spacing: 1px;
+    border: 1px solid #e9ecef;
+}
+
+.o_omni_quote_body {
+    margin-top: 6px;
+    max-height: 320px;
+    overflow-y: auto;
+    color: $text-muted;
 }
 
 // Quick-replies dropdown inside the composer.

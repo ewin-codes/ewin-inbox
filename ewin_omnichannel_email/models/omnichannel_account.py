@@ -37,13 +37,15 @@ class OmnichannelAccount(models.Model):
              "The thread in Odoo still shows each message once.")
     email_signature_operator = fields.Boolean(
         string="Operator's Signature",
-        help="Sign each reply with the replying operator's own signature, "
-             "the one in their user preferences.")
+        help="Start each reply with the writer's own signature — the one in "
+             "their user preferences — below the line they type on.")
     email_signature = fields.Html(
         string="Signature",
-        help="Added under every reply sent from this mailbox, after the "
-             "operator's own signature when that is on — the place for the "
-             "company's name, address and links.")
+        help="Put under every reply written to this mailbox's customers, "
+             "after the operator's own signature when that is on — the place "
+             "for the company's name, address and links. It is inserted into "
+             "the reply as plain text, where the operator can still change "
+             "it.")
 
     @api.depends("email_password")
     def _compute_email_password_masked(self):

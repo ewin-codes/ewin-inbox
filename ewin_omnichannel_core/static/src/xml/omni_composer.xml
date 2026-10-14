@@ -7,7 +7,9 @@
                       rows="2"
                       t-att-placeholder="props.placeholder"
                       t-on-input="onInput"
-                      t-on-keydown="onKeydown"/>
+                      t-on-keydown="onKeydown"
+                      t-on-focus="placeCaret"
+                      t-on-mouseup="placeCaret"/>
         </div>
     </t>
 </templates>

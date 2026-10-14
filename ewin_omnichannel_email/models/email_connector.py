@@ -1,10 +1,14 @@
 import email
 import logging
+import re
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
+from odoo.tools import html2plaintext, is_html_empty
 
 _logger = logging.getLogger(__name__)
+
+BR_WITH_ATTRIBUTES = re.compile(r"<br\b[^>]*>", re.IGNORECASE)
 
 
 class EmailConnector(models.AbstractModel):
@@ -187,6 +191,41 @@ class EmailConnector(models.AbstractModel):
                 "attachment", "Failed to store email attachment",
                 account=account, technical=str(err))
             return self.env["ir.attachment"]
+
+    # ---- the composer ----
+    @api.model
+    def composer_signature(self, conversation):
+        """The writer's own signature, then the mailbox's, as plain text.
+
+        It goes into the composer, so the reply is sent — and kept in the
+        thread — exactly as the operator saw it. Both are HTML fields edited
+        in an HTML editor; the composer is a textarea, so they arrive as text,
+        a line per line.
+        """
+        account = conversation.account_id
+        signatures = []
+        if account.email_signature_operator:
+            signatures.append(self.env.user.signature)
+        signatures.append(account.email_signature)
+        texts = [self._signature_text(signature)
+                 for signature in signatures if not is_html_empty(signature)]
+        return "\n".join(text for text in texts if text)
+
+    @api.model
+    def _signature_text(self, html):
+        """A signature as plain text, a line per line.
+
+        ``html2plaintext`` turns only a bare ``<br>`` into a line break, and
+        Odoo stores a user's signature with ``data-o-mail-quote`` on every
+        tag — so "--<br data-o-mail-quote='1'>Name" would come out as
+        "-- Name". The attributes are dropped from line breaks first.
+        """
+        return html2plaintext(BR_WITH_ATTRIBUTES.sub("<br/>", html)).strip()
+
+    @api.model
+    def composer_quote(self, conversation):
+        return self.env["omnichannel.email.reply"].quote_for_next_reply(
+            conversation)
 
     # ---- outbound ----
     @api.model

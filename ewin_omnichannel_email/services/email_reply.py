@@ -1,7 +1,7 @@
 from markupsafe import Markup
 
 from odoo import api, fields, models
-from odoo.tools import format_datetime, is_html_empty
+from odoo.tools import format_datetime
 
 # States in which an outbound message is known to have reached the customer.
 # A failed, cancelled or still-scheduled reply was never in their inbox, so it
@@ -18,19 +18,23 @@ MAX_QUOTE_DEPTH = 10
 # thread on the newest few; RFC 5322 allows trimming the oldest.
 MAX_REFERENCES = 20
 
-# Inline style, not a class: mail clients drop <style>, and Gmail recognises
-# the gmail_quote classes to fold the quote behind its "..." toggle.
-QUOTE_STYLE = "margin:0 0 0 .8ex;border-left:1px solid #ccc;padding-left:1ex"
+# Inline styles, not classes: mail clients drop <style>, and Gmail recognises
+# the gmail_quote classes to fold the quote behind its "..." toggle. The gap
+# above the quote is a margin rather than a <br/>: it collapses into the
+# reply's own paragraph margin, so the two make one blank line, not two.
+QUOTE_STYLE = "margin:1em 0 0"
+BLOCKQUOTE_STYLE = "margin:0 0 0 .8ex;border-left:1px solid #ccc;padding-left:1ex"
 
 
 class EmailReply(models.AbstractModel):
-    """What an outgoing email carries beyond the operator's own words.
+    """What an outgoing email carries beyond the reply itself.
 
-    The thread in Odoo shows each message once, as it was written. The
-    customer's mail client shows the email: the reply, the signatures under
-    it, and the conversation so far, quoted. Building that at send time
-    rather than storing it keeps the thread readable and lets a scheduled
-    reply quote what the customer wrote while it was waiting.
+    The thread in Odoo shows each message once, as it was written — the
+    signature included, since the composer puts it into the reply. The
+    customer's mail client shows the email: that reply, and the conversation
+    so far quoted under it. Building the quote at send time rather than
+    storing it keeps the thread readable and lets a scheduled reply quote
+    what the customer wrote while it was waiting.
     """
 
     _name = "omnichannel.email.reply"
@@ -40,6 +44,16 @@ class EmailReply(models.AbstractModel):
     def html(self, message):
         """The HTML body the customer receives for ``message``."""
         return self._as_sent(message, depth=0)
+
+    @api.model
+    def quote_for_next_reply(self, conversation):
+        """The quote a reply written now would carry, for the composer to
+        show folded under the textarea. Empty when quoting is off or there
+        is nothing to quote yet."""
+        if not conversation.account_id.email_quote_history:
+            return Markup()
+        previous = self._seen(conversation).sorted(self._chronology)[-1:]
+        return self._quote(previous, depth=1) if previous else Markup()
 
     @api.model
     def references(self, message):
@@ -58,13 +72,13 @@ class EmailReply(models.AbstractModel):
 
         A customer's email is its own stored body: whatever their client
         quoted under it is already in there. One of ours is rebuilt the way
-        ``html`` builds it now — which also means a signature or quote setting
-        changed since then is applied to it retroactively.
+        ``html`` builds it now — which also means a quote setting changed
+        since then is applied to it retroactively.
         """
         if message.direction == "inbound":
             return self._content(message)
         account = message.conversation_id.account_id
-        html = self._content(message) + self._signatures(message)
+        html = self._content(message)
         if account.email_quote_history and depth < MAX_QUOTE_DEPTH:
             previous = self._previous(message)
             if previous:
@@ -79,38 +93,17 @@ class EmailReply(models.AbstractModel):
         names = message.attachment_ids.mapped("name")
         if names:
             html += Markup("<p><i>%s</i></p>") % self._operator_env(
-                message)._("Attachments: %s", ", ".join(names))
+                message.conversation_id)._("Attachments: %s", ", ".join(names))
         return html
-
-    @api.model
-    def _signatures(self, message):
-        """The replying operator's own signature, then the account's."""
-        account = message.conversation_id.account_id
-        signatures = []
-        if account.email_signature_operator:
-            # sudo: the cron sends scheduled replies as the superuser and an
-            # operator may not read a colleague's user record; the signature
-            # is going out under that colleague's name either way. Archived
-            # users count too: a reply written before they left still goes
-            # out signed by them.
-            author = message.author_partner_id.sudo().with_context(
-                active_test=False).user_ids[:1]
-            if author and not is_html_empty(author.signature):
-                signatures.append(author.signature)
-        if not is_html_empty(account.email_signature):
-            signatures.append(account.email_signature)
-        return Markup().join(
-            Markup('<br/><div class="o_omni_signature">%s</div>') % signature
-            for signature in signatures)
 
     @api.model
     def _quote(self, message, depth):
         return Markup(
-            '<br/><div class="gmail_quote">'
+            '<div class="gmail_quote" style="%s">'
             '<div class="gmail_attr">%s</div>'
             '<blockquote class="gmail_quote" style="%s">%s</blockquote>'
             '</div>') % (
-                self._attribution(message), QUOTE_STYLE,
+                QUOTE_STYLE, self._attribution(message), BLOCKQUOTE_STYLE,
                 self._as_sent(message, depth))
 
     @api.model
@@ -120,11 +113,11 @@ class EmailReply(models.AbstractModel):
         name, address = self._author(message)
         who = "%s <%s>" % (name, address) if name and address \
             else name or address or ""
-        operator = self._operator(message)
+        operator = self._operator(message.conversation_id)
         when = format_datetime(
             self.env, self._moment(message), tz=operator.tz or "UTC",
             dt_format="medium", lang_code=operator.lang)
-        return self._operator_env(message)._(
+        return self._operator_env(message.conversation_id)._(
             "On %(date)s, %(author)s wrote:", date=when, author=who)
 
     @api.model
@@ -150,15 +143,20 @@ class EmailReply(models.AbstractModel):
         it waited. For one of ours sent earlier it is what came before it;
         timestamps keep whole seconds, so the id settles a tie.
         """
-        seen = message.conversation_id.omni_message_ids.filtered(
-            lambda m: m != message
-            and not m.is_internal
-            and m.message_type != "system"
-            and (m.direction == "inbound" or m.state in DELIVERED_STATES))
+        seen = self._seen(message.conversation_id) - message
         if self._is_being_sent(message):
             return seen
         key = self._chronology(message)
         return seen.filtered(lambda m: self._chronology(m) < key)
+
+    @api.model
+    def _seen(self, conversation):
+        """Every message of the conversation that reached the customer, in
+        either direction."""
+        return conversation.omni_message_ids.filtered(
+            lambda m: not m.is_internal
+            and m.message_type != "system"
+            and (m.direction == "inbound" or m.state in DELIVERED_STATES))
 
     @api.model
     def _previous(self, message):
@@ -182,13 +180,12 @@ class EmailReply(models.AbstractModel):
     # ---- language ----
 
     @api.model
-    def _operator(self, message):
-        conversation = message.conversation_id
+    def _operator(self, conversation):
         return conversation.operator_id or self.env.user
 
     @api.model
-    def _operator_env(self, message):
+    def _operator_env(self, conversation):
         """An environment in the operator's language, for the few words
         this adds to the email. The send may run in the cron, whose own
         environment speaks English whoever wrote the reply."""
-        return self.with_context(lang=self._operator(message).lang).env
+        return self.with_context(lang=self._operator(conversation).lang).env

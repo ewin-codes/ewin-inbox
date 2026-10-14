@@ -54,6 +54,12 @@ Depends on `base`, `mail`, `contacts`.
   own request. Only failures fall back to `omnichannel.job` with exponential
   retries, so a healthy send is instant and a flaky provider does not block
   the UI.
+- **A composer that keeps the lines.** The reply box is plain text and grows
+  with what is written in it; a line break stays a line break and a blank
+  line starts a new paragraph in the message the customer gets. A channel
+  that signs its replies opens the composer with the signature under an empty
+  first line, the caret on that line; anything the channel adds under the
+  reply by itself — the email quote — is shown folded under the box.
 - **Quick replies.** Canned templates with a shortcut, optionally scoped to one
   channel, rendered against the current conversation.
 - **Close reasons.** Closing a conversation can ask the operator why, from an
@@ -421,6 +427,8 @@ by name from the account — it never imports a connector directly.
 | `download_attachment` | Provider media → `ir.attachment` |
 | `get_external_profile` | Customer profile lookup, where the provider offers one |
 | `handle_provider_error` | Provider error → operator-friendly text + error log |
+| `composer_signature` | Optional. Plain text the composer opens a reply with, below the operator's words, for the current user |
+| `composer_quote` | Optional. HTML the channel sends under the next reply by itself, shown folded under the composer |
 | `_notify_ui` | The toast a button answers with — implemented here, not per connector |
 
 Unimplemented methods raise `NotImplementedError`, and the core tolerates that

@@ -4,6 +4,7 @@ import { Component, useState, onWillStart } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { standardFieldProps } from "@web/views/fields/standard_field_props";
+import { insertIntoReply, signatureBlock } from "./omni_signature";
 
 /**
  * "Quick replies": the operator's canned templates, listed for the channel the
@@ -57,9 +58,13 @@ export class OmniQuickRepliesField extends Component {
         const rendered = await this.orm.call(
             "omnichannel.template", "render_for_conversation",
             [template.id, record.resId]);
-        const current = record.data.composer_body || "";
+        // An untouched composer holds the signature on screen only, not in
+        // the record: start from what the operator sees, so the reply lands
+        // above the signature rather than replacing it.
+        const block = signatureBlock(record.data);
+        const current = record.data.composer_body || block;
         await record.update({
-            composer_body: current ? `${current}\n${rendered}` : rendered,
+            composer_body: insertIntoReply(current, block, rendered),
         });
         // Inserting a template is the start of writing a reply, not the end of
         // one: put the caret where the operator will keep typing. The textarea

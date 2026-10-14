@@ -38,12 +38,19 @@ class OmnichannelAccount(models.Model):
         ("webhook_uuid_uniq", "unique(webhook_uuid)", "Webhook UUID must be unique."),
     ]
 
-    def _get_connector(self):
-        """Return the connector model for this account's channel code."""
+    def _get_connector(self, missing_ok=False):
+        """Return the connector model for this account's channel code.
+
+        ``missing_ok`` returns None instead of raising when no connector is
+        installed for the channel — for callers that only ask a connector
+        for something optional and have a sensible answer without one.
+        """
         self.ensure_one()
         code = self.channel_id.code
         model_name = f"omnichannel.connector.{code}"
         if model_name not in self.env:
+            if missing_ok:
+                return None
             raise UserError(
                 _("No connector installed for channel '%s'.", code)
             )

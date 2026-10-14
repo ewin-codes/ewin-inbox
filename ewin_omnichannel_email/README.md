@@ -29,13 +29,19 @@ on a host with no public HTTPS endpoint at all.
   one inside the other. Internal notes, failed and still-scheduled replies are
   left out, a quoted message with files names them (the files travel only with
   their own email), and a scheduled reply quotes what the customer wrote while
-  it waited. On by default, switchable per account.
-- **Signatures** — two, both optional and both per account: the replying
-  operator's own (the one in their Odoo preferences — the author's, also when
-  the cron sends a scheduled reply), and the account's shared one beneath it.
-- **The thread stays readable** — signatures and quotes are added at send time
-  and are not stored: the Inbox thread shows each message once, as it was
-  written.
+  it waited. The quote the next reply will carry sits folded under the
+  composer behind a `•••` button, so the operator can check it before sending.
+  On by default, switchable per account.
+- **Signatures in the composer** — two, both optional and both per account:
+  the writer's own (the one in their Odoo preferences) and the account's
+  shared one beneath it. The composer opens with them under an empty first
+  line, the way a mail client does, and a click or a Tab into it puts the
+  caret on that line. The signature is part of the reply: the operator sees
+  it, can change it for one reply, and it is sent and kept in the thread as
+  written — where Odoo folds it under *Read more*, as it does every
+  signature. A composer holding the signature alone sends nothing.
+- **The thread stays readable** — the quote is added at send time and not
+  stored: the Inbox thread shows each message once, as it was written.
 - **Real threading** — a reply carries a generated `Message-ID`, answers the
   last inbound message in `In-Reply-To`, lists every earlier message of the
   conversation in `References` (newest 20), and keeps the thread's `Subject`
@@ -55,10 +61,13 @@ on a host with no public HTTPS endpoint at all.
   and sends over an authenticated TLS connection.
 - `omnichannel.connector.email` — the connector: the poll loop, message
   processing, outbound send, and provider-error handling.
-- `omnichannel.email.reply` — builds what the customer receives: the reply,
-  the signatures and the quoted conversation, plus the `References` chain. A
-  reply of ours sent earlier is rebuilt the same way when it is quoted, so a
-  signature or quoting setting changed since then applies to it as well.
+- `omnichannel.email.reply` — builds what the customer receives: the reply
+  and the quoted conversation under it, plus the `References` chain; and the
+  same quote for the composer's preview. A reply of ours sent earlier is
+  rebuilt the same way when it is quoted, so a quoting setting changed since
+  then applies to it as well.
+- The connector answers the core's composer hooks: `composer_signature` (the
+  two signatures as plain text, for the current user) and `composer_quote`.
 - `omnichannel.email.normalizer` — parses an `email.message` into Inbox's
   normalized shape, deriving the event id from the `Message-ID` (synthesised
   from a content hash when the sender omits one) and the thread reference from
@@ -86,8 +95,8 @@ Go to **EWIN Inbox → Configuration → Accounts**, create a record with channe
 | **Mailbox Folder** | Defaults to `INBOX`. |
 | **Download Files / Max File Size (MB) / Auto-create Contacts** | Same behaviour as every other Inbox connector. |
 | **Quote the Conversation** | On by default: the conversation so far goes under every reply. |
-| **Operator's Signature** | Signs each reply with its author's signature — set in the user menu, **Preferences → Signature**. |
-| **Signature** | The account's shared signature, under the operator's: company name, address, links. |
+| **Operator's Signature** | Opens each reply with the writer's own signature — set in the user menu, **Preferences → Signature**. |
+| **Signature** | The account's shared signature, under the operator's: company name, address, links. Inserted as plain text. |
 
 Click **Check Connection**. It verifies **both** IMAP and SMTP and reports
 whichever side is broken — so a mailbox that receives fine but cannot send is

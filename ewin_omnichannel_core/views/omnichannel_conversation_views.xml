@@ -170,9 +170,18 @@
                                        widget="omni_quick_replies"/>
                             </div>
                         </div>
+                        <!-- Read by the composer, which opens every reply
+                             with it. -->
+                        <field name="composer_signature" invisible="1"/>
                         <field name="composer_body" nolabel="1"
                                widget="omni_composer"
                                placeholder="Type a reply to the customer..."/>
+                        <!-- What the channel sends under the reply by itself,
+                             folded like a mail client's quote. Not for a note:
+                             a note goes nowhere. -->
+                        <field name="composer_quote" nolabel="1"
+                               widget="omni_quote_preview"
+                               invisible="not composer_quote or composer_is_internal"/>
                         <!-- o_omni_vrow, not d-flex align-items-center: this row
                              mixes a datetime field widget with buttons and the
                              attachment widget, and baseline alignment puts the

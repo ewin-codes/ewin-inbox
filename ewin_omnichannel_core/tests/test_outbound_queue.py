@@ -88,6 +88,24 @@ class TestOutboundQueue(OmnichannelCase):
         # composer cleared after send
         self.assertFalse(self.conv.composer_body)
 
+    def test_a_multi_line_reply_keeps_its_lines(self):
+        """The composer is plain text and the body is HTML: a line break
+        handed over as it is would be whitespace inside one paragraph."""
+        self.conv.write({"composer_body": "line one\nline two\n\nnew paragraph"})
+        with patch("odoo.addons.ewin_omnichannel_telegram.services."
+                   "telegram_api_client.TelegramApiClient.send_message",
+                   return_value={"message_id": 10}) as mock_send:
+            self.conv.action_send_reply()
+        msg = self.conv.omni_message_ids.filtered(
+            lambda m: m.direction == "outbound")
+        self.assertEqual(
+            msg.body, "<p>line one<br>line two</p><p>new paragraph</p>")
+        self.assertIn("line one\nline two", mock_send.call_args.args[1])
+
+    def test_a_channel_without_signatures_adds_nothing_to_the_composer(self):
+        self.assertFalse(self.conv.composer_signature)
+        self.assertFalse(self.conv.composer_quote)
+
     def test_operator_reply_in_discuss_forwards_to_telegram(self):
         # An operator typing directly in the linked Discuss channel is
         # forwarded to the customer through the connector.
