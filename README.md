@@ -24,9 +24,12 @@ Developed and maintained by [EWIN.codes](https://ewin.codes).
 - Realtime thread and list updates, no manual reload
 - Unread counters on the menu — a grey badge on **Inbox** for the queue
   nobody has taken, a red one on **My Conversations** for what is addressed
-  to you; both move over the bus
+  to you; both move over the bus, and a conversation waiting for the customer
+  or closed counts in neither
 - Delivery and read statuses where supported
 - Canned replies
+- Email replies that read like email — the conversation so far quoted under
+  each reply, and the operator's and the company's signatures
 - Scheduled replies — defer an answer to a chosen date and time; a counted tab
   above the chat holds the waiting replies as their own thread, and each can be
   rewritten in the composer, rescheduled, sent early or cancelled until it

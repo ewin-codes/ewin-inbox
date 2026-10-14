@@ -38,6 +38,10 @@ CLOSE_REASON_POLICY_PARAM = "ewin_omnichannel.close_reason_policy"
 # their lists.
 MENU_COUNTERS_BUS = "omni.menu.counters"
 
+# The states in which a conversation is somebody's work. The Inbox list and
+# both menu counts show these alone, and leaving them marks it read.
+ACTIVE_STATES = ("new", "open")
+
 
 class OmnichannelConversation(models.Model):
     _name = "omnichannel.conversation"
@@ -406,21 +410,42 @@ class OmnichannelConversation(models.Model):
         """Mark the linked Discuss channel as read for the current user, which
         drives unread_count (native member seen state). Reading anywhere else
         (Discuss app, chat window) clears it the same way."""
-        partner = self.env.user.partner_id
-        marked = False
+        self._mark_read_by(self.env.user.partner_id)
+
+    def _mark_read_by(self, partners=None, sync=False):
+        """Mark the mirror channels read up to their last message.
+
+        For the given partners only, or for every member when ``partners`` is
+        None — which is what setting a conversation aside does: a conversation
+        that waits for the customer, or is closed, holds nothing anyone still
+        has to read, and an unread number left on it would keep announcing
+        work that is already done.
+
+        ``sync`` tells the members' open web clients to adopt the new state at
+        once; the reader of an open thread does not need it, everyone else
+        does. Members already up to date are skipped, so nobody is pinged for
+        a number that did not move.
+        """
+        moved = self.env["res.partner"]
         for conv in self:
             channel = conv.discuss_channel_id
-            if not channel:
+            if not channel or not channel.message_ids:
                 continue
-            member = channel.channel_member_ids.filtered(
-                lambda m: m.partner_id == partner)
-            if not member or not channel.message_ids:
-                continue
-            member._mark_as_read(max(channel.message_ids.ids))
-            marked = True
-        if marked:
-            # Reading is what makes the "My Conversations" badge fall, and the
-            # number is the reader's own — aim the refresh at them alone.
+            last_id = max(channel.message_ids.ids)
+            # sudo: marking a colleague's membership is the point of the
+            # "everyone" case, and the current user's own row is filtered
+            # below in the other — the access check is the caller's write on
+            # the conversation, not the member row.
+            for member in channel.sudo().channel_member_ids:
+                if partners is not None and member.partner_id not in partners:
+                    continue
+                if member.seen_message_id.id >= last_id:
+                    continue
+                member._mark_as_read(last_id, sync=sync)
+                moved |= member.partner_id
+        # Reading is what makes the "My Conversations" badge fall, and the
+        # number is each reader's own — aim the refresh at them alone.
+        for partner in moved:
             self._notify_menu_counters(partner)
 
     @api.model
@@ -472,12 +497,20 @@ class OmnichannelConversation(models.Model):
 
         Refused on a closed one: the closure fields would stay behind on a
         conversation that no longer shows as closed. Re-open is the way back.
+
+        Parking it is also reading it: the ball is in the customer's court, so
+        nothing in it is left for anyone here. The customer's answer brings it
+        back as unread — see ``_state_after_customer_message``.
         """
         if any(conv.state == "closed" for conv in self):
             raise UserError(_(
                 "A closed conversation cannot wait for the customer. "
                 "Re-open it first."))
         self.write({"state": "pending"})
+        self._mark_read_by(sync=True)
+        # Leaving new/open takes it off both menu counts, the unassigned one
+        # included, which no personal ping above can reach.
+        self._notify_menu_counters()
 
     def action_close(self):
         """Close the conversations — asking why first when the setting
@@ -512,6 +545,9 @@ class OmnichannelConversation(models.Model):
 
         Conversations already closed are left alone: closing again must not
         rewrite who closed them and why, nor post the closure twice.
+
+        Closing marks the conversation read for everyone in its mirror, for
+        the same reason waiting for the customer does (``action_set_pending``).
         """
         to_close = self.filtered(lambda conv: conv.state != "closed")
         to_close.write({
@@ -521,6 +557,7 @@ class OmnichannelConversation(models.Model):
             "close_reason_id": reason.id if reason else False,
             "close_note": note or False,
         })
+        to_close._mark_read_by(sync=True)
         for conv in to_close:
             conv.message_post(body=conv._close_message(reason, note))
             conv._notify_omni_event("conversation_closed")
@@ -606,20 +643,25 @@ class OmnichannelConversation(models.Model):
         the caller's own rights — the record rules decide what an operator is
         allowed to be told about.
 
-        Unassigned is the whole inbound side of every conversation nobody has
-        taken. There is no read state to subtract there: reading is a Discuss
-        channel membership, and an unassigned conversation has no member, so
-        nothing in it has been read by anyone. Taking it or closing it is what
-        empties the number.
+        Only conversations that are new or open count: one waiting for the
+        customer or closed holds nothing to do until the customer writes again,
+        and that message brings it back to one of those two states anyway.
+
+        Unassigned is the whole inbound side of every such conversation nobody
+        has taken — exactly what the Inbox list shows. There is no read state
+        to subtract there: reading is a Discuss channel membership, and an
+        unassigned conversation has no member, so nothing in it has been read
+        by anyone. Taking it, parking it or closing it is what empties the
+        number.
         """
         unassigned = self.env["omnichannel.message"].search_count([
             ("direction", "=", "inbound"),
             ("conversation_id.operator_id", "=", False),
-            ("conversation_id.state", "!=", "closed"),
+            ("conversation_id.state", "in", ACTIVE_STATES),
         ])
         mine = sum(self.search([
             ("operator_id", "=", self.env.uid),
-            ("state", "!=", "closed"),
+            ("state", "in", ACTIVE_STATES),
         ]).mapped("unread_count"))
         return {"unassigned": unassigned, "mine": mine}
 

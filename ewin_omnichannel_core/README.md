@@ -29,9 +29,14 @@ Depends on `base`, `mail`, `contacts`.
 - **Realtime.** New messages and assignment changes are pushed over the bus to
   the assigned operator, so the open thread and the conversation list update
   without a manual reload.
+- **Inbox is the queue.** It lists the conversations nobody has taken that
+  still need an answer — *New* and *Open*, unassigned. Taking one moves it to
+  **My Conversations**; dropping the *Unassigned* facet shows the whole
+  floor's active work.
 - **Counters on the menu.** **Inbox** wears a grey badge with the number of
-  inbound messages in conversations nobody has taken, and **My Conversations**
-  a red one with what is unread in the conversations assigned to the reader.
+  inbound messages in the queue it lists, and **My Conversations** a red one
+  with what is unread in the new and open conversations assigned to the
+  reader.
   Both move on their own over the bus — the grey one for every operator at
   once, the red one for its owner — so nobody has to walk the menu to find out
   whether it holds anything new.
@@ -64,9 +69,13 @@ Depends on `base`, `mail`, `contacts`.
   on one; the reopen posts the reason it cleared to the chatter, which from
   then on holds the only copy. A closed conversation cannot be set to
   *Wait for customer* — it has to be reopened first.
+- **Setting a conversation aside reads it.** *Wait for customer* and closing
+  mark the conversation read for everyone in its Discuss mirror: the ball is
+  in the customer's court, and an unread number left on it would keep
+  announcing work that is done.
 - **Waiting for the customer.** *Wait for customer* parks a conversation in
   *Pending Customer* until the customer answers. Their next message ends the
-  wait by itself: the conversation goes back to *Open* if it has an operator,
+  wait by itself, arriving unread: the conversation goes back to *Open* if it has an operator,
   and back to *New* — the queue the Inbox shows to whoever is free — if it
   does not.
 - **Reporting.** Pivot and graph views over conversations and message volume,
@@ -269,8 +278,8 @@ The two menus an operator lives in wear their own number, so the answer to
 
 | Menu | Colour | Counts |
 |---|---|---|
-| **Inbox** | grey | inbound messages in conversations that are not closed and have no operator |
-| **My Conversations** | red | unread messages in the conversations assigned to the reader |
+| **Inbox** | grey | inbound messages in new and open conversations with no operator — the list Inbox shows |
+| **My Conversations** | red | unread messages in the new and open conversations assigned to the reader |
 
 Grey is the queue that belongs to whoever is free; red is addressed to the
 reader personally, and is the one worth leaving another app for. Both are
@@ -278,10 +287,15 @@ message counts, not conversation counts, and `omni_menu_counters()` reads them
 with the caller's own rights — the record rules decide what an operator is
 told about.
 
+A conversation waiting for the customer or closed is in neither: nothing in it
+is anyone's work until the customer writes again, and that message returns it
+to *New* or *Open*. Parking and closing also mark it read for every member of
+its mirror, so the unread pill on its row in the list goes with it.
+
 There is no read state to subtract from the grey one: reading is a
 `discuss.channel` membership, and an untaken conversation has no member, so
-nothing in it has been read by anyone. Taking it — or closing it — is what
-empties the number.
+nothing in it has been read by anyone. Taking it, parking it or closing it is
+what empties the number.
 
 Neither is polled. The server pushes an empty `omni.menu.counters` over the
 bus and the client asks for both numbers again:

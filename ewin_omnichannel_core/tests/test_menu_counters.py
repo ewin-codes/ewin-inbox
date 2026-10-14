@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 from odoo.tests import tagged
+from odoo.tools.safe_eval import safe_eval
 
 from .common import OmnichannelCase
 
@@ -149,6 +150,59 @@ class TestMenuCounters(OmnichannelCase):
         conv.write({"state": "closed"})
         self.env.invalidate_all()
         self.assertEqual(self._moved()["mine"], 0)
+
+    def test_waiting_for_the_customer_marks_it_read(self):
+        """Parking a conversation is reading it: nothing in it is left to do."""
+        conv = self._mine_with_something_unread()
+        conv.action_set_pending()
+        self.env.invalidate_all()
+        self.assertEqual(conv.unread_count, 0,
+                         "the row in the list must not stay bold either")
+        self.assertEqual(self._moved()["mine"], 0)
+
+    def test_closing_marks_it_read_for_everyone_in_the_mirror(self):
+        conv = self._inbound(ext="1", text="first").conversation_id
+        conv.operator_id = self.env.user
+        conv._sync_channel_members()
+        colleague = self._operator("counter_watcher")
+        conv.discuss_channel_id.sudo().add_members(
+            partner_ids=colleague.partner_id.ids, post_joined_message=False)
+        self._inbound(ext="2", text="second")
+        self.env.invalidate_all()
+        watcher = conv.discuss_channel_id.sudo().channel_member_ids.filtered(
+            lambda m: m.partner_id == colleague.partner_id)
+        self.assertTrue(
+            watcher.message_unread_counter,
+            "the fixture must leave the colleague something unread")
+        conv._close()
+        self.env.invalidate_all()
+        self.assertEqual(conv.unread_count, 0)
+        self.assertEqual(
+            watcher.message_unread_counter, 0,
+            "a closed conversation is done for whoever was following it")
+
+    def test_the_customers_answer_brings_the_unread_count_back(self):
+        conv = self._mine_with_something_unread()
+        conv.action_set_pending()
+        self._inbound(ext="3", text="here is the photo")
+        self.env.invalidate_all()
+        self.assertEqual(conv.state, "open")
+        self.assertEqual(self._moved()["mine"], 1)
+
+    def test_a_pending_conversation_is_not_in_the_grey_badge(self):
+        """The queue is what the Inbox list shows: new and open, unassigned."""
+        conv = self._inbound().conversation_id
+        conv.action_set_pending()
+        self.assertEqual(self._moved()["unassigned"], 0)
+
+    def test_the_inbox_list_is_the_queue_the_grey_badge_counts(self):
+        action = self.env.ref("ewin_omnichannel_core.action_conversation_inbox")
+        defaults = {key for key, value in safe_eval(action.context).items()
+                    if key.startswith("search_default_") and value}
+        self.assertEqual(
+            defaults,
+            {"search_default_unassigned", "search_default_new",
+             "search_default_open"})
 
     # -- keeping the badges honest over the bus ---------------------------
 

@@ -276,23 +276,21 @@
         </field>
     </record>
 
+    <!-- The queue: conversations nobody has taken that still need an answer.
+         The same set the grey menu badge counts (omni_menu_counters), so the
+         number and the list never disagree. Each default is an ordinary facet:
+         dropping "Unassigned" turns it into the whole floor's active work. -->
     <record id="action_conversation_inbox" model="ir.actions.act_window">
         <field name="name">Inbox</field>
         <field name="res_model">omnichannel.conversation</field>
         <field name="view_mode">list,form</field>
-        <field name="context">{'search_default_open': 1, 'search_default_new': 1}</field>
+        <field name="context">{'search_default_unassigned': 1, 'search_default_new': 1, 'search_default_open': 1}</field>
     </record>
     <record id="action_conversation_my" model="ir.actions.act_window">
         <field name="name">My Conversations</field>
         <field name="res_model">omnichannel.conversation</field>
         <field name="view_mode">list,form</field>
         <field name="context">{'search_default_my': 1}</field>
-    </record>
-    <record id="action_conversation_unassigned" model="ir.actions.act_window">
-        <field name="name">Unassigned</field>
-        <field name="res_model">omnichannel.conversation</field>
-        <field name="view_mode">list,form</field>
-        <field name="context">{'search_default_unassigned': 1}</field>
     </record>
     <record id="action_conversation_all" model="ir.actions.act_window">
         <field name="name">All Conversations</field>
