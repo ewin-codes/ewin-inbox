@@ -54,6 +54,10 @@ on a host with no public HTTPS endpoint at all.
   with an `Re:` prefix. The customer's mail client threads the conversation the
   way they expect, and their answer comes back to the same Inbox conversation
   instead of opening a new one.
+- **A first email is not a reply** — `Re:` goes on the subject only once the
+  customer has written in the conversation. An email to someone who has not
+  written yet keeps its subject as it is, and carries no `In-Reply-To` or
+  `References` either.
 - **One bad mail does not stop the run** — each message is committed on its own;
   a message that fails to parse is rolled back, logged, and polling continues
   with the next one. A message the server refuses to mark seen after it was

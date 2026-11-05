@@ -246,15 +246,18 @@ class EmailConnector(models.AbstractModel):
                 "'Email Address' before sending.")
         # Reply keeps the thread's Subject line (conv.subject), not conv.name
         # (which is the customer for email, same as chat channels).
-        subject = conv.subject or conv.name or "(no subject)"
-        if not subject.lower().startswith("re:"):
-            subject = f"Re: {subject}"
         last_inbound = self.env["omnichannel.message"].search([
             ("conversation_id", "=", conv.id),
             ("direction", "=", "inbound"),
             ("external_message_id", "!=", False),
         ], order="id desc", limit=1)
         in_reply_to = last_inbound.external_message_id or None
+        subject = conv.subject or conv.name or "(no subject)"
+        # "Re:" only on a reply. A first email to someone who has never
+        # written to us is not one, and a stranger reading "Re:" goes looking
+        # for a letter they never sent.
+        if last_inbound and not subject.lower().startswith("re:"):
+            subject = f"Re: {subject}"
         domain = from_addr.split("@")[-1] if "@" in from_addr else "ewin"
         message_id = make_msgid(domain=domain)
         # The body as the customer receives it — the reply, the signatures,

@@ -47,6 +47,41 @@ class TestEmailOutbound(TransactionCase):
         self.assertEqual(msg.state, "sent")
         self.assertEqual(msg.external_message_id, mock_send.call_args.kwargs["message_id"])
 
+    # ---- subject: "Re:" only on a reply ----
+
+    def _first_contact(self, subject=False, name="Ann"):
+        """A conversation we open ourselves: nothing has come in yet."""
+        identity = self.env["omnichannel.identity"].create({
+            "account_id": self.account.id, "external_id": "ann@x.com"})
+        return self.env["omnichannel.conversation"].create({
+            "name": name, "account_id": self.account.id,
+            "identity_id": identity.id, "subject": subject})
+
+    def _sent_subject(self, conv):
+        with patch(SEND_PATH, return_value="<out@us.com>") as mock_send:
+            self.env["omnichannel.message.service"].create_outbound(
+                conv, "<p>Hello there</p>")
+        return mock_send.call_args.kwargs["subject"]
+
+    def test_a_first_email_is_not_dressed_as_a_reply(self):
+        """A stranger reading "Re:" looks for a letter they never wrote."""
+        self.assertEqual(self._sent_subject(self._first_contact("Hello")),
+                         "Hello")
+
+    def test_a_reply_to_the_customer_carries_re(self):
+        conv = self._seed_inbound().conversation_id
+        conv.subject = "Hello"
+        self.assertEqual(self._sent_subject(conv), "Re: Hello")
+
+    def test_a_subject_that_already_says_re_is_not_doubled(self):
+        conv = self._seed_inbound().conversation_id
+        conv.subject = "Re: Hello"
+        self.assertEqual(self._sent_subject(conv), "Re: Hello")
+
+    def test_a_first_email_without_a_subject_falls_back_to_the_name(self):
+        self.assertEqual(
+            self._sent_subject(self._first_contact(name="Ann Lee")), "Ann Lee")
+
     def test_customer_reply_threads_to_outbound(self):
         inbound = self._seed_inbound()
         conv = inbound.conversation_id
