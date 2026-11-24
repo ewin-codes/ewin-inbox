@@ -324,7 +324,7 @@ class OmnichannelConversation(models.Model):
             chan = escape(conv.channel_id.name or code or "Channel")
             name = escape(
                 conv.partner_id.display_name
-                or conv.identity_id.display_name or conv.name or "Unknown")
+                or conv.identity_id.name or conv.name or "Unknown")
             parts = [
                 self._channel_badge(code, chan, 15),
                 Markup('<span>%s</span>') % name,
@@ -442,7 +442,7 @@ class OmnichannelConversation(models.Model):
         (Discuss app, chat window) clears it the same way."""
         self._mark_read_by(self.env.user.partner_id)
 
-    def _mark_read_by(self, partners=None, sync=False):
+    def _mark_read_by(self, partners=None):
         """Mark the mirror channels read up to their last message.
 
         For the given partners only, or for every member when ``partners`` is
@@ -451,10 +451,10 @@ class OmnichannelConversation(models.Model):
         has to read, and an unread number left on it would keep announcing
         work that is already done.
 
-        ``sync`` tells the members' open web clients to adopt the new state at
-        once; the reader of an open thread does not need it, everyone else
-        does. Members already up to date are skipped, so nobody is pinged for
-        a number that did not move.
+        Each member's open web clients adopt the new number at once: Odoo
+        pushes a changed unread counter to its member from ``write``. Members
+        already up to date are skipped, so nobody is pinged for a number that
+        did not move.
         """
         moved = self.env["res.partner"]
         for conv in self:
@@ -471,7 +471,7 @@ class OmnichannelConversation(models.Model):
                     continue
                 if member.seen_message_id.id >= last_id:
                     continue
-                member._mark_as_read(last_id, sync=sync)
+                member._mark_as_read(last_id)
                 moved |= member.partner_id
         # Reading is what makes the "My Conversations" badge fall, and the
         # number is each reader's own — aim the refresh at them alone.
@@ -537,7 +537,7 @@ class OmnichannelConversation(models.Model):
                 "A closed conversation cannot wait for the customer. "
                 "Re-open it first."))
         self.write({"state": "pending"})
-        self._mark_read_by(sync=True)
+        self._mark_read_by()
         # Leaving new/open takes it off both menu counts, the unassigned one
         # included, which no personal ping above can reach.
         self._notify_menu_counters()
@@ -587,7 +587,7 @@ class OmnichannelConversation(models.Model):
             "close_reason_id": reason.id if reason else False,
             "close_note": note or False,
         })
-        to_close._mark_read_by(sync=True)
+        to_close._mark_read_by()
         for conv in to_close:
             conv.message_post(body=conv._close_message(reason, note))
             conv._notify_omni_event("conversation_closed")

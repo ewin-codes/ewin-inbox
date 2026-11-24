@@ -55,7 +55,7 @@ class TestMenuCounters(OmnichannelCase):
     def _operator(self, login):
         return self.env["res.users"].create({
             "name": login, "login": login,
-            "groups_id": [(4, self.env.ref(OPERATOR_GROUP).id)]})
+            "group_ids": [(4, self.env.ref(OPERATOR_GROUP).id)]})
 
     # -- the grey badge: the unclaimed queue ------------------------------
 

@@ -84,7 +84,7 @@ class TestInboundFlow(OmnichannelCase):
         svc = self.env["omnichannel.routing.service"]
         msg1 = svc.process_event(self.account, self._event(text="first"))
         identity = msg1.conversation_id.identity_id
-        self.assertEqual(identity.display_name, "Ivan Petrov")
+        self.assertEqual(identity.name, "Ivan Petrov")
         self.assertEqual(identity.username, "ivan")
         first_seen_at = identity.last_seen_at
 
@@ -100,7 +100,7 @@ class TestInboundFlow(OmnichannelCase):
         svc.process_event(self.account, sparse_event)
         identity.invalidate_recordset()
 
-        self.assertEqual(identity.display_name, "Ivan Petrov")
+        self.assertEqual(identity.name, "Ivan Petrov")
         self.assertEqual(identity.username, "ivan")
         self.assertTrue(identity.last_seen_at)
         self.assertGreaterEqual(identity.last_seen_at, first_seen_at)

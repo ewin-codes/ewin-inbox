@@ -19,7 +19,7 @@ class TestMultiCompany(OmnichannelCase):
         self.operator = self.env["res.users"].create({
             "name": "Op A", "login": "op_a",
             "company_id": self.company.id, "company_ids": [(6, 0, [self.company.id])],
-            "groups_id": [(4, self.env.ref(
+            "group_ids": [(4, self.env.ref(
                 "ewin_omnichannel_core.group_omni_operator").id)]})
         self.team_b = self.env["omnichannel.team"].create(
             {"name": "Team B", "company_id": self.company_b.id})

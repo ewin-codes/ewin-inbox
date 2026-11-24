@@ -200,7 +200,7 @@ class MessengerConnector(models.AbstractModel):
         existing = self.env["omnichannel.identity"].search([
             ("account_id", "=", account.id), ("external_id", "=", str(psid)),
         ], limit=1)
-        if existing and existing.display_name:
+        if existing and existing.name:
             return
         try:
             profile = self.get_external_profile(account, psid)

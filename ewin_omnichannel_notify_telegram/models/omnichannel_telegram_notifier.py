@@ -64,12 +64,14 @@ class OmnichannelTelegramNotifier(models.Model):
         groups="ewin_omnichannel_core.group_omni_admin", copy=False)
     webhook_status = fields.Char(readonly=True, default="none")
 
-    _sql_constraints = [
-        ("webhook_uuid_uniq", "unique(webhook_uuid)",
-         "Webhook UUID must be unique."),
-        ("throttle_not_negative", "check(throttle_minutes >= 0)",
-         "The throttle window cannot be negative."),
-    ]
+    _webhook_uuid_uniq = models.Constraint(
+        "unique(webhook_uuid)",
+        "Webhook UUID must be unique.",
+    )
+    _throttle_not_negative = models.Constraint(
+        "check(throttle_minutes >= 0)",
+        "The throttle window cannot be negative.",
+    )
 
     my_telegram_connected = fields.Boolean(
         string="You are connected",

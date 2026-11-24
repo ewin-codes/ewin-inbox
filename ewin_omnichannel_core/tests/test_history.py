@@ -17,7 +17,7 @@ class TestHistory(OmnichannelCase):
             {"name": "Bot", "channel_id": self.channel.id})
         self.identity = self.env["omnichannel.identity"].create(
             {"account_id": self.account.id, "external_id": "123",
-             "display_name": "Ada Lovelace"})
+             "name": "Ada Lovelace"})
         # mail_create_nolog: a bare create() logs its own "Contact created"
         # mail.mt_note, which would otherwise be indistinguishable from a
         # mirrored copy to _notes() below.

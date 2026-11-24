@@ -345,11 +345,11 @@ class TestScheduledSend(OmnichannelCase):
         conversation's operator nor on its team."""
         operator_a = self.env["res.users"].create({
             "name": "Sched Op A", "login": "sched_op_a",
-            "groups_id": [(4, self.env.ref(
+            "group_ids": [(4, self.env.ref(
                 "ewin_omnichannel_core.group_omni_operator").id)]})
         operator_b = self.env["res.users"].create({
             "name": "Sched Op B", "login": "sched_op_b",
-            "groups_id": [(4, self.env.ref(
+            "group_ids": [(4, self.env.ref(
                 "ewin_omnichannel_core.group_omni_operator").id)]})
         self.conv.operator_id = operator_a
         message = self._scheduled_message()
@@ -370,7 +370,7 @@ class TestScheduledSend(OmnichannelCase):
         message = self._scheduled_message()
         outsider = self.env["res.users"].create({
             "name": "No Omni Access", "login": "sched_outsider",
-            "groups_id": [(6, 0, [self.env.ref("base.group_user").id])]})
+            "group_ids": [(6, 0, [self.env.ref("base.group_user").id])]})
         with self.assertRaises(AccessError):
             message.with_user(outsider).action_cancel_schedule()
         self.env.cr.execute(

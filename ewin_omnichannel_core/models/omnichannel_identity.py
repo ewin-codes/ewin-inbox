@@ -12,7 +12,7 @@ class OmnichannelIdentity(models.Model):
         related="account_id.company_id", store=True, index=True)
     external_id = fields.Char(required=True, index=True)
     partner_id = fields.Many2one("res.partner", index=True)
-    display_name = fields.Char()
+    name = fields.Char(help="The name the channel reports for this person.")
     username = fields.Char()
     phone = fields.Char()
     email = fields.Char()
@@ -29,10 +29,18 @@ class OmnichannelIdentity(models.Model):
     last_seen_at = fields.Datetime(default=fields.Datetime.now)
     active = fields.Boolean(default=True)
 
-    _sql_constraints = [
-        ("account_external_uniq", "unique(account_id, external_id)",
-         "An identity with this external id already exists for this account."),
-    ]
+    _account_external_uniq = models.Constraint(
+        "unique(account_id, external_id)",
+        "An identity with this external id already exists for this account.",
+    )
+
+    @api.depends("name", "handle")
+    def _compute_display_name(self):
+        """The name the channel gave, else the handle: a customer who never
+        told us their name is still somebody an operator can recognise, and
+        not ``omnichannel.identity,5``."""
+        for identity in self:
+            identity.display_name = identity.name or identity.handle
 
     @api.depends("email", "username", "phone", "external_id")
     def _compute_handle(self):

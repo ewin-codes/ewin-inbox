@@ -70,12 +70,12 @@ class TestInboundAttachments(OmnichannelCase):
         self.assertEqual(attachment.res_id, message.conversation_id.id)
 
     def test_an_operator_can_read_the_customer_file(self):
-        """ir.attachment.check refuses an attachment with no record behind it
-        to everyone but its creator; only a settings admin escapes that rule,
-        which is why an installation notices this late."""
+        """ir.attachment.check_access refuses an attachment with no record
+        behind it to everyone but its creator; only a settings admin escapes
+        that rule, which is why an installation notices this late."""
         operator = self.env["res.users"].create({
             "name": "Operator", "login": "inbound_att_operator",
-            "groups_id": [(4, self.env.ref(
+            "group_ids": [(4, self.env.ref(
                 "ewin_omnichannel_core.group_omni_operator").id)]})
         message = self._inbound()
-        message.attachment_ids.with_user(operator).check("read")
+        message.attachment_ids.with_user(operator).check_access("read")

@@ -18,12 +18,12 @@ class TestNotifyWebhook(HttpCase):
             "bot_username": "ewin_notify_bot", "webhook_secret": "SECRET"})
         self.operator = self.env["res.users"].create({
             "name": "Olga Operator", "login": "olga_webhook_test",
-            "groups_id": [(4, self.env.ref(
+            "group_ids": [(4, self.env.ref(
                 "ewin_omnichannel_core.group_omni_operator").id)]})
         self.admin_user = self.env["res.users"].create({
             "name": "Adam Admin", "login": "adam_webhook_test",
             "omni_tg_chat_id": "900",
-            "groups_id": [(4, self.env.ref(
+            "group_ids": [(4, self.env.ref(
                 "ewin_omnichannel_core.group_omni_admin").id)]})
         self.patcher = patch.object(
             type(self.env["omnichannel.telegram.notifier"]), "_client")

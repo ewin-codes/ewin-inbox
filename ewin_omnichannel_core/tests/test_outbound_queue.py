@@ -113,7 +113,7 @@ class TestOutboundQueue(OmnichannelCase):
         operator = self.env["res.users"].create({
             "name": "Op", "login": "op_fwd_test",
             "email": "op_fwd@example.com",
-            "groups_id": [(4, self.env.ref(
+            "group_ids": [(4, self.env.ref(
                 "ewin_omnichannel_core.group_omni_operator").id)]})
         with patch("odoo.addons.ewin_omnichannel_telegram.services."
                    "telegram_api_client.TelegramApiClient.send_message",

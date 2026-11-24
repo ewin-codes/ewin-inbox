@@ -12,7 +12,7 @@ class TestLinking(NotifyCase):
         super().setUp()
         self.operator = self.env["res.users"].create({
             "name": "Olga Operator", "login": "olga_link_test",
-            "groups_id": [(4, self.env.ref(
+            "group_ids": [(4, self.env.ref(
                 "ewin_omnichannel_core.group_omni_operator").id)]})
 
     def test_link_action_returns_a_wizard_with_a_t_me_url(self):
@@ -31,7 +31,7 @@ class TestLinking(NotifyCase):
     def test_a_colleague_cannot_issue_someone_elses_link(self):
         other = self.env["res.users"].create({
             "name": "Peter", "login": "peter_link_test",
-            "groups_id": [(4, self.env.ref(
+            "group_ids": [(4, self.env.ref(
                 "ewin_omnichannel_core.group_omni_operator").id)]})
         with self.assertRaises(AccessError):
             self.operator.with_user(other).action_omni_tg_link()
@@ -91,7 +91,7 @@ class TestLinking(NotifyCase):
         # what a real administrator onboarding a colleague actually holds.
         admin = self.env["res.users"].create({
             "name": "Ida Admin", "login": "ida_link_test",
-            "groups_id": [
+            "group_ids": [
                 (4, self.env.ref("base.group_system").id),
                 (4, self.env.ref("ewin_omnichannel_core.group_omni_admin").id),
             ]})
@@ -107,7 +107,7 @@ class TestLinking(NotifyCase):
         action = self.operator.with_user(self.operator).action_omni_tg_link()
         other = self.env["res.users"].create({
             "name": "Peter", "login": "peter_wizard_test",
-            "groups_id": [(4, self.env.ref(
+            "group_ids": [(4, self.env.ref(
                 "ewin_omnichannel_core.group_omni_operator").id)]})
         seen = self.env["omnichannel.telegram.link"].with_user(
             other).search([])

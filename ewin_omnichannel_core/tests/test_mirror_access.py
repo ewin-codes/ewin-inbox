@@ -20,14 +20,14 @@ class TestMirrorAccess(OmnichannelCase):
             "identity_id": self.identity.id})
         self.employee = self.env["res.users"].create({
             "name": "Warehouse", "login": "mirror_employee",
-            "groups_id": [(6, 0, [self.env.ref("base.group_user").id])]})
+            "group_ids": [(6, 0, [self.env.ref("base.group_user").id])]})
         self.operator_a = self._operator("mirror_op_a")
         self.operator_b = self._operator("mirror_op_b")
 
     def _operator(self, login):
         return self.env["res.users"].create({
             "name": login, "login": login,
-            "groups_id": [(4, self.env.ref(
+            "group_ids": [(4, self.env.ref(
                 "ewin_omnichannel_core.group_omni_operator").id)]})
 
     def test_employee_without_an_inbox_group_cannot_read_the_mirror(self):

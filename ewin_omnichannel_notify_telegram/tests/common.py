@@ -19,7 +19,7 @@ class NotifyCase(TransactionCase):
             "name": "Test Account", "channel_id": cls.channel.id})
         cls.identity = cls.env["omnichannel.identity"].create({
             "account_id": cls.account.id, "external_id": "4242",
-            "display_name": "Ann Brown", "username": "ann"})
+            "name": "Ann Brown", "username": "ann"})
         cls.conversation = cls.env["omnichannel.conversation"].create({
             "name": "Ann Brown", "account_id": cls.account.id,
             "identity_id": cls.identity.id})

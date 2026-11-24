@@ -29,7 +29,7 @@ class TestTelegramAccountActions(TransactionCase):
     def _user(cls, login, group):
         return cls.env["res.users"].create({
             "name": login, "login": login,
-            "groups_id": [(4, cls.env.ref(
+            "group_ids": [(4, cls.env.ref(
                 f"ewin_omnichannel_core.{group}").id)]})
 
     def test_operator_cannot_register_the_webhook(self):

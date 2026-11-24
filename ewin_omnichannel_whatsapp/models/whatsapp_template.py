@@ -21,10 +21,10 @@ class WhatsAppTemplate(models.Model):
     variables_count = fields.Integer(default=0)
     active = fields.Boolean(default=True)
 
-    _sql_constraints = [
-        ("wa_template_uniq", "unique(account_id, name, language)",
-         "A template with this name and language already exists."),
-    ]
+    _wa_template_uniq = models.Constraint(
+        "unique(account_id, name, language)",
+        "A template with this name and language already exists.",
+    )
 
     @api.model
     def _body_text(self, components):

@@ -62,13 +62,13 @@ class OmnichannelConversation(models.Model):
             "name": self.subject or _(
                 "%(channel)s conversation with %(customer)s",
                 channel=self.channel_id.name or _("Chat"),
-                customer=partner.display_name or identity.display_name
+                customer=partner.display_name or identity.name
                 or self.name),
             "partner_id": partner.id or False,
             # contact_name is the free-text stand-in crm.lead uses while no
             # contact exists; filling both would show the customer twice.
             "contact_name": False if partner else (
-                identity.display_name or False),
+                identity.name or False),
             "email_from": identity.email or partner.email or False,
             "phone": identity.phone or partner.phone or False,
             "user_id": self.operator_id.id or self.env.uid,

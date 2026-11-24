@@ -32,5 +32,5 @@ class OmnichannelTemplate(models.Model):
         name = ""
         if conversation:
             name = (conversation.partner_id.display_name
-                    or conversation.identity_id.display_name or "")
+                    or conversation.identity_id.name or "")
         return (template.body or "").replace("{{name}}", name)

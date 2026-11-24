@@ -85,7 +85,7 @@ class TestJobQueue(OmnichannelCase):
         through sudo, so no group needs more than read on it."""
         admin = self.env["res.users"].create({
             "name": "Omni admin", "login": "omni_admin_job_test",
-            "groups_id": [(4, self.env.ref(
+            "group_ids": [(4, self.env.ref(
                 "ewin_omnichannel_core.group_omni_admin").id)]})
         with self.assertRaises(AccessError):
             self.env["omnichannel.job"].with_user(admin).create({

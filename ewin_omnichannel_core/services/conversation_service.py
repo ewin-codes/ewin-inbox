@@ -37,7 +37,7 @@ class ConversationService(models.AbstractModel):
                 return closed
         partner = identity.partner_id
         conv = Conversation.create({
-            "name": partner.name if partner else (identity.display_name or "Conversation"),
+            "name": partner.name if partner else (identity.name or "Conversation"),
             "account_id": account.id,
             "identity_id": identity.id,
             "partner_id": partner.id if partner else False,

@@ -31,7 +31,7 @@ class TestNotifier(NotifyCase):
             "name": "Admin B", "login": "notify_admin_b",
             "company_id": company_b.id,
             "company_ids": [(6, 0, [company_b.id])],
-            "groups_id": [(4, self.env.ref(
+            "group_ids": [(4, self.env.ref(
                 "ewin_omnichannel_core.group_omni_admin").id)]})
         notifier_b = self.env["omnichannel.telegram.notifier"].with_user(
             admin_b).create({"name": "B", "company_id": company_b.id})
@@ -55,7 +55,7 @@ class TestNotifier(NotifyCase):
             "name": "Admin B", "login": "notify_admin_b2",
             "company_id": company_b.id,
             "company_ids": [(6, 0, [company_b.id])],
-            "groups_id": [(4, self.env.ref(
+            "group_ids": [(4, self.env.ref(
                 "ewin_omnichannel_core.group_omni_admin").id)]})
         with self.assertRaises(ValidationError):
             self.env["omnichannel.telegram.notifier"].with_user(
@@ -83,7 +83,7 @@ class TestNotifier(NotifyCase):
         # must not need the access it exists to stand in for.
         operator = self.env["res.users"].create({
             "name": "Operator", "login": "notify_operator",
-            "groups_id": [(4, self.env.ref(
+            "group_ids": [(4, self.env.ref(
                 "ewin_omnichannel_core.group_omni_operator").id)]})
         self.assertEqual(
             self.notifier.with_user(operator).bot_token_masked,
@@ -183,7 +183,7 @@ class TestNotifier(NotifyCase):
         # button on a model the caller can read.
         operator = self.env["res.users"].create({
             "name": "Restricted Operator", "login": "notify_btn_operator_1",
-            "groups_id": [(4, self.env.ref(
+            "group_ids": [(4, self.env.ref(
                 "ewin_omnichannel_core.group_omni_operator").id)]})
         with self.assertRaises(AccessError):
             self.notifier.with_user(operator).action_check_connection()
@@ -191,7 +191,7 @@ class TestNotifier(NotifyCase):
     def test_register_webhook_refuses_an_operator(self):
         operator = self.env["res.users"].create({
             "name": "Restricted Operator", "login": "notify_btn_operator_2",
-            "groups_id": [(4, self.env.ref(
+            "group_ids": [(4, self.env.ref(
                 "ewin_omnichannel_core.group_omni_operator").id)]})
         with self.assertRaises(AccessError):
             self.notifier.with_user(operator).action_register_webhook()
@@ -199,7 +199,7 @@ class TestNotifier(NotifyCase):
     def test_remove_webhook_refuses_an_operator(self):
         operator = self.env["res.users"].create({
             "name": "Restricted Operator", "login": "notify_btn_operator_3",
-            "groups_id": [(4, self.env.ref(
+            "group_ids": [(4, self.env.ref(
                 "ewin_omnichannel_core.group_omni_operator").id)]})
         with self.assertRaises(AccessError):
             self.notifier.with_user(operator).action_remove_webhook()

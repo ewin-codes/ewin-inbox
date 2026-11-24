@@ -75,5 +75,5 @@ class TestInboundFlow(TransactionCase):
             connector.parse_webhook(self.account, self._payload(), {})
         identity = self.env["omnichannel.identity"].search([
             ("account_id", "=", self.account.id), ("external_id", "=", "USER1")])
-        self.assertEqual(identity.display_name, "Ann Lee")
+        self.assertEqual(identity.name, "Ann Lee")
         self.assertEqual(identity.partner_id.name, "Ann Lee")

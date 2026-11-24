@@ -76,7 +76,7 @@ class TestConversation(OmnichannelCase):
         # a mirrored inbound raises it, _mark_read clears it.
         operator = self.env["res.users"].create({
             "name": "Op2", "login": "op2_unread",
-            "groups_id": [(4, self.env.ref(
+            "group_ids": [(4, self.env.ref(
                 "ewin_omnichannel_core.group_omni_operator").id)]})
         conv = self._new_conv()
         conv.operator_id = operator

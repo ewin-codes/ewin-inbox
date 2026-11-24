@@ -26,10 +26,10 @@ class OmnichannelEvent(models.Model):
     processed_at = fields.Datetime()
     error = fields.Text()
 
-    _sql_constraints = [
-        ("account_event_uniq", "unique(account_id, external_event_id)",
-         "Event already recorded for this account."),
-    ]
+    _account_event_uniq = models.Constraint(
+        "unique(account_id, external_event_id)",
+        "Event already recorded for this account.",
+    )
 
     @api.model
     def record(self, account, external_event_id, event_type=False, payload=None):

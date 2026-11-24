@@ -157,7 +157,7 @@ class EmailReply(models.AbstractModel):
             return message.conversation_id.account_id._email_sender()
         partner = message.author_partner_id
         identity = message.conversation_id.identity_id
-        return (partner.name or identity.display_name,
+        return (partner.name or identity.name,
                 partner.email or identity.external_id)
 
     # ---- the history ----

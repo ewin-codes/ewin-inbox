@@ -1,9 +1,8 @@
 import logging
-import threading
 
 from markupsafe import Markup, escape
 
-from odoo import _, api, fields, models
+from odoo import _, api, fields, models, modules
 from odoo.exceptions import UserError, ValidationError
 
 _logger = logging.getLogger(__name__)
@@ -304,7 +303,7 @@ class OmnichannelMessage(models.Model):
         """, (now, limit))
         candidate_ids = [row[0] for row in self.env.cr.fetchall()]
         service = self.env["omnichannel.message.service"]
-        testing = getattr(threading.current_thread(), "testing", False)
+        testing = bool(modules.module.current_test)
         for message_id in candidate_ids:
             # Re-lock the message before releasing. If it was rescheduled or
             # released by another process, this returns no row and we skip it.

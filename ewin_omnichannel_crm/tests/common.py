@@ -21,7 +21,7 @@ class OmnichannelCrmCase(TransactionCase):
             mail_create_nolog=True).create({"name": "Ada Lovelace"})
         self.identity = self.env["omnichannel.identity"].create({
             "account_id": self.account.id, "external_id": "123",
-            "display_name": "Ada Lovelace", "phone": "+490001",
+            "name": "Ada Lovelace", "phone": "+490001",
             "email": "ada@example.com"})
         self.lead = self.env["crm.lead"].with_context(
             mail_create_nolog=True).create({"name": "Bulk order"})

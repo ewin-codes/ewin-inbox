@@ -1,7 +1,6 @@
 import logging
-import threading
 
-from odoo import api, fields, models
+from odoo import api, fields, models, modules
 
 _logger = logging.getLogger(__name__)
 
@@ -101,7 +100,7 @@ class OmnichannelJob(models.Model):
         ], limit=limit, order="next_run_at, id")
         for job in jobs:
             job.run()
-            if not getattr(threading.current_thread(), "testing", False):
+            if not modules.module.current_test:
                 # isolate each job; a failure must not roll back peers
                 self.env.cr.commit()
 

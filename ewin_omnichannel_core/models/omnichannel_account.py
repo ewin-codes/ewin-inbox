@@ -34,9 +34,10 @@ class OmnichannelAccount(models.Model):
     connector_config = fields.Json(default=dict)
     sequence = fields.Integer(default=10)
 
-    _sql_constraints = [
-        ("webhook_uuid_uniq", "unique(webhook_uuid)", "Webhook UUID must be unique."),
-    ]
+    _webhook_uuid_uniq = models.Constraint(
+        "unique(webhook_uuid)",
+        "Webhook UUID must be unique.",
+    )
 
     def _get_connector(self, missing_ok=False):
         """Return the connector model for this account's channel code.

@@ -19,6 +19,7 @@ class OmnichannelChannel(models.Model):
         help="Supported capabilities, e.g. {'text': true, 'image': true}.",
     )
 
-    _sql_constraints = [
-        ("code_uniq", "unique(code)", "Channel code must be unique."),
-    ]
+    _code_uniq = models.Constraint(
+        "unique(code)",
+        "Channel code must be unique.",
+    )

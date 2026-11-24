@@ -44,7 +44,7 @@ class TestCreateLead(OmnichannelCrmCase):
     def test_create_lead_assigns_the_operator(self):
         operator = self.env["res.users"].create({
             "name": "Op", "login": "op_create_lead_test",
-            "groups_id": [(6, 0, [self.env.ref("base.group_user").id])]})
+            "group_ids": [(6, 0, [self.env.ref("base.group_user").id])]})
         conv = self._new_conv(operator_id=operator.id)
         conv.action_create_lead()
         self.assertEqual(conv.lead_id.user_id, operator)

@@ -71,7 +71,7 @@ class TestGuidance(TransactionCase):
         self.env.user.sudo().omni_tg_chat_id = "555"
         other = self.env["res.users"].create({
             "name": "Other", "login": "guidance_other",
-            "groups_id": [(4, self.env.ref(
+            "group_ids": [(4, self.env.ref(
                 "ewin_omnichannel_core.group_omni_admin").id)]})
         self.assertFalse(
             self.notifier.with_user(other).my_telegram_connected,
@@ -100,7 +100,7 @@ class TestGuidance(TransactionCase):
         """
         operator = self.env["res.users"].create({
             "name": "Operator", "login": "guidance_operator",
-            "groups_id": [(4, self.env.ref(
+            "group_ids": [(4, self.env.ref(
                 "ewin_omnichannel_core.group_omni_operator").id)]})
         arch = etree.fromstring(
             self.env["res.users"].with_user(operator).get_view(

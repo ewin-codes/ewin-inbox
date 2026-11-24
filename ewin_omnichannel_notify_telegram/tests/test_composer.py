@@ -92,7 +92,7 @@ class TestComposer(NotifyCase):
     def test_a_sender_named_by_their_handle_is_not_repeated(self):
         self.identity.write({
             "username": False, "email": "ann@example.com",
-            "display_name": "ann@example.com"})
+            "name": "ann@example.com"})
         self.assertEqual(self._lines()[1], "ann@example.com")
 
     def test_handle_is_added_when_it_differs_from_the_name(self):
@@ -100,7 +100,7 @@ class TestComposer(NotifyCase):
         self.assertIn("(@ann)", self.service._compose(message))
 
     def test_unnamed_customer_falls_back_to_the_handle(self):
-        self.conversation.identity_id.display_name = False
+        self.conversation.identity_id.name = False
         self.conversation.partner_id = False
         message = self._inbound()
         self.assertIn("@ann", self.service._compose(message))

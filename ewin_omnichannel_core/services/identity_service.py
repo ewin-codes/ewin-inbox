@@ -14,7 +14,7 @@ class IdentityService(models.AbstractModel):
             ("external_id", "=", ext_id),
         ], limit=1)
         profile = {
-            "display_name": external_user.get("name"),
+            "name": external_user.get("name"),
             "username": external_user.get("username"),
             "phone": external_user.get("phone"),
             "email": external_user.get("email"),
@@ -61,8 +61,8 @@ class IdentityService(models.AbstractModel):
 
     @api.model
     def _build_partner_name(self, identity):
-        if identity.display_name:
-            return identity.display_name
+        if identity.name:
+            return identity.name
         if identity.username:
             return f"{identity.account_id.channel_id.name} @{identity.username}"
         return f"{identity.account_id.channel_id.name} user {identity.external_id}"

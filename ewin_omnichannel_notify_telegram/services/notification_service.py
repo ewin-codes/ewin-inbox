@@ -115,7 +115,7 @@ class TelegramNotificationService(models.AbstractModel):
         the @username, which is how the operator will address them back, and
         it tells two same-named people apart.
         """
-        name = conversation.partner_id.name or conversation.identity_id.display_name
+        name = conversation.partner_id.name or conversation.identity_id.name
         handle = conversation.identity_handle
         if name and handle and handle != name:
             return f"{name} ({handle})"

@@ -20,7 +20,7 @@ class TestMaskedCredential(TransactionCase):
             "wa_access_token": "EAAG"})
         self.operator = self.env["res.users"].create({
             "name": "Operator", "login": "wa_masked_operator",
-            "groups_id": [(4, self.env.ref(
+            "group_ids": [(4, self.env.ref(
                 "ewin_omnichannel_core.group_omni_operator").id)]})
         # A cold cache, the way the operator's own request starts. Odoo's
         # field cache is shared by every environment of a transaction and
