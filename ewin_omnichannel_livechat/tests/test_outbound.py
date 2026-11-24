@@ -47,7 +47,7 @@ class TestLivechatOutbound(LivechatCase):
 
     def test_download_attachment_returns_independent_copy(self):
         att = self.env["ir.attachment"].create({
-            "name": "f.txt", "datas": b"aGVsbG8="})
+            "name": "f.txt", "raw": b"hello"})
         result = self.account._get_connector().download_attachment(
             self.account, {"attachment_id": att.id})
         self.assertTrue(result)

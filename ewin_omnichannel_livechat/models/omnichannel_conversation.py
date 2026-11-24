@@ -18,13 +18,9 @@ class OmnichannelConversation(models.Model):
             channel = conv.livechat_channel_id
             if not channel.exists() or channel.livechat_end_dt:
                 continue
-            operator_partner = channel.livechat_operator_id \
-                or conv.account_id.livechat_bridge_user_id.partner_id
-            channel.sudo().with_context(
-                omni_livechat_outbound=True).message_post(
-                body=_("The operator has closed this conversation."),
-                author_id=operator_partner.id,
-                message_type="comment",
-                subtype_xmlid="mail.mt_comment")
-            channel.sudo()._close_livechat_session()
+            # Odoo's own closing notice, in the words that fit: the session
+            # ends because the operator closed it, not because the visitor
+            # left. A notification is never ingested back as a reply.
+            channel.sudo()._close_livechat_session(
+                message=_("The operator has closed this conversation."))
         return res

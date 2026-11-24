@@ -56,7 +56,7 @@ class LivechatConnector(models.AbstractModel):
         if not channel or not channel.exists():
             raise NonRetriableError(_(
                 "The livechat session is no longer available."))
-        operator_partner = channel.livechat_operator_id \
+        operator_partner = channel.livechat_agent_partner_ids[:1] \
             or account.livechat_bridge_user_id.partner_id
         mail_message = channel.sudo().with_context(
             omni_livechat_outbound=True).message_post(

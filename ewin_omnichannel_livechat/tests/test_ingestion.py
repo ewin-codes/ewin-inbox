@@ -74,7 +74,6 @@ class TestLivechatIngestion(LivechatCase):
         channel = self.env["discuss.channel"].create({
             "name": "S", "channel_type": "livechat",
             "livechat_channel_id": other_lc.id,
-            "livechat_operator_id": self.bridge_user.partner_id.id,
             "channel_member_ids": [
                 (0, 0, {"partner_id": self.bridge_user.partner_id.id})],
         })

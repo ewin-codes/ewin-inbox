@@ -33,7 +33,6 @@ class LivechatCase(TransactionCase):
             "name": "Session",
             "channel_type": "livechat",
             "livechat_channel_id": self.lc_channel.id,
-            "livechat_operator_id": self.bridge_user.partner_id.id,
             "channel_member_ids": members,
         }
         if visitor is not None:

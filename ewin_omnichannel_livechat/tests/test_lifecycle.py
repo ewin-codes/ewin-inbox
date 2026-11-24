@@ -24,7 +24,8 @@ class TestLivechatLifecycle(LivechatCase):
 
     def test_visitor_leave_sets_conversation_pending(self):
         conv, channel = self._conversation()
-        channel._close_livechat_session()
+        channel._close_livechat_session(
+            message=channel._get_visitor_leave_message())
         self.assertEqual(conv.state, "pending")
 
     def test_ewin_close_posts_notice_and_ends_session(self):
@@ -52,7 +53,7 @@ class TestLivechatLifecycle(LivechatCase):
         conv, channel = self._conversation()
         conv.operator_id = self.env.user
         state_before = conv.state
-        self.env["ir.config_parameter"].sudo().set_param(
+        self.env["ir.config_parameter"].sudo().set_str(
             "ewin_omnichannel.close_reason_policy", "required")
         action = conv.action_close()
         self.assertEqual(action["res_model"], "omnichannel.close.wizard")

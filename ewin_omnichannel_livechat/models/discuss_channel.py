@@ -58,8 +58,8 @@ class DiscussChannel(models.Model):
             return
         event.mark_processed()
 
-    def _close_livechat_session(self, **kwargs):
-        res = super()._close_livechat_session(**kwargs)
+    def _close_livechat_session(self, message):
+        res = super()._close_livechat_session(message)
         Conversation = self.env["omnichannel.conversation"].sudo()
         for channel in self.filtered(
                 lambda c: c.channel_type == "livechat"):

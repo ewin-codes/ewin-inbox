@@ -102,11 +102,11 @@ an operator attaches to a reply in Inbox is passed straight through
   an operator can review and close it deliberately.
 - **Operator closes in EWIN** — a conversation that actually closes
   (`omnichannel.conversation._close()`, reached from the Close button or the
-  close-reason wizard) posts a closing notice into L (so the visitor sees the
-  conversation ended) and then ends the live session
-  (`_close_livechat_session()`). The notice is a plain system post, not a new
-  inbound message — it does not get re-ingested. Closing a conversation that
-  is already closed posts nothing.
+  close-reason wizard) ends the live session through
+  `_close_livechat_session()`, with Odoo's closing notice worded for the case:
+  the visitor reads that the operator closed the conversation. The notice is a
+  system notification, not a new inbound message — it does not get
+  re-ingested. Closing a conversation that is already closed posts nothing.
 
 ## Bridge presence heartbeat
 

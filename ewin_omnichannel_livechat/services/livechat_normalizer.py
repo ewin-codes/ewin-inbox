@@ -14,15 +14,17 @@ class LivechatNormalizer(models.AbstractModel):
         """True when the post is a visitor comment we should ingest.
 
         Visitor-vs-operator uses the same signal website_livechat itself uses:
-        a livechat post is the operator's iff its author is
-        ``livechat_operator_id``. System notifications (message_type other
-        than 'comment') are excluded too."""
+        a livechat post is the operator's iff its author is one of the
+        session's agents. A chatbot's posts are its own script, not the
+        visitor's words, so they are left out as well, and so are system
+        notifications (message_type other than 'comment')."""
         if channel.channel_type != "livechat":
             return False
         if mail_message.message_type != "comment":
             return False
-        if mail_message.author_id and \
-                mail_message.author_id == channel.livechat_operator_id:
+        staff = channel.livechat_agent_partner_ids \
+            | channel.livechat_bot_partner_ids
+        if mail_message.author_id and mail_message.author_id in staff:
             return False
         return True
 
