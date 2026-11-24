@@ -47,7 +47,7 @@ class TestPoll(TransactionCase):
             [("account_id", "=", self.account.id)])
 
     def test_a_flag_failure_is_not_reported_as_a_processing_failure(self):
-        """The email is already stored when the server refuses the \Seen
+        r"""The email is already stored when the server refuses the \Seen
         flag. Calling that "Failed to process email" sends whoever reads the
         log looking for a lost message that is sitting in the inbox."""
         with self._mailbox(
