@@ -1,25 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <record id="module_category_omnichannel" model="ir.module.category">
+    <!-- The three roles are one privilege: the user form offers them as a
+         single choice under "EWIN Inbox", each one implying the one below. -->
+    <record id="privilege_omnichannel" model="res.groups.privilege">
         <field name="name">EWIN Inbox</field>
         <field name="sequence">20</field>
+        <field name="category_id" ref="base.module_category_productivity"/>
     </record>
 
     <record id="group_omni_operator" model="res.groups">
-        <field name="name">Omnichannel: Operator</field>
-        <field name="category_id" ref="module_category_omnichannel"/>
+        <field name="name">Operator</field>
+        <field name="sequence">10</field>
+        <field name="privilege_id" ref="privilege_omnichannel"/>
+        <field name="comment">Answers the conversations of their own, of their teams and the unassigned queue.</field>
         <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
     </record>
 
     <record id="group_omni_manager" model="res.groups">
-        <field name="name">Omnichannel: Manager</field>
-        <field name="category_id" ref="module_category_omnichannel"/>
+        <field name="name">Manager</field>
+        <field name="sequence">20</field>
+        <field name="privilege_id" ref="privilege_omnichannel"/>
+        <field name="comment">Sees every conversation of the company and reads the reports.</field>
         <field name="implied_ids" eval="[(4, ref('group_omni_operator'))]"/>
     </record>
 
     <record id="group_omni_admin" model="res.groups">
-        <field name="name">Omnichannel: Administrator</field>
-        <field name="category_id" ref="module_category_omnichannel"/>
+        <field name="name">Administrator</field>
+        <field name="sequence">30</field>
+        <field name="privilege_id" ref="privilege_omnichannel"/>
+        <field name="comment">Connects channel accounts, holds their credentials and configures the Inbox.</field>
         <field name="implied_ids" eval="[(4, ref('group_omni_manager'))]"/>
     </record>
 

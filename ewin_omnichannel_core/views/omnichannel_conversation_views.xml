@@ -268,7 +268,7 @@
                 <separator/>
                 <filter name="send_errors" string="With send errors"
                         domain="[('omni_message_ids.state','=','failed')]"/>
-                <group expand="0" string="Group By">
+                <group>
                     <filter name="g_state" string="Status" context="{'group_by':'state'}"/>
                     <filter name="g_channel" string="Channel"
                             context="{'group_by':'channel_id'}"/>

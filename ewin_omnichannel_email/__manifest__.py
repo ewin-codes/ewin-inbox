@@ -1,7 +1,7 @@
 {
     "name": "EWIN Inbox: Email",
     "summary": "Email (IMAP/SMTP) connector for EWIN Inbox",
-    "version": "18.0.1.3.1",
+    "version": "19.0.1.3.1",
     "category": "Productivity/Discuss",
     "author": "EWIN.codes",
     "maintainer": "EWIN.codes",

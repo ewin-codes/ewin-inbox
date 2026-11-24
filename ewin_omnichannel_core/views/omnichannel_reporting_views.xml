@@ -79,7 +79,7 @@
                      while a reader can still lift the filter to see them. -->
                 <filter name="real_volume" string="Real Volume"
                         domain="[('state', 'not in', ['scheduled', 'cancelled'])]"/>
-                <group expand="0" string="Group By">
+                <group>
                     <filter name="g_channel" string="Channel"
                             context="{'group_by':'channel_id'}"/>
                     <filter name="g_direction" string="Direction"

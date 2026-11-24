@@ -66,7 +66,7 @@
                         domain="[('state','=','acknowledged')]"/>
                 <filter name="resolved" string="Resolved"
                         domain="[('state','=','resolved')]"/>
-                <group expand="0" string="Group By">
+                <group>
                     <filter name="g_category" string="Category"
                             context="{'group_by':'category'}"/>
                     <filter name="g_state" string="Status" context="{'group_by':'state'}"/>

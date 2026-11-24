@@ -1,7 +1,7 @@
 {
     "name": "EWIN Inbox: Alerts",
     "summary": "Notify operators in Telegram when a customer writes",
-    "version": "18.0.1.0.0",
+    "version": "19.0.1.0.0",
     "category": "Productivity/Discuss",
     "author": "EWIN.codes",
     "maintainer": "EWIN.codes",
