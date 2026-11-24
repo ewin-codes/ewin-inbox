@@ -7,7 +7,7 @@
         <field name="arch" type="xml">
             <xpath expr="//div[@name='button_box']" position="inside">
                 <button type="object" name="action_omni_link_conversations"
-                        class="oe_stat_button" icon="fa-link"
+                        class="oe_stat_button" icon="link"
                         groups="ewin_omnichannel_core.group_omni_operator">
                     <div class="o_stat_info">
                         <span class="o_stat_text">Link</span>
@@ -15,7 +15,7 @@
                     </div>
                 </button>
                 <button type="object" name="action_omni_conversations"
-                        class="oe_stat_button" icon="fa-comments"
+                        class="oe_stat_button" icon="forum"
                         groups="ewin_omnichannel_core.group_omni_operator"
                         invisible="omni_conversation_count == 0">
                     <field name="omni_conversation_count" widget="statinfo"

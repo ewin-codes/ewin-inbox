@@ -5,28 +5,17 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 from odoo.tools import BinaryBytes, file_open, plaintext2html
 
-# Channel code -> (fontawesome class, brand colour) for the list icon.
-CHANNEL_ICONS = {
-    "telegram": ("fa-telegram", "#29a9eb"),
-    "whatsapp": ("fa-whatsapp", "#25d366"),
-    "instagram": ("fa-instagram", "#e1306c"),
-    "email": ("fa-envelope", "#d44638"),
-    "livechat": ("fa-comments", "#00a09d"),
-}
-CHANNEL_ICON_DEFAULT = ("fa-comments-o", "#6c757d")
-
-# Channel codes that ship a brand PNG under static/src/img. It is the mirrored
-# Discuss channel's avatar, so the source is recognisable in the Discuss
-# sidebar (which shows an avatar, not the FontAwesome list icon).
+# Channel codes that ship a brand PNG under static/src/img. It is the marker
+# in the lists and the mirrored Discuss channel's avatar both, so a source
+# looks the same wherever it is shown. Odoo's own icon set is Material
+# Symbols, which draws no brands at all.
 CHANNEL_AVATAR_CODES = (
     "telegram", "viber", "email", "messenger", "whatsapp", "instagram",
     "livechat")
 CHANNEL_AVATAR_URL = "/ewin_omnichannel_core/static/src/img/channel_%s.png"
 
-# Channel codes drawn from that brand PNG in the lists too, because Odoo
-# bundles FontAwesome 4.7 and it carries no glyph for Viber or Messenger — an
-# <i class="fa fa-viber"> is a valid-looking tag that renders as a blank cell.
-CHANNEL_IMAGE_ICONS = ("viber", "messenger")
+# The marker of a channel that ships no brand PNG.
+CHANNEL_ICON_DEFAULT = ("forum", "#6c757d")
 
 # How hard the Close button asks why: "off" | "optional" | "required".
 CLOSE_REASON_POLICY_PARAM = "ewin_omnichannel.close_reason_policy"
@@ -198,7 +187,7 @@ class OmnichannelConversation(models.Model):
             conv.scheduled_badge = (
                 Markup(
                     '<span class="badge text-bg-warning" title="%s">'
-                    '<i class="fa fa-clock-o me-1"></i>%s</span>') % (title, count)
+                    '<i class="oi me-1" data-icon="schedule"></i>%s</span>') % (title, count)
                 if count else False)
 
     @api.depends("first_customer_message_at", "first_operator_message_at")
@@ -347,19 +336,17 @@ class OmnichannelConversation(models.Model):
     def _channel_badge(self, code, label, size):
         """Return the inline channel marker for ``code``, ``size`` px square.
 
-        A FontAwesome glyph where one exists, the brand PNG otherwise: the
-        bundled FontAwesome has no glyph for every channel we support, and a
-        missing one fails silently as an empty cell rather than as a fallback
-        shape. ``label`` must already be escaped.
+        The brand PNG where the channel ships one, a neutral glyph otherwise.
+        ``label`` must already be escaped.
         """
-        if code in CHANNEL_IMAGE_ICONS:
+        if code in CHANNEL_AVATAR_CODES:
             return Markup(
                 '<img src="%s" alt="%s" title="%s" style="width:%dpx;'
                 'height:%dpx;border-radius:2px;vertical-align:middle"/>') % (
                 CHANNEL_AVATAR_URL % code, label, label, size, size)
-        icon, color = CHANNEL_ICONS.get(code, CHANNEL_ICON_DEFAULT)
+        icon, color = CHANNEL_ICON_DEFAULT
         return Markup(
-            '<i class="fa %s" style="color:%s;line-height:1;font-size:%dpx" '
+            '<i class="oi" data-icon="%s" style="color:%s;font-size:%dpx" '
             'title="%s" role="img" aria-label="%s"></i>') % (
             icon, color, size, label, label)
 

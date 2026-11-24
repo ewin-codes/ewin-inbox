@@ -1,9 +1,12 @@
+import re
+from pathlib import Path
+
 from odoo.exceptions import UserError
 from odoo.tests import tagged
 from odoo.tools import file_open
 
 from ..models.omnichannel_conversation import (
-    CHANNEL_ICON_DEFAULT, CHANNEL_ICONS, CHANNEL_IMAGE_ICONS)
+    CHANNEL_AVATAR_CODES, CHANNEL_AVATAR_URL, CHANNEL_ICON_DEFAULT)
 from .common import OmnichannelCase
 
 
@@ -139,17 +142,15 @@ class TestConversation(OmnichannelCase):
             {"account_id": acc.id, "external_id": "9"})
         conv = self.env["omnichannel.conversation"].create({
             "name": "C", "account_id": acc.id, "identity_id": ident.id})
-        self.assertIn("fa-telegram", conv.channel_icon)
+        self.assertIn(CHANNEL_AVATAR_URL % "telegram", conv.channel_icon)
         # unknown channel code falls back to a generic icon, never blank
         conv2 = self._new_conv()  # uses the "test" channel
-        self.assertIn("fa-comments-o", conv2.channel_icon)
+        self.assertIn(
+            'data-icon="%s"' % CHANNEL_ICON_DEFAULT[0], conv2.channel_icon)
 
-    def test_channel_icon_uses_the_brand_image_where_fontawesome_has_none(self):
-        """Odoo bundles FontAwesome 4.7, which has no fa-viber: the glyph is
-        silently blank, so the brand PNG has to stand in."""
+    def test_the_customer_label_carries_the_brand_marker(self):
         viber = self.env["omnichannel.channel"].search(
-            [("code", "=", "viber")], limit=1) or \
-            self.env["omnichannel.channel"].create(
+            [("code", "=", "viber")], limit=1) or             self.env["omnichannel.channel"].create(
                 {"name": "Viber", "code": "viber"})
         acc = self.env["omnichannel.account"].create(
             {"name": "ViberBot", "channel_id": viber.id})
@@ -158,42 +159,41 @@ class TestConversation(OmnichannelCase):
         conv = self.env["omnichannel.conversation"].create({
             "name": "C", "account_id": acc.id, "identity_id": ident.id})
         for markup in (conv.channel_icon, conv.customer_label):
-            self.assertNotIn("fa-viber", markup)
-            self.assertIn(
-                "/ewin_omnichannel_core/static/src/img/channel_viber.png",
-                markup)
+            self.assertIn(CHANNEL_AVATAR_URL % "viber", markup)
 
-    def test_every_glyph_referenced_exists_in_the_bundled_fontawesome(self):
-        """A class FontAwesome does not carry is not an error, it is a blank
-        cell — which is exactly how ``fa-viber`` shipped. Pin every glyph we
-        name against the stylesheet Odoo actually serves."""
-        path = "web/static/src/libs/fontawesome/css/font-awesome.css"
+    def test_every_icon_named_is_in_odoos_icon_subset(self):
+        """Odoo ships a subset of Material Symbols, and a name outside it is
+        not an error but a blank where the icon should be. Pin every name this
+        module draws against the list the subset is built from."""
+        path = "web/tooling/icons/icons_wishlist.txt"
         try:
             with file_open(path) as fh:
-                css = fh.read()
+                subset = set(fh.read().split())
         except (FileNotFoundError, OSError):
-            self.skipTest("bundled FontAwesome not found at %s" % path)
-        for glyph, _colour in [*CHANNEL_ICONS.values(), CHANNEL_ICON_DEFAULT]:
-            self.assertIn(
-                ".%s:before" % glyph, css,
-                "%s is not in the bundled FontAwesome and would render "
-                "as an empty icon" % glyph)
+            self.skipTest("Odoo's icon list not found at %s" % path)
+        module = Path(__file__).resolve().parents[1]
+        names = {CHANNEL_ICON_DEFAULT[0]}
+        for source in [*module.rglob("*.xml"), *module.rglob("*.py")]:
+            if "tests" in source.parts:
+                continue
+            text = source.read_text(encoding="utf-8")
+            # data-icon="..." and a button's icon="..." alike
+            names.update(re.findall(r'icon="([a-z_]+)"', text))
+        self.assertTrue(names - {CHANNEL_ICON_DEFAULT[0]},
+                        "the scan found no icons: the pattern is broken")
+        self.assertFalse(
+            names - subset,
+            "not in Odoo's icon subset, so drawn as a blank")
 
     def test_every_connector_channel_has_its_own_brand_marker(self):
-        """A connector that forgets to register an icon would fall through to
-        the generic bubble and be indistinguishable from the other channels."""
+        """A connector that forgets to ship a brand image would fall through
+        to the generic bubble and be indistinguishable from the others."""
         channels = self.env["omnichannel.channel"].search(
             [("connector_module", "!=", False)])
         for channel in channels:
-            self.assertTrue(
-                channel.code in CHANNEL_ICONS
-                or channel.code in CHANNEL_IMAGE_ICONS,
+            self.assertIn(
+                channel.code, CHANNEL_AVATAR_CODES,
                 "channel %r has no brand marker of its own" % channel.code)
-        for code in CHANNEL_IMAGE_ICONS:
-            # the PNG the markup points at has to actually be on disk
-            self.assertTrue(
-                self.env["omnichannel.conversation"]._channel_avatar(code),
-                "no brand PNG shipped for %r" % code)
 
     def test_every_connector_channel_has_a_discuss_avatar(self):
         """The Discuss sidebar draws the mirror channel's avatar, not the list

@@ -124,7 +124,7 @@ class OmnichannelMessage(models.Model):
                     parts.append(Markup(
                         '<a href="/web/content/%s?download=true" '
                         'class="o_omni_file badge text-bg-light" title="%s">'
-                        '<i class="fa fa-paperclip me-1"/>%s</a>') % (att.id, name, name))
+                        '<i class="oi me-1" data-icon="attach_file"/>%s</a>') % (att.id, name, name))
             message.has_attachments = bool(parts)
             message.attachment_preview = (
                 Markup('<div class="o_omni_atts">%s</div>') % Markup("").join(parts)

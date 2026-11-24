@@ -27,7 +27,7 @@
                         <button name="action_omni_tg_link" type="object"
                                 string="Connect Telegram"
                                 class="btn btn-primary"
-                                icon="fa-telegram"/>
+                                icon="send"/>
                     </div>
                     <div colspan="2" invisible="not omni_tg_chat_id">
                         <p class="text-muted mb-2">

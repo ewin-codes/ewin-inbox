@@ -59,7 +59,7 @@
     label {
         margin-bottom: 0;
     }
-    i.fa {
+    i.oi {
         line-height: 1;
     }
     // Bootstrap nudges a checkbox/switch down by .25em to sit on the text
@@ -581,7 +581,7 @@
     @include omni-vrow(6px);
     display: inline-flex; // stay inline inside the list-cell
 
-    i.fa {
+    i.oi {
         font-size: 15px;
     }
 }

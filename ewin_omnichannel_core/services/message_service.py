@@ -6,7 +6,7 @@ from odoo.tools import format_datetime
 
 INTERNAL_BADGE = Markup(
     '<span class="o_omni_internal_marker">'
-    '<i class="fa fa-lock"></i> Internal note</span>')
+    '<i class="oi" data-icon="lock"></i> Internal note</span>')
 
 
 class MessageService(models.AbstractModel):

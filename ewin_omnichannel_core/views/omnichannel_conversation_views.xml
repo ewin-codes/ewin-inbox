@@ -130,7 +130,7 @@
                         <div class="o_omni_editing o_omni_vrow justify-content-between mb-1"
                              invisible="not composer_editing_message_id">
                             <span class="fw-bold">
-                                <i class="fa fa-pencil me-1"/>Editing a scheduled reply
+                                <i class="oi me-1" data-icon="edit"/>Editing a scheduled reply
                             </span>
                             <button name="action_cancel_edit" type="object"
                                     string="Cancel" class="btn-link btn-sm"/>
@@ -146,7 +146,7 @@
                             </span>
                             <span class="fw-bold text-warning o_omni_internal_banner"
                                   invisible="not composer_is_internal">
-                                <i class="fa fa-lock me-1"></i>Internal note — not sent to the customer
+                                <i class="oi me-1" data-icon="lock"></i>Internal note — not sent to the customer
                             </span>
                             <div class="o_omni_vrow gap-3">
                                 <!-- Hidden while editing: a scheduled reply
@@ -219,7 +219,7 @@
                                      composer accessory. One clear gap apart so
                                      neither is clicked for the other. -->
                                 <span class="o_omni_later o_omni_vrow">
-                                    <i class="fa fa-clock-o text-muted"
+                                    <i class="oi text-muted" data-icon="schedule"
                                        title="Send later"/>
                                     <field name="composer_scheduled_at" nolabel="1"
                                            placeholder="Send later"/>
@@ -229,7 +229,7 @@
                                          out of edit mode is the banner's own
                                          Cancel. -->
                                     <button name="action_clear_schedule_time"
-                                            type="object" icon="fa-times"
+                                            type="object" icon="close"
                                             title="Clear the send time"
                                             class="o_omni_later_clear"
                                             invisible="not composer_scheduled_at or composer_editing_message_id"/>

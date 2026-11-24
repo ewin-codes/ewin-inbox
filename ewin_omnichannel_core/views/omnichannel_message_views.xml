@@ -87,9 +87,9 @@
                 <field name="company_id" readonly="1"
                        groups="base.group_multi_company"/>
                 <button name="action_send_now" type="object"
-                        icon="fa-paper-plane" title="Send now"/>
+                        icon="send" title="Send now"/>
                 <button name="action_cancel_schedule" type="object"
-                        icon="fa-times" title="Cancel"/>
+                        icon="close" title="Cancel"/>
             </list>
         </field>
     </record>
