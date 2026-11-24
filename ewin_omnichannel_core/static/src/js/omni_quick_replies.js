@@ -1,6 +1,4 @@
-/** @odoo-module **/
-
-import { Component, useState, onWillStart } from "@odoo/owl";
+import { Component, onWillStart, proxy, useProps } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { standardFieldProps } from "@web/views/fields/standard_field_props";
@@ -21,11 +19,12 @@ import { insertIntoReply, signatureBlock } from "./omni_signature";
  */
 export class OmniQuickRepliesField extends Component {
     static template = "ewin_omnichannel_core.OmniQuickRepliesField";
-    static props = { ...standardFieldProps };
+
+    props = useProps(standardFieldProps);
 
     setup() {
         this.orm = useService("orm");
-        this.state = useState({ open: false, templates: [] });
+        this.state = proxy({ open: false, templates: [] });
         onWillStart(() => this.loadTemplates());
     }
 

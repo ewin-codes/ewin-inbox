@@ -1,5 +1,3 @@
-/** @odoo-module **/
-
 /**
  * The signature a reply opens with, shared by everything that writes into
  * the composer.

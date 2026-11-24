@@ -1,6 +1,4 @@
-/** @odoo-module **/
-
-import { Component, useEffect, useState, onWillUnmount } from "@odoo/owl";
+import { Component, onWillDestroy, proxy, useOnChange, useProps } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { standardFieldProps } from "@web/views/fields/standard_field_props";
@@ -33,7 +31,8 @@ import { _t } from "@web/core/l10n/translation";
  */
 export class OmniScheduledPaneField extends Component {
     static template = "ewin_omnichannel_core.OmniScheduledPaneField";
-    static props = { ...standardFieldProps };
+
+    props = useProps(standardFieldProps);
 
     setup() {
         this.orm = useService("orm");
@@ -42,7 +41,7 @@ export class OmniScheduledPaneField extends Component {
         this._seenCount = this.recordCount;
         this._seenPending = this.recordPending;
         this._seenBody = this.recordBody;
-        this.state = useState({
+        this.state = proxy({
             count: this._seenCount,
             scheduledTab: false,
             messages: [],
@@ -50,23 +49,20 @@ export class OmniScheduledPaneField extends Component {
         // The strip needs a count, which the record already carries — so
         // nothing is fetched until the pane is actually opened or the count
         // changes under it.
-        useEffect(
+        useOnChange(
+            () => [this.recordCount, this.recordPending, this.recordBody],
             (count, pending, body) =>
-                this._onRecordRefreshed(count, pending, body),
-            () => [this.recordCount, this.recordPending, this.recordBody]
+                this._onRecordRefreshed(count, pending, body)
         );
         // Realtime: the same "omni.inbox" signal the thread listens to. A
         // reply the cron has just released must leave this pane on its own, or
         // the operator keeps looking at a reply that already went out.
-        this._onOmniEvent = (payload) => {
-            if (!payload || payload.conversation_id !== this.props.record.resId) {
-                return;
-            }
-            this._load();
-        };
-        this.busService.subscribe("omni.inbox", this._onOmniEvent);
-        onWillUnmount(() =>
-            this.busService.unsubscribe("omni.inbox", this._onOmniEvent)
+        onWillDestroy(
+            this.busService.subscribe("omni.inbox", (payload) => {
+                if (payload?.conversation_id === this.props.record.resId) {
+                    this._load();
+                }
+            })
         );
     }
 

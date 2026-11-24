@@ -1,10 +1,8 @@
-/** @odoo-module **/
-
 import { registry } from "@web/core/registry";
 import { listView } from "@web/views/list/list_view";
 import { ListController } from "@web/views/list/list_controller";
 import { useService } from "@web/core/utils/hooks";
-import { onWillUnmount } from "@odoo/owl";
+import { onWillDestroy } from "@odoo/owl";
 
 // Inbox list is a plain backend list, which Odoo does not refresh in realtime.
 // The linked Discuss channels DO push "discuss.channel/new_message" over the
@@ -21,16 +19,16 @@ export class OmniConversationListController extends ListController {
             // small debounce: a burst of messages triggers a single reload
             timer = setTimeout(() => this.model.load(), 400);
         };
-        this._omniOnNewMessage = () => reload();
-        bus.subscribe("discuss.channel/new_message", this._omniOnNewMessage);
-        // Also reload on our own realtime signal, which reaches the operator
-        // even when a just-assigned mirror channel is not yet live on the bus.
-        this._omniOnEvent = () => reload();
-        bus.subscribe("omni.inbox", this._omniOnEvent);
-        onWillUnmount(() => {
+        const unsubscribe = [
+            bus.subscribe("discuss.channel/new_message", reload),
+            // Also reload on our own realtime signal, which reaches the
+            // operator even when a just-assigned mirror channel is not yet
+            // live on the bus.
+            bus.subscribe("omni.inbox", reload),
+        ];
+        onWillDestroy(() => {
             clearTimeout(timer);
-            bus.unsubscribe("discuss.channel/new_message", this._omniOnNewMessage);
-            bus.unsubscribe("omni.inbox", this._omniOnEvent);
+            unsubscribe.forEach((off) => off());
         });
     }
 }

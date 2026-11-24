@@ -1,6 +1,4 @@
-/** @odoo-module **/
-
-import { Component, markup, useRef, useEffect, useState } from "@odoo/owl";
+import { Component, markup, proxy, signal, t, useEffect, useProps } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { standardFieldProps } from "@web/views/fields/standard_field_props";
@@ -30,16 +28,17 @@ import { replyEnd, signatureBlock } from "./omni_signature";
  */
 export class OmniComposerField extends Component {
     static template = "ewin_omnichannel_core.OmniComposerField";
-    static props = {
+
+    props = useProps({
         ...standardFieldProps,
-        placeholder: { type: String, optional: true },
-    };
+        placeholder: t.string().optional(),
+    });
+    textareaRef = signal.ref();
+    quoteRef = signal.ref();
 
     setup() {
         this.orm = useService("orm");
-        this.textareaRef = useRef("textarea");
-        this.quoteRef = useRef("quote");
-        this.state = useState({ quoteOpen: false });
+        this.state = proxy({ quoteOpen: false });
         // The last value this widget wrote from a keystroke. The record
         // echoing it back is not an external change: re-showing the signature
         // then would put back what the operator just deleted.
@@ -47,41 +46,48 @@ export class OmniComposerField extends Component {
         // Same for the quote: once the operator edits it, the editor is the
         // source and must not be overwritten under their caret.
         this.quoteTyped = false;
-        useEffect(
-            () => {
-                const el = this.textareaRef.el;
-                if (!el || (this.typed !== null && this.value === this.typed)) {
-                    return;
-                }
-                const shown = this.value || this.signature;
-                if (el.value !== shown) {
-                    el.value = shown;
-                    // After a send or a quick reply the next words go right
-                    // above the signature, not after it.
-                    const end = replyEnd(shown, this.signature);
-                    el.setSelectionRange(end, end);
-                    if (!this.value) {
-                        // A fresh reply starts with its quote folded again.
-                        this.state.quoteOpen = false;
-                    }
-                }
-                this.fitHeight();
-            },
-            () => [this.value, this.signature]
-        );
-        useEffect(
-            (open, edited, quote) => {
-                const el = this.quoteRef.el;
-                if (!edited) {
-                    this.quoteTyped = false;
-                }
-                if (!open || !el || this.quoteTyped) {
-                    return;
-                }
-                el.innerHTML = quote;
-            },
-            () => [this.state.quoteOpen, this.quoteEdited, this.quoteHtml]
-        );
+        // Both effects re-run on what they read: the element once it is on
+        // the page, and the record and the fold whenever they move.
+        useEffect(() => this.syncReply());
+        useEffect(() => this.syncQuote());
+    }
+
+    /** Show what the record holds, unless it is the echo of a keystroke. */
+    syncReply() {
+        const el = this.textareaRef();
+        const value = this.value;
+        const signature = this.signature;
+        if (!el || (this.typed !== null && value === this.typed)) {
+            return;
+        }
+        const shown = value || signature;
+        if (el.value !== shown) {
+            el.value = shown;
+            // After a send or a quick reply the next words go right
+            // above the signature, not after it.
+            const end = replyEnd(shown, signature);
+            el.setSelectionRange(end, end);
+            if (!value) {
+                // A fresh reply starts with its quote folded again.
+                this.state.quoteOpen = false;
+            }
+        }
+        this.fitHeight();
+    }
+
+    /** Fill the unfolded quote, unless the operator is the one editing it. */
+    syncQuote() {
+        const el = this.quoteRef();
+        const open = this.state.quoteOpen;
+        const edited = this.quoteEdited;
+        const quote = this.quoteHtml;
+        if (!edited) {
+            this.quoteTyped = false;
+        }
+        if (!open || !el || this.quoteTyped) {
+            return;
+        }
+        el.innerHTML = quote;
     }
 
     get data() {
@@ -131,7 +137,7 @@ export class OmniComposerField extends Component {
      * is on screen. The box around it caps the height and scrolls past that.
      */
     fitHeight() {
-        const el = this.textareaRef.el;
+        const el = this.textareaRef();
         if (!el) {
             return;
         }
@@ -144,7 +150,7 @@ export class OmniComposerField extends Component {
      * belongs on the empty line above it.
      */
     placeCaret() {
-        const el = this.textareaRef.el;
+        const el = this.textareaRef();
         const signature = this.signature;
         if (!el || !signature || el.value.slice(0, replyEnd(el.value, signature)).trim()) {
             return;
@@ -155,7 +161,7 @@ export class OmniComposerField extends Component {
     /** A click on the box's padding is a click into the reply. */
     onBoxClick(ev) {
         if (ev.target === ev.currentTarget) {
-            this.textareaRef.el?.focus();
+            this.textareaRef()?.focus();
         }
     }
 
@@ -214,7 +220,7 @@ export class OmniComposerField extends Component {
 export const omniComposerField = {
     component: OmniComposerField,
     supportedTypes: ["text"],
-    extractProps: ({ attrs }) => ({ placeholder: attrs.placeholder }),
+    extractProps: ({ placeholder }) => ({ placeholder }),
 };
 
 registry.category("fields").add("omni_composer", omniComposerField);

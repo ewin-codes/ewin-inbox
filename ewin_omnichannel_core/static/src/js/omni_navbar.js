@@ -1,10 +1,8 @@
-/** @odoo-module **/
-
+import { onMounted, onPatched, usePlugin } from "@odoo/owl";
 import { _t } from "@web/core/l10n/translation";
-import { NavBar } from "@web/webclient/navbar/navbar";
 import { patch } from "@web/core/utils/patch";
-import { useService } from "@web/core/utils/hooks";
-import { useEffect, useState } from "@odoo/owl";
+import { NavBar } from "@web/webclient/navbar/navbar";
+import { OmniMenuCountersPlugin } from "./omni_menu_counters";
 
 const APP_XMLID = "ewin_omnichannel_core.menu_omnichannel_root";
 
@@ -27,23 +25,25 @@ const BADGES = {
 patch(NavBar.prototype, {
     setup() {
         super.setup();
-        this.omniMenuCounters = useService("omni_menu_counters");
-        this.omniCounters = useState(this.omniMenuCounters.counters);
-        useEffect(
-            () => {
-                this.omniMenuCounters.setActive(this.currentApp?.xmlid === APP_XMLID);
-            },
-            () => [this.currentApp?.xmlid]
-        );
+        this.omniMenuCounters = usePlugin(OmniMenuCountersPlugin);
+        // The app on screen changes with a render of the navbar, never
+        // without one, so every mount and patch is where it is checked.
         // A badge widens its section, and the navbar decides what falls into
         // the "More" dropdown by measuring those widths — once per menu or
-        // systray change, which a count arriving over the bus is not.
-        useEffect(
-            () => {
+        // systray change, which a count arriving over the bus is not. A patch
+        // that moved a count is therefore measured again.
+        let measured = null;
+        const sync = () => {
+            this.omniMenuCounters.setActive(this.currentApp?.xmlid === APP_XMLID);
+            const { unassigned, mine } = this.omniMenuCounters.counters;
+            const counts = `${unassigned}/${mine}`;
+            if (measured !== null && counts !== measured) {
                 this.adapt();
-            },
-            () => [this.omniCounters.unassigned, this.omniCounters.mine]
-        );
+            }
+            measured = counts;
+        };
+        onMounted(sync);
+        onPatched(sync);
     },
 
     /**
@@ -56,7 +56,7 @@ patch(NavBar.prototype, {
         if (!badge) {
             return null;
         }
-        const count = this.omniCounters[badge.key];
+        const count = this.omniMenuCounters.counters[badge.key];
         return count ? { ...badge, count } : null;
     },
 });

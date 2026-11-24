@@ -1,8 +1,8 @@
-/** @odoo-module **/
-
-import { registry } from "@web/core/registry";
+import { Plugin, proxy, usePlugin } from "@odoo/owl";
+import { BusPlugin } from "@bus/services/bus_plugin";
+import { ORM } from "@web/core/orm_plugin";
+import { services } from "@web/core/services";
 import { debounce } from "@web/core/utils/timing";
-import { reactive } from "@odoo/owl";
 
 /**
  * Holds the two numbers the EWIN Inbox menu badges wear.
@@ -13,45 +13,44 @@ import { reactive } from "@odoo/owl";
  * "omni.menu.counters" whenever anything in the inbox moves, and that is what
  * keeps the numbers honest without a poll.
  */
-export const omniMenuCountersService = {
-    dependencies: ["orm", "bus_service"],
-    start(env, { orm, bus_service }) {
-        const counters = reactive({ unassigned: 0, mine: 0 });
-        let active = false;
+export class OmniMenuCountersPlugin extends Plugin {
+    orm = usePlugin(ORM);
+    bus = usePlugin(BusPlugin);
 
-        const fetch = async () => {
-            if (!active) {
-                return;
-            }
-            Object.assign(
-                counters,
-                await orm.call("omnichannel.conversation", "omni_menu_counters", [])
-            );
-        };
+    counters = proxy({ unassigned: 0, mine: 0 });
+    active = false;
+
+    setup() {
         // A burst of inbound messages is one refresh, not one per message.
-        const refresh = debounce(fetch, 300);
-        bus_service.subscribe("omni.menu.counters", refresh);
+        this.bus.subscribe("omni.menu.counters", debounce(() => this.fetch(), 300));
+    }
 
-        return {
-            counters,
-            /** Called by the navbar: true while EWIN Inbox is the open app. */
-            setActive(value) {
-                if (value === active) {
-                    return;
-                }
-                active = value;
-                if (active) {
-                    fetch();
-                } else {
-                    // Nothing is watching. Dropping the numbers keeps a stale
-                    // badge from being the first thing seen on the way back in,
-                    // before the fresh count lands.
-                    counters.unassigned = 0;
-                    counters.mine = 0;
-                }
-            },
-        };
-    },
-};
+    async fetch() {
+        if (!this.active) {
+            return;
+        }
+        Object.assign(
+            this.counters,
+            await this.orm.call("omnichannel.conversation", "omni_menu_counters", [])
+        );
+    }
 
-registry.category("services").add("omni_menu_counters", omniMenuCountersService);
+    /** Called by the navbar: true while EWIN Inbox is the open app. */
+    setActive(value) {
+        if (value === this.active) {
+            return;
+        }
+        this.active = value;
+        if (value) {
+            this.fetch();
+        } else {
+            // Nothing is watching. Dropping the numbers keeps a stale badge
+            // from being the first thing seen on the way back in, before the
+            // fresh count lands.
+            this.counters.unassigned = 0;
+            this.counters.mine = 0;
+        }
+    }
+}
+
+services.add(OmniMenuCountersPlugin);
