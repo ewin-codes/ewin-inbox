@@ -37,7 +37,7 @@
                         <field name="error"/>
                     </group>
                     <group string="Payload">
-                        <field name="payload" widget="jsonb"
+                        <field name="payload" widget="json"
                                groups="ewin_omnichannel_core.group_omni_admin"/>
                     </group>
                 </sheet>
