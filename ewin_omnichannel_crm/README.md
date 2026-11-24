@@ -72,11 +72,11 @@ different things, and only one of them writes to the pipeline:
 Deleting a lead clears `lead_id` (`ondelete="set null"`) and leaves the
 conversation untouched.
 
-The wizard's own ACL row moved to core along with the model it grants access
+The wizard's own access row moved to core along with the model it grants access
 to; this module no longer ships one. **Upgrade this module together with
 core** (`-u ewin_omnichannel_core`, which cascades to every dependent) rather
 than on its own: upgrading only `ewin_omnichannel_crm` makes
-`ir.model.data._process_end` delete this module's old, now-undeclared ACL
+`ir.model.data._process_end` delete this module's old, now-undeclared access
 row while core — never marked `to upgrade` — does not recreate its
 replacement, leaving the wizard with zero access rows and both Link
 Conversation buttons raising an `AccessError` for anyone but the superuser.

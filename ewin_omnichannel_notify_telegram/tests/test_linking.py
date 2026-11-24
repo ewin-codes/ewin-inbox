@@ -101,7 +101,7 @@ class TestLinking(NotifyCase):
 
     def test_a_colleague_cannot_see_another_operators_wizard(self):
         # Regression for the leak the review caught: omnichannel.telegram.link
-        # carries the live token in its url field, and without an ir.rule
+        # carries the live token in its url field, and without an access restriction
         # scoping it to its own creator, every group_omni_operator user could
         # search_read every other operator's outstanding link.
         action = self.operator.with_user(self.operator).action_omni_tg_link()

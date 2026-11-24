@@ -154,7 +154,7 @@ class TelegramNotificationService(models.AbstractModel):
         authenticated caller — a portal user included — could pick an
         arbitrary notifier and message and have the bot post that message's
         sender, text and a deep link into any company's conversation, bypassing
-        every record rule that normally hides it.
+        every access rule that normally hides it.
         """
         notifier = self.env["omnichannel.telegram.notifier"].sudo().browse(
             notifier_id).exists()

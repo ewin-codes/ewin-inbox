@@ -339,7 +339,7 @@ class TestScheduledSend(OmnichannelCase):
             message.action_cancel_schedule()
 
     def test_operator_cannot_read_another_operators_scheduled_message(self):
-        """The Scheduled menu is company-wide and ungrouped: the record rule,
+        """The Scheduled menu is company-wide and ungrouped: the access rule,
         not the menu, has to keep an operator's pending reply — body,
         conversation and author — away from a colleague who is neither the
         conversation's operator nor on its team."""
@@ -365,7 +365,7 @@ class TestScheduledSend(OmnichannelCase):
 
     def test_cancel_refuses_a_caller_with_no_write_access(self):
         """action_cancel_schedule's transition is a raw UPDATE, which no
-        record rule can constrain — the access check has to happen before
+        access rule can constrain — the access check has to happen before
         it runs, not be left to something downstream noticing by accident."""
         message = self._scheduled_message()
         outsider = self.env["res.users"].create({

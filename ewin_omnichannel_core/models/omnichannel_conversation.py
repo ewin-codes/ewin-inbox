@@ -22,7 +22,7 @@ CLOSE_REASON_POLICY_PARAM = "ewin_omnichannel.close_reason_policy"
 
 # Bus notification type the menu badges listen on. It carries no payload on
 # purpose: it travels to every operator at once, and a conversation id in it
-# would tell an operator about threads their own record rules keep out of
+# would tell an operator about threads their own access rules keep out of
 # their lists.
 MENU_COUNTERS_BUS = "omni.menu.counters"
 
@@ -655,7 +655,7 @@ class OmnichannelConversation(models.Model):
         """The two numbers the Inbox and My Conversations menus wear.
 
         Both count messages rather than conversations, and both are read with
-        the caller's own rights — the record rules decide what an operator is
+        the caller's own rights — the access rules decide what an operator is
         allowed to be told about.
 
         Only conversations that are new or open count: one waiting for the
@@ -837,7 +837,7 @@ class OmnichannelConversation(models.Model):
         one2many, because the pane has to refresh itself the moment the cron
         releases a reply — and a one2many can only be refreshed by reloading
         the whole record, which would throw away whatever is half-typed in the
-        composer. Going through ``search`` also keeps the record rules in
+        composer. Going through ``search`` also keeps the access rules in
         force: an operator sees here exactly what they may see anywhere else.
         """
         self.ensure_one()

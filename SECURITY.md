@@ -79,9 +79,9 @@ addons; Telegram is used below wherever one connector has to stand for all of th
   Telegram endpoint cannot hang the job queue worker indefinitely.
 - **Access control & multi-company isolation.** Three role groups —
   `omni_operator` / `omni_manager` / `omni_admin` (each implying the previous) — gate
-  `ir.model.access.csv` permissions per model. `ir.rule` record rules on account, identity,
-  conversation, message, team, event, template, tag, close reason and error log restrict
-  each record to its own company (or a global/no-company record), so users in Company A
+  the permissions of `security/ir.access.csv` per model. Restrictions, access rows without
+  a group, on account, identity, conversation, message, team, event, template, tag, close
+  reason and error log restrict each record to its own company (or a global/no-company record), so users in Company A
   never see conversations, messages, canned replies, or account configuration belonging to
   Company B. Conversations and messages are additionally scoped by operator/team for the
   operator role.

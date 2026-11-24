@@ -58,7 +58,7 @@ class OmnichannelCloseReason(models.Model):
             ]
             # search_count runs as the current user on purpose, not sudo:
             # the domain pins company_id to this record's own value, and
-            # the record rule filters that same column, so whatever
+            # the access rule filters that same column, so whatever
             # visibility applies to `reason` applies identically to every
             # sibling the search could match. sudo() would not widen what
             # is genuinely uniqueness-relevant — it would let the check

@@ -194,7 +194,7 @@ calls it or an operator presses **Send now**. A conditional
 RETURNING id` decides who releases a given row, so a caller that loses the
 race gets `False` back and stops — never a second delivery. The same method
 opens with an access check, so the operator-facing action is governed by the
-ordinary record rules while the cron, running as the system, is not blocked
+ordinary access rules while the cron, running as the system, is not blocked
 by them.
 
 The cron, **`Omnichannel: Send scheduled messages`**, does not lock its whole
@@ -292,7 +292,7 @@ The two menus an operator lives in wear their own number, so the answer to
 Grey is the queue that belongs to whoever is free; red is addressed to the
 reader personally, and is the one worth leaving another app for. Both are
 message counts, not conversation counts, and `omni_menu_counters()` reads them
-with the caller's own rights — the record rules decide what an operator is
+with the caller's own rights — the access rules decide what an operator is
 told about.
 
 A conversation waiting for the customer or closed is in neither: nothing in it
@@ -313,7 +313,7 @@ bus and the client asks for both numbers again:
   subscribes every user to a channel per group they hold, so the unclaimed
   queue, which belongs to nobody and has no personal channel to aim at,
   needs no channel of its own. The ping carries no ids on purpose: it reaches
-  operators whose record rules keep that conversation out of their own lists.
+  operators whose access rules keep that conversation out of their own lists.
 - **to one partner**, from `_mark_read` — reading is what makes the red badge
   fall, and the number is the reader's own.
 
@@ -497,11 +497,19 @@ reading it. That companion's compute reads the secret through `sudo()` on
 purpose: it is the field the operator group sees *instead of* the secret, so
 needing the access it stands in for would make the whole account form an
 `AccessError` for exactly the group it was added for. Deriving a fixed-length
-mask is not the access the connector's `_client()` guards. Record rules scope accounts, identities, conversations, messages,
-events, teams, templates, tags, close reasons and error logs by company, and
-conversations and messages additionally by operator/team for the operator role —
-a message inherits its scope from the conversation it belongs to, the same
-operator, unassigned, or team-member test.
+mask is not the access the connector's `_client()` guards.
+
+Access is declared in `security/ir.access.csv`, Odoo 20's one access model.
+Each role's permissions are rows with its group; permissions of different
+groups add up. The operator's rows on conversations and messages carry the
+operator scope as their domain — own, unassigned, or a team the operator is in,
+a message taking its scope from its conversation — while the manager's rows
+on the same models carry none, which is what lets a manager see the whole
+company. Rows without a group are restrictions and bind every role: they keep
+accounts, identities, conversations, messages, events, teams, templates, tags,
+close reasons and error logs inside the user's companies. Templates, tags and
+close reasons may be left company-less to be offered everywhere; a canned
+reply carries prices and internal wording, so it is never company-blind.
 
 Menus that read `omnichannel.*` are invisible to users outside these groups —
 after installing, grant yourself **EWIN Inbox / Administrator**.
@@ -516,7 +524,7 @@ reasonable reading would put the control elsewhere:
   what keeps the customer history and the internal notes away from the rest of
   the company; inside the inbox group the mirror is readable more widely than
   the conversation list is. Which conversations an operator *works* is still
-  `rule_conversation_operator_scope`, and sending to the customer from the
+  the domain of `access_conversation_operator`, and sending to the customer from the
   mirror is checked against the conversation, not against channel membership.
 - **The account form's buttons ask for write on the account.** They connect,
   register webhooks and rotate credentials, all through `sudo()` inside the
@@ -540,17 +548,14 @@ reasonable reading would put the control elsewhere:
 5. Add a normalizer that turns the provider payload into the universal shape,
    and — for webhook channels — a public controller that authenticates the
    callback before handing it to the connector.
-6. Register the channel's brand marker in `omnichannel_conversation.py`, so the
-   conversation lists show it instead of the generic bubble: an entry in
-   `CHANNEL_ICONS` when the bundled FontAwesome 4.7 carries the brand glyph, or
-   a 128×128 PNG at `static/src/img/channel_<code>.png` listed in
-   `CHANNEL_IMAGE_ICONS` when it does not (FontAwesome has no Viber or
-   Messenger glyph, and a missing class renders as a blank cell rather than
-   failing). Ship that PNG in every case and list the code in
-   `CHANNEL_AVATAR_CODES` as well: it becomes the avatar of each mirrored
-   Discuss channel, and without it the channel's customers show up in the
-   Discuss sidebar under a generic `#`. A test fails for any connector channel
-   that has none.
+6. Ship the channel's brand marker: a 128×128 PNG at
+   `static/src/img/channel_<code>.png`, with the code listed in
+   `CHANNEL_AVATAR_CODES` in `omnichannel_conversation.py`. The conversation
+   lists show it instead of the generic bubble, and it becomes the avatar of
+   each mirrored Discuss channel; without it the channel's customers show up in
+   the Discuss sidebar under a generic `#`. It has to be an image: Odoo's icon
+   set, Material Symbols, draws no brands. A test fails for any connector
+   channel that has none.
 7. Override `omnichannel.account._get_public_address()` for your channel code
    — the address a customer writes to (a mailbox, `@bot`, phone, page), read
    under `sudo()`, an empty string when unknown — and call `super()` for every

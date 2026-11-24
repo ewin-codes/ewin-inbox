@@ -1,6 +1,6 @@
 # EWIN Inbox
 
-Open-source omnichannel customer inbox for Odoo 19.
+Open-source omnichannel customer inbox for Odoo 20.
 
 Receive and answer customer messages from Telegram, Email, Live Chat,
 WhatsApp, Messenger, Instagram and Viber in one Odoo-native interface.
@@ -10,7 +10,7 @@ assignment, delivery statuses, canned replies, retries and reporting.
 
 Developed and maintained by [EWIN.codes](https://ewin.codes).
 
-![Odoo](https://img.shields.io/badge/Odoo-19.0-714B67) ![License](https://img.shields.io/badge/license-LGPL--3-blue) ![Status](https://img.shields.io/badge/status-active%20development-orange) [![Odoo Apps](https://img.shields.io/badge/Odoo%20Apps-EWIN%20Inbox-714B67)](https://apps.odoo.com/apps/modules/19.0/ewin_omnichannel_core)
+![Odoo](https://img.shields.io/badge/Odoo-20.0-714B67) ![License](https://img.shields.io/badge/license-LGPL--3-blue) ![Status](https://img.shields.io/badge/status-active%20development-orange) [![Odoo Apps](https://img.shields.io/badge/Odoo%20Apps-EWIN%20Inbox-714B67)](https://apps.odoo.com/apps/modules/20.0/ewin_omnichannel_core)
 
 ![EWIN Inbox](screenshots/inbox.png)
 
@@ -91,11 +91,11 @@ and a test send, run from the form.
 ## Installation
 
 Every module is also published on the
-[Odoo Apps Store](https://apps.odoo.com/apps/modules/19.0/ewin_omnichannel_core),
+[Odoo Apps Store](https://apps.odoo.com/apps/modules/20.0/ewin_omnichannel_core),
 free, where each one can be downloaded on its own. From this repository:
 
-1. Clone the repository on the branch of your Odoo version: `19.0` here,
-   `18.0` for Odoo 18.
+1. Clone the repository on the branch of your Odoo version: `20.0` here,
+   `19.0` for Odoo 19, `18.0` for Odoo 18.
 2. Add the repository path to the Odoo `addons_path`.
 3. Update the Apps list.
 4. Install EWIN Inbox.
@@ -114,7 +114,7 @@ odoo -d <db> -i ewin_omnichannel_core,ewin_omnichannel_telegram --stop-after-ini
 
 ## Requirements
 
-- Odoo 19 (Odoo 18: branch `18.0`)
+- Odoo 20 (Odoo 19: branch `19.0`, Odoo 18: branch `18.0`)
 - Public HTTPS endpoint for webhook-based connectors
 - Provider accounts and API credentials for selected channels
 - IMAP and SMTP credentials for Email

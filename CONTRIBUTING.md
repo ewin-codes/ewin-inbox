@@ -4,7 +4,7 @@ Thanks for considering a contribution to EWIN Inbox.
 
 ## Development setup
 
-Run any Odoo 19 (Community) instance with the module directories on its `addons_path`.
+Run any Odoo 20 (Community) instance with the module directories on its `addons_path`.
 Install the core first, then the connector you are working on (the connector depends on
 the core):
 
@@ -33,8 +33,8 @@ Notes:
 
 ## Coding conventions
 
-- Follow the [Odoo coding guidelines](https://www.odoo.com/documentation/19.0/contributing/development/coding_guidelines.html)
-  for naming, file layout, XML/Python style, and `ir.model.access.csv`/record-rule coverage
+- Follow the [Odoo coding guidelines](https://www.odoo.com/documentation/20.0/contributing/development/coding_guidelines.html)
+  for naming, file layout, XML/Python style, and `security/ir.access.csv` coverage
   for every new model.
 - Odoo **model** technical names live in the `omnichannel.*` namespace (e.g.
   `omnichannel.conversation`); only the Odoo **module** names carry the `ewin_` prefix
@@ -54,7 +54,7 @@ Notes:
 
 ## Branch / PR flow
 
-Each supported Odoo series has its own branch: `18.0` and `19.0`. The code differs
+Each supported Odoo series has its own branch: `18.0`, `19.0` and `20.0`. The code differs
 between them where Odoo's API does, so a branch only ever runs on its own series.
 
 1. Create a feature branch off the oldest series the change applies to (e.g.

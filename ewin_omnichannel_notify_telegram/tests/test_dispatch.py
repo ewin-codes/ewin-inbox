@@ -23,7 +23,7 @@ class TestDispatch(NotifyCase):
         # before letting an authenticated RPC caller invoke a method. Both
         # sudo() their arguments, so without @api.private any operator could
         # call them directly with a notifier/message id pair of their own
-        # choosing, sidestepping every record rule that normally hides a
+        # choosing, sidestepping every access rule that normally hides a
         # conversation from them.
         with self.assertRaises(AccessError):
             get_public_method(self.service, "send_notification")

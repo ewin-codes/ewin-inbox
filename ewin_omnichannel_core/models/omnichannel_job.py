@@ -56,8 +56,8 @@ class OmnichannelJob(models.Model):
     def _resolve_target(self):
         """Return the recordset this job may call — or refuse the job.
 
-        ``_cron_process_jobs`` drains the queue as superuser, where neither
-        access rights nor record rules apply, so a row is an instruction to
+        ``_cron_process_jobs`` drains the queue as superuser, where no access
+        check applies, so a row is an instruction to
         the database owner. What a row may name is therefore not "any model"
         but a method its own model published in ``_job_methods``: the queue
         stays channel-agnostic (it never learns what a connector is) while the

@@ -93,7 +93,7 @@ class TestMenuCounters(OmnichannelCase):
     def test_an_operator_is_told_only_what_their_rules_let_them_see(self):
         """The counts are read with the caller's own rights.
 
-        The unclaimed queue is everyone's, and the record rule says so. A
+        The unclaimed queue is everyone's, and the access rule says so. A
         conversation a colleague has taken is not, and a badge that counted it
         would announce work its reader cannot open.
         """
@@ -114,7 +114,7 @@ class TestMenuCounters(OmnichannelCase):
         self.assertEqual(
             self.env["omnichannel.conversation"].with_user(
                 operator).search_count([("id", "=", theirs.id)]), 0,
-            "and the record rule really does keep it out of their reach")
+            "and the access rule really does keep it out of their reach")
 
     # -- the red badge: what is addressed to the reader --------------------
 

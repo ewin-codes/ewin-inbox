@@ -317,7 +317,7 @@ class OmnichannelMessage(models.Model):
             message = self.browse(message_id)
             try:
                 # Use sudo() to bypass access checks: the scheduler acts as the
-                # system, not as the operator. Company record rules would reject
+                # system, not as the operator. Company access rules would reject
                 # a message belonging to another company with AccessError, which
                 # would silently fail the send. The operator's own access check
                 # happens when they compose the reply, not when the cron releases it.
@@ -386,7 +386,7 @@ class OmnichannelMessage(models.Model):
         service = self.env["omnichannel.message.service"]
         for message in self:
             # Access control at the door, same as release_scheduled: raw SQL
-            # runs behind the ORM's back and a record rule cannot constrain
+            # runs behind the ORM's back and a access rule cannot constrain
             # it, so the check has to happen here, before the UPDATE, not be
             # left to something downstream noticing by accident.
             message.check_access("write")

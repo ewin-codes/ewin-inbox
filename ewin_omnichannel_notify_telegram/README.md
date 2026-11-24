@@ -212,12 +212,13 @@ it is the wrong one: an account is the bot customers write to.
   the clock was wrong. The field that holds it,
   `res.users.omni_tg_link_token`, is closed to everyone but
   `base.group_system`: `res.users` is readable by every internal user, so a
-  field of that sensitivity cannot ride along on the model's normal ACL. The
+  field of that sensitivity cannot ride along on the model's normal access. The
   link itself is handed to the operator through a transient wizard
   (`omnichannel.telegram.link`) instead — and that wizard carries its own
-  `ir.rule` scoping it to `create_uid = user.id`. That rule is required
+  access restriction scoping it to `create_uid = user.id`
+  (`rule_telegram_link_own` in `security/ir.access.csv`). It is required
   because a `TransientModel` gets **no** creator-only restriction of its own
-  in Odoo 19; without it, any operator holding ordinary read access to the
+  in Odoo 20; without it, any operator holding ordinary read access to the
   wizard model could `search_read` it and read out a colleague's still-valid
   one-time link.
 - **`/register` only takes effect from a Telegram account that has already

@@ -47,8 +47,8 @@ class TestJobQueue(OmnichannelCase):
         self.assertGreater(job.next_run_at, fields.Datetime.now())
 
     def test_run_refuses_a_target_that_did_not_opt_in(self):
-        """The cron drains this queue as superuser, where neither access rights
-        nor record rules apply. A row is therefore an instruction to the
+        """The cron drains this queue as superuser, where no access check
+        applies. A row is therefore an instruction to the
         database owner, and only a method its own model published in
         ``_job_methods`` may be that instruction."""
         job = self.env["omnichannel.job"].create({

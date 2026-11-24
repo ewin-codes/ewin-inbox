@@ -176,7 +176,7 @@ class TestNotifier(NotifyCase):
         self.assertEqual(self.notifier.webhook_status, "removed")
 
     def test_check_connection_refuses_an_operator(self):
-        # An operator holds only read access (ir.model.access.csv). The
+        # An operator holds only read access (security/ir.access.csv). The
         # button's own check_access("write") is the only thing standing
         # between that read grant and the sudo() write inside it — nothing
         # else in the stack enforces it, since call_button reaches any

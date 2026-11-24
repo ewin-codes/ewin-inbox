@@ -42,7 +42,7 @@ class TestMirrorAccess(OmnichannelCase):
 
     def test_reply_from_an_operator_outside_the_conversation_is_not_sent(self):
         """Membership of the channel is not authority over the customer: the
-        forward is allowed by the conversation, which has its own record rule.
+        forward is allowed by the conversation, which has its own access rule.
         """
         self.conv.operator_id = self.operator_a
         channel = self.conv._ensure_discuss_channel()
