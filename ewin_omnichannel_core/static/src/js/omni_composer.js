@@ -100,10 +100,16 @@ export class OmniComposerField extends Component {
         return this.data.send_shortcut || "ctrl_enter";
     }
 
-    /** Whether the channel sends anything under this reply by itself. */
+    /**
+     * Whether the channel sends anything under this reply by itself.
+     *
+     * An Html field reaches the record as a Markup object, and an object is
+     * truthy even when it holds nothing — so the quote is measured, not
+     * tested, or every chat channel would show an empty "•••".
+     */
     get hasQuote() {
         return !this.data.composer_is_internal
-            && Boolean(this.data.composer_quote || this.quoteEdited);
+            && (this.quoteEdited || String(this.data.composer_quote || "").length > 0);
     }
 
     get quoteEdited() {
