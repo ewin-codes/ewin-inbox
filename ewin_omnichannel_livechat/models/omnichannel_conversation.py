@@ -16,7 +16,7 @@ class OmnichannelConversation(models.Model):
         res = super()._close(reason=reason, note=note)
         for conv in closing.filtered("livechat_channel_id"):
             channel = conv.livechat_channel_id
-            if not channel.exists() or not channel.livechat_active:
+            if not channel.exists() or channel.livechat_end_dt:
                 continue
             operator_partner = channel.livechat_operator_id \
                 or conv.account_id.livechat_bridge_user_id.partner_id

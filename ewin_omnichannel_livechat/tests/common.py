@@ -21,18 +21,19 @@ class LivechatCase(TransactionCase):
             "state": "connected",
         })
 
-    def _make_session(self, visitor=None, anonymous_name="Visitor #1",
-                      guest=None):
-        members = [(0, 0, {"partner_id": self.bridge_user.partner_id.id})]
+    def _make_session(self, visitor=None, guest=None):
+        # The shape im_livechat gives a session it opens: the bridge as the
+        # agent, the anonymous visitor as a guest member.
+        members = [(0, 0, {"partner_id": self.bridge_user.partner_id.id,
+                           "livechat_member_type": "agent"})]
         if guest is not None:
-            members.append((0, 0, {"guest_id": guest.id}))
+            members.append((0, 0, {"guest_id": guest.id,
+                                   "livechat_member_type": "visitor"}))
         vals = {
             "name": "Session",
             "channel_type": "livechat",
             "livechat_channel_id": self.lc_channel.id,
             "livechat_operator_id": self.bridge_user.partner_id.id,
-            "livechat_active": True,
-            "anonymous_name": anonymous_name,
             "channel_member_ids": members,
         }
         if visitor is not None:

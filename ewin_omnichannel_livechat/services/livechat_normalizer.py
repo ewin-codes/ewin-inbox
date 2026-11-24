@@ -28,7 +28,13 @@ class LivechatNormalizer(models.AbstractModel):
 
     @api.model
     def _resolve_identity(self, channel, mail_message):
+        """Who wrote: the logged-in partner, the website visitor, the guest.
+
+        An anonymous visitor's name is their guest's: website_livechat names
+        the guest ``Visitor #<visitor id>`` when the session opens, and that
+        is the name the operator sees in Discuss as well."""
         visitor = channel.livechat_visitor_id
+        guest = channel.channel_member_ids.filtered("guest_id")[:1].guest_id
         if visitor and visitor.partner_id:
             partner = visitor.partner_id
             return {
@@ -41,22 +47,20 @@ class LivechatNormalizer(models.AbstractModel):
         if visitor:
             return {
                 "id": f"visitor:{visitor.id}",
-                "name": channel.anonymous_name or f"Visitor #{visitor.id}",
+                "name": guest.name or f"Visitor #{visitor.id}",
                 "language_code": visitor.lang_id.code,
                 "raw": {"visitor_id": visitor.id},
             }
-        guest_member = channel.channel_member_ids.filtered("guest_id")[:1]
-        if guest_member:
-            guest = guest_member.guest_id
+        if guest:
             return {
                 "id": f"guest:{guest.id}",
-                "name": channel.anonymous_name or guest.name,
+                "name": guest.name,
                 "language_code": guest.lang,
                 "raw": {"guest_id": guest.id},
             }
         return {
             "id": f"session:{channel.id}",
-            "name": channel.anonymous_name or "Visitor",
+            "name": "Visitor",
             "raw": {},
         }
 

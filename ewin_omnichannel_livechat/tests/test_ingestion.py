@@ -75,7 +75,6 @@ class TestLivechatIngestion(LivechatCase):
             "name": "S", "channel_type": "livechat",
             "livechat_channel_id": other_lc.id,
             "livechat_operator_id": self.bridge_user.partner_id.id,
-            "livechat_active": True, "anonymous_name": "V",
             "channel_member_ids": [
                 (0, 0, {"partner_id": self.bridge_user.partner_id.id})],
         })

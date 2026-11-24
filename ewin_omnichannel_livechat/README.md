@@ -48,7 +48,7 @@ Outbound replies from Inbox are posted back into L by
    the conversation flow (routing, teams, canned replies); a chatbot
    answering inside L would compete with it and its scripted messages would
    be ingested as if they were operator replies.
-3. In Odoo, as an **Omnichannel: Administrator**, go to **EWIN Inbox →
+3. In Odoo, as an **EWIN Inbox / Administrator**, go to **EWIN Inbox →
    Configuration → Accounts** and create a new record:
    - **Channel:** Live Chat
    - **Live Chat Channel:** the `im_livechat.channel` from step 1
@@ -111,7 +111,7 @@ an operator attaches to a reply in Inbox is passed straight through
 ## Bridge presence heartbeat
 
 `website_livechat` only offers a chat window to visitors if at least one
-channel operator is online (`bus.presence`). Because the bridge operator is
+channel operator is online (`mail.presence`). Because the bridge operator is
 a headless technical user, no browser session ever calls in on its behalf,
 so its presence would read as offline within a few minutes and
 `im_livechat` would stop offering sessions on that channel entirely. A cron

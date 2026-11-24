@@ -32,7 +32,7 @@ class TestLivechatLifecycle(LivechatCase):
         conv.operator_id = self.env.user
         conv.action_close()
         self.assertEqual(conv.state, "closed")
-        self.assertFalse(channel.livechat_active)
+        self.assertTrue(channel.livechat_end_dt)
         self.assertTrue(any(
             "closed" in (m.body or "").lower() for m in channel.message_ids))
         # closing notice must not create a new inbound omni message
@@ -59,6 +59,6 @@ class TestLivechatLifecycle(LivechatCase):
         # Exactly as it was, not merely "not closed": a session ended behind
         # the operator's back would show up here as pending.
         self.assertEqual(conv.state, state_before)
-        self.assertTrue(channel.livechat_active)
+        self.assertFalse(channel.livechat_end_dt)
         self.assertFalse(any(
             "closed" in (m.body or "").lower() for m in channel.message_ids))
