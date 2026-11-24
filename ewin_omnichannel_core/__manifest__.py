@@ -1,7 +1,7 @@
 {
     "name": "EWIN Inbox",
     "summary": "Omnichannel customer inbox for Odoo",
-    "version": "19.0.1.10.0",
+    "version": "20.0.1.10.0",
     "category": "Productivity/Discuss",
     "author": "EWIN.codes",
     "maintainer": "EWIN.codes",
@@ -16,7 +16,7 @@
     ],
     "data": [
         "security/omnichannel_security.xml",
-        "security/ir.model.access.csv",
+        "security/ir.access.csv",
         "data/cron_data.xml",
         "data/close_reason_data.xml",
         "views/omnichannel_channel_views.xml",

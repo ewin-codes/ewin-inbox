@@ -1,0 +1,6 @@
+id,name,model_id,group_id/id,operation,domain
+access_notifier_operator,Telegram notifier: operator,omnichannel.telegram.notifier,ewin_omnichannel_core.group_omni_operator,r,
+access_notifier_admin,Telegram notifier: administrator,omnichannel.telegram.notifier,ewin_omnichannel_core.group_omni_admin,crud,
+access_tg_link_wizard,Telegram link: operator,omnichannel.telegram.link,ewin_omnichannel_core.group_omni_operator,cru,
+rule_telegram_link_own,Telegram link: own wizard only,omnichannel.telegram.link,,crud,"[('create_uid', '=', user.id)]"
+rule_notifier_company,Telegram notifier: company,omnichannel.telegram.notifier,,crud,"[('company_id', 'in', company_ids)]"

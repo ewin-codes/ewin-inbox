@@ -1,7 +1,7 @@
 {
     "name": "EWIN Inbox: Alerts",
     "summary": "Notify operators in Telegram when a customer writes",
-    "version": "19.0.1.0.0",
+    "version": "20.0.1.0.0",
     "category": "Productivity/Discuss",
     "author": "EWIN.codes",
     "maintainer": "EWIN.codes",
@@ -13,8 +13,7 @@
         "ewin_omnichannel_core",
     ],
     "data": [
-        "security/ir.model.access.csv",
-        "security/notify_security.xml",
+        "security/ir.access.csv",
         "views/omnichannel_telegram_notifier_views.xml",
         "views/omnichannel_account_views.xml",
         "views/omnichannel_telegram_link_wizard_views.xml",

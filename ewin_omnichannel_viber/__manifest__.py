@@ -1,7 +1,7 @@
 {
     "name": "EWIN Inbox: Viber",
     "summary": "Viber bot connector for EWIN Inbox",
-    "version": "19.0.1.0.1",
+    "version": "20.0.1.0.1",
     "category": "Productivity/Discuss",
     "author": "EWIN.codes",
     "maintainer": "EWIN.codes",
@@ -14,7 +14,6 @@
     ],
     "data": [
         "data/viber_channel_data.xml",
-        "security/ir.model.access.csv",
         "views/omnichannel_account_views.xml",
     ],
     "application": False,

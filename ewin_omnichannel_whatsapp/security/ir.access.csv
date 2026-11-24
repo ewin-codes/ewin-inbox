@@ -1,0 +1,5 @@
+id,name,model_id,group_id/id,operation,domain
+access_wa_template_operator,WhatsApp template: operator,omnichannel.whatsapp.template,ewin_omnichannel_core.group_omni_operator,r,
+access_wa_template_admin,WhatsApp template: administrator,omnichannel.whatsapp.template,ewin_omnichannel_core.group_omni_admin,crud,
+access_wa_sendtpl_wizard_operator,WhatsApp template wizard: operator,omnichannel.whatsapp.send_template.wizard,ewin_omnichannel_core.group_omni_operator,crud,
+access_wa_sendtpl_line_operator,WhatsApp template wizard line: operator,omnichannel.whatsapp.send_template.wizard.line,ewin_omnichannel_core.group_omni_operator,crud,

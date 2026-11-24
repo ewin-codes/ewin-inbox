@@ -1,7 +1,7 @@
 {
     "name": "EWIN Inbox: Live Chat",
     "summary": "Odoo website Live Chat connector for EWIN Inbox",
-    "version": "19.0.1.0.1",
+    "version": "20.0.1.0.1",
     "category": "Productivity/Discuss",
     "author": "EWIN.codes",
     "maintainer": "EWIN.codes",
@@ -14,7 +14,6 @@
         "website_livechat",
     ],
     "data": [
-        "security/ir.model.access.csv",
         "data/livechat_channel_data.xml",
         "data/livechat_cron.xml",
         "views/omnichannel_account_views.xml",

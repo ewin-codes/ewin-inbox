@@ -1,0 +1,36 @@
+id,name,model_id,group_id/id,operation,domain
+access_channel_operator,Channel: operator,omnichannel.channel,ewin_omnichannel_core.group_omni_operator,r,
+access_channel_admin,Channel: administrator,omnichannel.channel,ewin_omnichannel_core.group_omni_admin,crud,
+access_team_operator,Team: operator,omnichannel.team,ewin_omnichannel_core.group_omni_operator,r,
+access_team_manager,Team: manager,omnichannel.team,ewin_omnichannel_core.group_omni_manager,crud,
+access_account_operator,Account: operator,omnichannel.account,ewin_omnichannel_core.group_omni_operator,r,
+access_account_admin,Account: administrator,omnichannel.account,ewin_omnichannel_core.group_omni_admin,crud,
+access_identity_operator,Identity: operator,omnichannel.identity,ewin_omnichannel_core.group_omni_operator,cru,
+access_identity_admin,Identity: administrator,omnichannel.identity,ewin_omnichannel_core.group_omni_admin,crud,
+access_tag_operator,Tag: operator,omnichannel.tag,ewin_omnichannel_core.group_omni_operator,r,
+access_tag_manager,Tag: manager,omnichannel.tag,ewin_omnichannel_core.group_omni_manager,crud,
+access_template_operator,Template: operator,omnichannel.template,ewin_omnichannel_core.group_omni_operator,r,
+access_template_manager,Template: manager,omnichannel.template,ewin_omnichannel_core.group_omni_manager,crud,
+access_conversation_operator,"Conversation: operator, own, team and unassigned",omnichannel.conversation,ewin_omnichannel_core.group_omni_operator,cru,"['|', '|', ('operator_id', '=', user.id), ('operator_id', '=', False), ('team_id.user_ids', 'in', [user.id])]"
+access_conversation_manager,"Conversation: manager, all of the company",omnichannel.conversation,ewin_omnichannel_core.group_omni_manager,crud,
+access_message_operator,"Message: operator, as the conversation",omnichannel.message,ewin_omnichannel_core.group_omni_operator,cru,"['|', '|', ('conversation_id.operator_id', '=', user.id), ('conversation_id.operator_id', '=', False), ('conversation_id.team_id.user_ids', 'in', [user.id])]"
+access_message_manager,"Message: manager, all of the company",omnichannel.message,ewin_omnichannel_core.group_omni_manager,crud,
+access_event_manager,Event: manager,omnichannel.event,ewin_omnichannel_core.group_omni_manager,r,
+access_event_admin,Event: administrator,omnichannel.event,ewin_omnichannel_core.group_omni_admin,crud,
+access_job_admin,Job: administrator,omnichannel.job,ewin_omnichannel_core.group_omni_admin,r,
+access_errorlog_manager,Error log: manager,omnichannel.error.log,ewin_omnichannel_core.group_omni_manager,ru,
+access_errorlog_admin,Error log: administrator,omnichannel.error.log,ewin_omnichannel_core.group_omni_admin,crud,
+access_close_reason_operator,Close reason: operator,omnichannel.close.reason,ewin_omnichannel_core.group_omni_operator,r,
+access_close_reason_manager,Close reason: manager,omnichannel.close.reason,ewin_omnichannel_core.group_omni_manager,crud,
+access_close_wizard_operator,Close wizard: operator,omnichannel.close.wizard,ewin_omnichannel_core.group_omni_operator,crud,
+access_conversation_link_wizard_operator,Link wizard: operator,omnichannel.conversation.link.wizard,ewin_omnichannel_core.group_omni_operator,crud,
+rule_account_company,Account: company,omnichannel.account,,crud,"['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]"
+rule_conversation_company,Conversation: company,omnichannel.conversation,,crud,"[('company_id', 'in', company_ids)]"
+rule_message_company,Message: company,omnichannel.message,,crud,"[('company_id', 'in', company_ids)]"
+rule_identity_company,Identity: company,omnichannel.identity,,crud,"[('company_id', 'in', company_ids)]"
+rule_event_company,Event: company,omnichannel.event,,crud,"[('company_id', 'in', company_ids)]"
+rule_team_company,Team: company,omnichannel.team,,crud,"['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]"
+rule_errorlog_company,Error log: company,omnichannel.error.log,,crud,"['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]"
+rule_close_reason_company,Close reason: company,omnichannel.close.reason,,crud,"['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]"
+rule_template_company,Template: company,omnichannel.template,,crud,"['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]"
+rule_tag_company,Tag: company,omnichannel.tag,,crud,"['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]"
