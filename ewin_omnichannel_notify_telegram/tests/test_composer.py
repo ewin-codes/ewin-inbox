@@ -11,7 +11,7 @@ class TestComposer(NotifyCase):
     def setUp(self):
         super().setUp()
         self.service = self.env["omnichannel.telegram.notification.service"]
-        self.env["ir.config_parameter"].sudo().set_param(
+        self.env["ir.config_parameter"].sudo().set_str(
             "web.base.url", "https://example.test")
 
     def _lines(self, message=None):

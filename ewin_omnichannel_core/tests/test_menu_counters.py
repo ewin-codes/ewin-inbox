@@ -118,9 +118,9 @@ class TestMenuCounters(OmnichannelCase):
 
     # -- the red badge: what is addressed to the reader --------------------
 
-    def _mine_with_something_unread(self):
+    def _mine_with_something_unread(self, operator=None):
         conv = self._inbound(ext="1", text="first").conversation_id
-        conv.operator_id = self.env.user
+        conv.operator_id = operator or self.env.user
         conv._sync_channel_members()
         self._inbound(ext="2", text="second")
         self.env.invalidate_all()
@@ -165,8 +165,8 @@ class TestMenuCounters(OmnichannelCase):
         conv.operator_id = self.env.user
         conv._sync_channel_members()
         colleague = self._operator("counter_watcher")
-        conv.discuss_channel_id.sudo().add_members(
-            partner_ids=colleague.partner_id.ids, post_joined_message=False)
+        conv.discuss_channel_id.sudo()._add_members(
+            partners=colleague.partner_id, post_joined_message=False)
         self._inbound(ext="2", text="second")
         self.env.invalidate_all()
         watcher = conv.discuss_channel_id.sudo().channel_member_ids.filtered(
@@ -238,10 +238,13 @@ class TestMenuCounters(OmnichannelCase):
             "rules keep this conversation out of their own lists")
 
     def test_reading_pings_the_reader_alone(self):
-        conv = self._mine_with_something_unread()
-        pings = self._pings(conv._mark_read)
+        """The ping goes to the reader's own user channel. The superuser
+        running the test has none, so the reader is an ordinary operator."""
+        reader = self._operator("counter_reader")
+        conv = self._mine_with_something_unread(operator=reader)
+        pings = self._pings(conv.with_user(reader)._mark_read)
         self.assertEqual(len(pings), 1)
-        self.assertEqual(pings[0][0], self.env.user.partner_id)
+        self.assertEqual(pings[0][0], reader)
 
     def test_reading_pings_nobody_when_there_is_nothing_to_mark(self):
         """Reading is a Discuss channel membership.

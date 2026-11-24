@@ -165,7 +165,7 @@ class EmailClient:
             mimetype = att.mimetype or "application/octet-stream"
             maintype, _, subtype = mimetype.partition("/")
             msg.add_attachment(
-                att.raw or b"", maintype=maintype or "application",
+                att.raw.content, maintype=maintype or "application",
                 subtype=subtype or "octet-stream", filename=att.name or "file")
         server = None
         try:

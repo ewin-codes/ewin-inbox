@@ -83,8 +83,7 @@ class OmnichannelAccount(models.Model):
 
     @api.depends("webhook_uuid", "channel_code")
     def _compute_ig_webhook_url(self):
-        base = self.env["ir.config_parameter"].sudo().get_param(
-            "web.base.url") or ""
+        base = self.env["ir.config_parameter"].sudo().get_str("web.base.url") or ""
         for acc in self:
             acc.ig_webhook_url = (
                 f"{base}/omnichannel/webhook/instagram/{acc.webhook_uuid}"

@@ -96,7 +96,7 @@ class TestCloseReason(OmnichannelCase):
             archived.active = True
 
     def _set_policy(self, value):
-        self.env["ir.config_parameter"].sudo().set_param(
+        self.env["ir.config_parameter"].sudo().set_str(
             "ewin_omnichannel.close_reason_policy", value)
 
     def test_policy_defaults_to_off(self):

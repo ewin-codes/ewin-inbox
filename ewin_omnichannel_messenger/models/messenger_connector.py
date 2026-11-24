@@ -330,7 +330,7 @@ class MessengerConnector(models.AbstractModel):
             result = client.send_text(recipient, caption)
         for att in message.attachment_ids:
             result = client.send_attachment(
-                recipient, self._attachment_type(att.mimetype), att.raw,
+                recipient, self._attachment_type(att.mimetype), att.raw.content,
                 att.name, att.mimetype)
         return result or {}
 

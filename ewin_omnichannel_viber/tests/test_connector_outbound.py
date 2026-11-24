@@ -37,7 +37,7 @@ class TestViberConnectorOutbound(TransactionCase):
 
     def test_outbound_image_sends_as_picture_with_public_url(self):
         att = self.env["ir.attachment"].create({
-            "name": "pic.png", "mimetype": "image/png", "datas": b"aGk="})
+            "name": "pic.png", "mimetype": "image/png", "raw": b"hi"})
         self.conv.write({"composer_attachment_ids": [(6, 0, att.ids)]})
         with patch(SEND_PATH, return_value={"status": 0, "message_token": 8}) \
                 as mock_send:

@@ -1,10 +1,9 @@
-import base64
 
 from markupsafe import Markup, escape
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
-from odoo.tools import file_open, plaintext2html
+from odoo.tools import BinaryBytes, file_open, plaintext2html
 
 # Channel code -> (fontawesome class, brand colour) for the list icon.
 CHANNEL_ICONS = {
@@ -304,8 +303,8 @@ class OmnichannelConversation(models.Model):
         return super().unlink()
 
     def _compute_send_shortcut(self):
-        value = self.env["ir.config_parameter"].sudo().get_param(
-            "ewin_omnichannel.send_shortcut", "ctrl_enter")
+        value = self.env["ir.config_parameter"].sudo().get_str(
+            "ewin_omnichannel.send_shortcut") or "ctrl_enter"
         for conv in self:
             conv.send_shortcut = value
 
@@ -365,13 +364,13 @@ class OmnichannelConversation(models.Model):
             icon, color, size, label, label)
 
     @api.model
-    def _channel_avatar_b64(self, code):
-        """Return the base64 brand avatar for a channel code, or False."""
+    def _channel_avatar(self, code):
+        """Return the brand avatar for a channel code, or False."""
         if code not in CHANNEL_AVATAR_CODES:
             return False
         try:
             with file_open((CHANNEL_AVATAR_URL % code).lstrip("/"), "rb") as fh:
-                return base64.b64encode(fh.read())
+                return BinaryBytes(fh.read())
         except (FileNotFoundError, OSError):
             return False
 
@@ -390,18 +389,18 @@ class OmnichannelConversation(models.Model):
             # history and the internal notes, so it is restricted to the group
             # that is allowed to work in the inbox at all. Which conversations
             # an operator may *find* is still decided by
-            # rule_conversation_operator_scope on this model.
+            # access_conversation_operator on this model.
             "group_public_id": self.env.ref(
                 "ewin_omnichannel_core.group_omni_operator").id,
         }
-        avatar = self._channel_avatar_b64(self.channel_id.code)
+        avatar = self._channel_avatar(self.channel_id.code)
         if avatar:
             vals["image_128"] = avatar
         channel = self.env["discuss.channel"].create(vals)
         self.discuss_channel_id = channel
         channel.omni_conversation_id = self.id
         # Membership is added afterwards, through _sync_channel_members, so it
-        # goes via discuss.channel.add_members like every other path.
+        # goes via discuss.channel._add_members like every other path.
         self._sync_channel_members()
         return channel
 
@@ -416,18 +415,18 @@ class OmnichannelConversation(models.Model):
             partner = conv.operator_id.partner_id
             if not partner:
                 continue
-            # add_members, never a bare discuss.channel.member create: it is
+            # _add_members, never a bare discuss.channel.member create: it is
             # what pushes "discuss.channel/joined" to the operator's own bus
             # channel, and that notification is what makes an already-open
             # browser subscribe to this channel's bus. A raw create writes a
             # correct membership row that the running session never hears
             # about — so no live message, no unread badge and no sound until
-            # the operator reloads the page. add_members is idempotent: it
+            # the operator reloads the page. _add_members is idempotent: it
             # skips partners who are members already.
             # post_joined_message=False keeps the customer-facing mirror thread
             # free of "joined the channel" notices.
-            channel.sudo().add_members(
-                partner_ids=partner.ids, post_joined_message=False)
+            channel.sudo()._add_members(
+                partners=partner, post_joined_message=False)
             member = channel.sudo().channel_member_ids.filtered(
                 lambda m: m.partner_id == partner)
             # notify on every message (default channel setting is mentions-only,
@@ -475,8 +474,8 @@ class OmnichannelConversation(models.Model):
                 moved |= member.partner_id
         # Reading is what makes the "My Conversations" badge fall, and the
         # number is each reader's own — aim the refresh at them alone.
-        for partner in moved:
-            self._notify_menu_counters(partner)
+        for user in moved.user_ids:
+            self._notify_menu_counters(user)
 
     @api.model
     def action_seen(self, conversation_ids):
@@ -515,12 +514,12 @@ class OmnichannelConversation(models.Model):
 
         Read from the parameter on every call rather than cached on the
         record, so flipping the setting takes effect for the next click and
-        not the next registry reload. ``get_param`` falls back to the default
-        for a missing *or* empty value, which is what makes an installation
-        that never touched the setting behave exactly as before.
+        not the next registry reload. A missing *and* an empty value both mean
+        the default, which is what makes an installation that never touched
+        the setting behave exactly as before.
         """
-        return self.env["ir.config_parameter"].sudo().get_param(
-            CLOSE_REASON_POLICY_PARAM, "off")
+        return self.env["ir.config_parameter"].sudo().get_str(
+            CLOSE_REASON_POLICY_PARAM) or "off"
 
     def action_set_pending(self):
         """Park the conversations until the customer answers.
@@ -625,8 +624,8 @@ class OmnichannelConversation(models.Model):
         """Push a lightweight realtime signal so the Inbox thread and list
         refresh without a manual reload.
 
-        It targets the assigned operator's own partner bus channel, which is
-        always subscribed — unlike a mirror discuss.channel, whose client-side
+        It targets the assigned operator's own bus channel, which is always
+        subscribed — unlike a mirror discuss.channel, whose client-side
         bus subscription only settles after a page reload when membership was
         just granted. Also a hook point for future automations/CRM/AI.
         """
@@ -634,8 +633,7 @@ class OmnichannelConversation(models.Model):
         # The badges move on every one of these events, and on the unassigned
         # ones there is no operator below to carry the signal.
         self._notify_menu_counters()
-        partner = self.operator_id.partner_id
-        if not partner:
+        if not self.operator_id:
             return True
         data = {
             "event": event_name,
@@ -645,24 +643,24 @@ class OmnichannelConversation(models.Model):
         }
         if payload:
             data.update(payload)
-        self.env["bus.bus"]._sendone(partner, "omni.inbox", data)
+        self.operator_id._bus_send("omni.inbox", data)
         return True
 
     @api.model
-    def _notify_menu_counters(self, partner=None):
+    def _notify_menu_counters(self, user=None):
         """Tell the web client that the menu badges are stale.
 
-        Aimed at one partner it refreshes that person alone. Aimed at nobody
+        Aimed at one user it refreshes that person alone. Aimed at nobody
         it reaches the whole floor: ir.websocket subscribes every user to a
         bus channel per group they hold, so the unclaimed queue — which
         belongs to no one and therefore has no personal channel to carry it —
         needs no channel of its own.
         """
-        target = partner or self.env.ref(
+        target = user or self.env.ref(
             "ewin_omnichannel_core.group_omni_operator",
             raise_if_not_found=False)
         if target:
-            self.env["bus.bus"]._sendone(target, MENU_COUNTERS_BUS, {})
+            target._bus_send(MENU_COUNTERS_BUS, {})
         return True
 
     @api.model

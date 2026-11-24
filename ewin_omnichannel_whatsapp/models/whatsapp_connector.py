@@ -195,7 +195,7 @@ class WhatsAppConnector(models.AbstractModel):
                 media_type = "audio"
             else:
                 media_type = "document"
-            media_id = client.upload_media(att.raw, att.name, mime)
+            media_id = client.upload_media(att.raw.content, att.name, mime)
             result = client.send_media(
                 to, media_type, media_id, caption=caption or None,
                 filename=att.name if media_type == "document" else None)

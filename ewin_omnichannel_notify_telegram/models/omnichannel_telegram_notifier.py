@@ -145,7 +145,7 @@ class OmnichannelTelegramNotifier(models.Model):
 
     def _webhook_url(self):
         self.ensure_one()
-        base = self.env["ir.config_parameter"].sudo().get_param("web.base.url")
+        base = self.env["ir.config_parameter"].sudo().get_str("web.base.url")
         return f"{base}/omnichannel/notify/telegram/{self.webhook_uuid}"
 
     def _ensure_bot_identity(self):

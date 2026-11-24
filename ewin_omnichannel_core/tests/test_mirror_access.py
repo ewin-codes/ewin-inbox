@@ -46,8 +46,8 @@ class TestMirrorAccess(OmnichannelCase):
         """
         self.conv.operator_id = self.operator_a
         channel = self.conv._ensure_discuss_channel()
-        channel.sudo().add_members(
-            partner_ids=self.operator_b.partner_id.ids,
+        channel.sudo()._add_members(
+            partners=self.operator_b.partner_id,
             post_joined_message=False)
         connector = self._fake_connector()
         with self._with_connector(connector):

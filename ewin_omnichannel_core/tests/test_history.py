@@ -111,7 +111,7 @@ class TestHistory(OmnichannelCase):
         """Re-linking the ir.attachment rather than copying them keeps one
         binary per file however many records the history reaches."""
         attachment = self.env["ir.attachment"].create(
-            {"name": "invoice.pdf", "datas": b"JVBERi0="})
+            {"name": "invoice.pdf", "raw": b"%PDF-"})
         conv = self._new_conv(partner_id=self.partner.id)
         message = self._new_message(
             conv, attachment_ids=[(6, 0, attachment.ids)])
@@ -126,7 +126,7 @@ class TestHistory(OmnichannelCase):
         test above does, cannot see it — the customer's photo would reach the
         contact's chatter as text with no file."""
         attachment = self.env["ir.attachment"].create(
-            {"name": "parcel.jpg", "datas": b"Zm9v"})
+            {"name": "parcel.jpg", "raw": b"foo"})
         conv = self._new_conv(partner_id=self.partner.id)
         message = self._new_message(
             conv, message_type="image", attachment_ids=[(6, 0, attachment.ids)])

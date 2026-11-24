@@ -13,7 +13,7 @@ from .common import NotifyCase
 class TestNotifier(NotifyCase):
 
     def test_webhook_url_is_built_from_base_url(self):
-        self.env["ir.config_parameter"].sudo().set_param(
+        self.env["ir.config_parameter"].sudo().set_str(
             "web.base.url", "https://example.test")
         self.assertEqual(
             self.notifier._webhook_url(),

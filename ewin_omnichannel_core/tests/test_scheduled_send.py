@@ -150,7 +150,7 @@ class TestScheduledSend(OmnichannelCase):
         stores them and _mirror_to_discuss passes them on, but neither is
         proof that one survives all the way to release — this is."""
         attachment = self.env["ir.attachment"].create(
-            {"name": "brochure.pdf", "datas": b"JVBERi0="})
+            {"name": "brochure.pdf", "raw": b"%PDF-"})
         connector = self._fake_connector()
         with self._with_connector(connector):
             message = self.env["omnichannel.message.service"].create_outbound(

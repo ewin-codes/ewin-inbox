@@ -37,7 +37,7 @@ class TelegramConnector(models.AbstractModel):
 
     @api.model
     def _webhook_url(self, account):
-        base = self.env["ir.config_parameter"].sudo().get_param("web.base.url")
+        base = self.env["ir.config_parameter"].sudo().get_str("web.base.url")
         return f"{base}/omnichannel/webhook/telegram/{account.webhook_uuid}"
 
     @api.model
@@ -171,7 +171,7 @@ class TelegramConnector(models.AbstractModel):
         result = None
         caption = message.body_text()
         for att in message.attachment_ids:
-            data = att.raw
+            data = att.raw.content
             if (att.mimetype or "").startswith("image/"):
                 result = client.send_photo(chat_id, data, att.name, caption)
             else:

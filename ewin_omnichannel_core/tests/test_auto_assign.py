@@ -66,18 +66,21 @@ class TestAutoAssign(OmnichannelCase):
             "nobody owns this conversation, so the only thing to say is that "
             "the unclaimed queue has grown")
 
-    def test_member_sync_goes_through_add_members(self):
-        """Membership must be granted with discuss.channel.add_members.
+    def test_member_sync_announces_the_join(self):
+        """Membership must be granted with discuss.channel._add_members.
 
         It is the only path that pushes "discuss.channel/joined" to the new
         member, and that notification is what makes an already-open browser
         subscribe to the channel's bus. Creating the member row directly
         leaves the running session unsubscribed: no live message, no unread
         badge, no sound until a reload.
+
+        The operator is an ordinary user: the superuser running the test has
+        no browser, so Odoo has no bus channel to tell about the join.
         """
-        self.conv.operator_id = self.env.user
+        self.conv.operator_id = self.other
         channel = self.conv._ensure_discuss_channel()
-        partner = self.env.user.partner_id
+        partner = self.other.partner_id
         member = channel.channel_member_ids.filtered(
             lambda m: m.partner_id == partner)
         self.assertTrue(member, "the operator must be a channel member")
@@ -99,7 +102,7 @@ class TestAutoAssign(OmnichannelCase):
 
         self.assertIn(
             "discuss.channel/joined", sent,
-            "add_members must announce the join over the bus, otherwise an "
+            "_add_members must announce the join over the bus, otherwise an "
             "open browser never subscribes to this channel")
 
     def test_member_sync_is_idempotent(self):

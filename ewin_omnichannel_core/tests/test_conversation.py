@@ -104,9 +104,9 @@ class TestConversation(OmnichannelCase):
     def test_attachment_preview_image_vs_file(self):
         conv = self._new_conv()
         img = self.env["ir.attachment"].create({
-            "name": "pic.png", "mimetype": "image/png", "datas": b"aGk="})
+            "name": "pic.png", "mimetype": "image/png", "raw": b"hi"})
         doc = self.env["ir.attachment"].create({
-            "name": "report.pdf", "mimetype": "application/pdf", "datas": b"aGk="})
+            "name": "report.pdf", "mimetype": "application/pdf", "raw": b"hi"})
         msg = self.env["omnichannel.message"].create({
             "conversation_id": conv.id, "direction": "inbound",
             "sender_type": "customer", "attachment_ids": [(6, 0, (img | doc).ids)]})
@@ -120,7 +120,7 @@ class TestConversation(OmnichannelCase):
         conv = self._new_conv()
         evil = self.env["ir.attachment"].create({
             "name": "<script>x</script>.pdf", "mimetype": "application/pdf",
-            "datas": b"aGk="})
+            "raw": b"hi"})
         msg = self.env["omnichannel.message"].create({
             "conversation_id": conv.id, "direction": "inbound",
             "sender_type": "customer", "attachment_ids": [(6, 0, evil.ids)]})
@@ -192,7 +192,7 @@ class TestConversation(OmnichannelCase):
         for code in CHANNEL_IMAGE_ICONS:
             # the PNG the markup points at has to actually be on disk
             self.assertTrue(
-                self.env["omnichannel.conversation"]._channel_avatar_b64(code),
+                self.env["omnichannel.conversation"]._channel_avatar(code),
                 "no brand PNG shipped for %r" % code)
 
     def test_every_connector_channel_has_a_discuss_avatar(self):
@@ -203,19 +203,19 @@ class TestConversation(OmnichannelCase):
             [("connector_module", "!=", False)])
         for channel in channels:
             self.assertTrue(
-                self.env["omnichannel.conversation"]._channel_avatar_b64(
+                self.env["omnichannel.conversation"]._channel_avatar(
                     channel.code),
                 "no Discuss avatar shipped for %r" % channel.code)
 
     def test_send_shortcut_reads_config(self):
         conv = self._new_conv()
         # default when unset
-        self.env["ir.config_parameter"].sudo().set_param(
+        self.env["ir.config_parameter"].sudo().set_str(
             "ewin_omnichannel.send_shortcut", "")
         conv.invalidate_recordset(["send_shortcut"])
         self.assertEqual(conv.send_shortcut, "ctrl_enter")
         # follows the configured value
-        self.env["ir.config_parameter"].sudo().set_param(
+        self.env["ir.config_parameter"].sudo().set_str(
             "ewin_omnichannel.send_shortcut", "enter")
         conv.invalidate_recordset(["send_shortcut"])
         self.assertEqual(conv.send_shortcut, "enter")

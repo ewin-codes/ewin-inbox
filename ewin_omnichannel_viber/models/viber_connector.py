@@ -43,7 +43,7 @@ class ViberConnector(models.AbstractModel):
 
     @api.model
     def _webhook_url(self, account):
-        base = self.env["ir.config_parameter"].sudo().get_param("web.base.url")
+        base = self.env["ir.config_parameter"].sudo().get_str("web.base.url")
         return f"{base}/omnichannel/viber/webhook/{account.webhook_uuid}"
 
     @api.model
@@ -196,7 +196,7 @@ class ViberConnector(models.AbstractModel):
     def _public_attachment_url(self, attachment):
         """Build a tokenised public URL Viber's servers can fetch. The
         access_token gates the download to holders of the (unguessable) token."""
-        base = self.env["ir.config_parameter"].sudo().get_param("web.base.url")
+        base = self.env["ir.config_parameter"].sudo().get_str("web.base.url")
         att = attachment.sudo()
         token = att.access_token or att.generate_access_token()[0]
         return f"{base}/web/content/{att.id}?access_token={token}&download=true"
