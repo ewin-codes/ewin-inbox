@@ -172,7 +172,7 @@ professional account before a release, since the tests mock the Graph API.
    comes back as a red notice carrying the reason, which also lands in
    **Last Error** and in the error log — an expired or revoked token flips the
    account to **Error**, a transient failure does not.
-9. **Permissions** — an **Omnichannel: Operator** cannot see the access token,
+9. **Permissions** — an **EWIN Inbox / Operator** cannot see the access token,
    App Secret or Verify Token (admin-only), nor records of another company.
 10. **Duplicate webhook delivery** — a redelivered event with the same message
     id is recognised as already processed (`omnichannel.event` idempotency) and

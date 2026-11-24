@@ -483,7 +483,8 @@ wizard's send just the same:
 
 ## Security
 
-Three groups, under the **EWIN Inbox** application category:
+Three groups, offered as one **EWIN Inbox** privilege on the user form
+(each one implies the one before it):
 
 - **Operator** (`group_omni_operator`) — works conversations; sees their own
   and their teams'. Never sees provider credentials.

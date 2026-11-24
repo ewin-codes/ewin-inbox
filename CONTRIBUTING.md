@@ -4,7 +4,7 @@ Thanks for considering a contribution to EWIN Inbox.
 
 ## Development setup
 
-Run any Odoo 18 (Community) instance with the module directories on its `addons_path`.
+Run any Odoo 19 (Community) instance with the module directories on its `addons_path`.
 Install the core first, then the connector you are working on (the connector depends on
 the core):
 
@@ -33,7 +33,7 @@ Notes:
 
 ## Coding conventions
 
-- Follow the [Odoo coding guidelines](https://www.odoo.com/documentation/18.0/contributing/development/coding_guidelines.html)
+- Follow the [Odoo coding guidelines](https://www.odoo.com/documentation/19.0/contributing/development/coding_guidelines.html)
   for naming, file layout, XML/Python style, and `ir.model.access.csv`/record-rule coverage
   for every new model.
 - Odoo **model** technical names live in the `omnichannel.*` namespace (e.g.
@@ -54,8 +54,12 @@ Notes:
 
 ## Branch / PR flow
 
-1. Create a feature branch off `main` (e.g. `feat/short-description` or
-   `fix/short-description`).
+Each supported Odoo series has its own branch: `18.0` and `19.0`. The code differs
+between them where Odoo's API does, so a branch only ever runs on its own series.
+
+1. Create a feature branch off the oldest series the change applies to (e.g.
+   `fix/short-description` off `18.0`). A fix is then carried forward to every newer
+   series branch; a new feature may target the newest series only.
 2. Make your changes, keeping commits focused and descriptive.
 3. Ensure the full test suite passes (see above) before opening a pull request.
 4. Open a pull request describing the change and referencing any related issue.

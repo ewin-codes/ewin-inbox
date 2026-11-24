@@ -217,7 +217,7 @@ it is the wrong one: an account is the bot customers write to.
   (`omnichannel.telegram.link`) instead — and that wizard carries its own
   `ir.rule` scoping it to `create_uid = user.id`. That rule is required
   because a `TransientModel` gets **no** creator-only restriction of its own
-  in Odoo 18; without it, any operator holding ordinary read access to the
+  in Odoo 19; without it, any operator holding ordinary read access to the
   wizard model could `search_read` it and read out a colleague's still-valid
   one-time link.
 - **`/register` only takes effect from a Telegram account that has already

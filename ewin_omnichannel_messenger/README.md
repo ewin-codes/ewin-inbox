@@ -137,7 +137,7 @@ Page before a release, since the tests mock the Graph API.
 6. **Send outside the window** — replying more than 24 hours after the
    customer's last message fails with a friendly "outside the 24-hour window"
    error and an `omnichannel.error.log` entry; the send is not retried.
-7. **Permissions** — an **Omnichannel: Operator** cannot see the Page token,
+7. **Permissions** — an **EWIN Inbox / Operator** cannot see the Page token,
    App Secret or Verify Token (admin-only), nor records of another company.
 8. **Duplicate webhook delivery** — a redelivered event with the same message
    id is recognised as already processed (`omnichannel.event` idempotency) and
