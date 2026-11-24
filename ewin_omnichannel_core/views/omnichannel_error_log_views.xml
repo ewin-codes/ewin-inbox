@@ -46,7 +46,7 @@
                     <group string="Technical details">
                         <field name="technical" readonly="1"
                                groups="ewin_omnichannel_core.group_omni_manager"/>
-                        <field name="payload" widget="jsonb" readonly="1"
+                        <field name="payload" widget="json" readonly="1"
                                groups="ewin_omnichannel_core.group_omni_admin"/>
                     </group>
                 </sheet>

@@ -58,7 +58,7 @@
                         <field name="mail_message_id"/>
                         <field name="error_code"/>
                         <field name="error_message"/>
-                        <field name="raw_payload" widget="jsonb"
+                        <field name="raw_payload" widget="json"
                                groups="ewin_omnichannel_core.group_omni_admin"/>
                     </group>
                 </sheet>

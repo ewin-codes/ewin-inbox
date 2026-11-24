@@ -16,7 +16,7 @@
             <form><sheet><group>
                 <field name="name"/><field name="code"/>
                 <field name="connector_module"/><field name="active"/>
-                <field name="capabilities" widget="jsonb"/>
+                <field name="capabilities" widget="json"/>
             </group></sheet></form>
         </field>
     </record>
